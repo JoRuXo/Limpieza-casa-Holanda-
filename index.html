@@ -1,6 +1,17 @@
-<title>Turno de Hoy</title>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F7A6C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Turno de Hoy">
+<meta name="description" content="Turnos de limpieza de la Casa Holanda: a quién le toca hoy, tareas con foto y control del material de limpieza.">
+<title>Turno de Hoy — Casa Holanda</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧹</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Karla:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<style id="app-style">
+<style>
 :root{
   --bg:#EEF2F1;
   --surface:#FFFFFF;
@@ -57,6 +68,7 @@ body{
   font-size:15px;
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
 }
 img{max-width:100%;display:block}
 [hidden]{display:none!important}
@@ -73,19 +85,19 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .brand .sub{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .who{display:flex;align-items:center;gap:10px}
 .status{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.dot.ready{background:var(--good)}
-.dot.readonly{background:var(--warn)}
-.dot.connecting{background:var(--muted);animation:pulse 1.4s infinite}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good)}
+.dot.saving{background:var(--warn);animation:pulse 1.2s infinite}
+.dot.error{background:var(--bad)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@media (prefers-reduced-motion:reduce){.dot.connecting{animation:none}}
+@media (prefers-reduced-motion:reduce){.dot.saving{animation:none}}
 .me-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px 5px 5px;box-shadow:var(--shadow)}
 .me-chip button{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0;font-size:12px}
 .avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:800;font-size:14px;flex-shrink:0}
 .avatar.lg{width:64px;height:64px;font-size:26px}
 .badge-admin{font-size:11px;background:var(--admin-soft);color:var(--admin);border-radius:6px;padding:1px 6px;font-family:var(--font-mono);font-weight:600;text-transform:uppercase}
 
-/* ---------- name picker ---------- */
+/* ---------- boot / name picker ---------- */
+.boot{max-width:900px;margin:0 auto;padding:60px 16px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:13px}
 .picker{padding:40px 0}
 .picker h2{font-size:30px;margin-bottom:6px}
 .picker p{color:var(--muted);margin:0 0 24px}
@@ -106,7 +118,7 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .alert.review{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent)}
 .alert b{font-weight:700}
 
-/* ---------- hero (today) ---------- */
+/* ---------- hero ---------- */
 .hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:16px}
 .hero-top{display:flex;align-items:center;gap:16px;margin-bottom:18px}
 .hero-top .date{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
@@ -133,10 +145,8 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn-primary:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
 .btn-sm{padding:5px 9px;font-size:12px}
-.btn-file{position:relative;overflow:hidden}
-.btn-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
 
-/* ---------- weekly (cubos) ---------- */
+/* ---------- weekly ---------- */
 .weekly{background:var(--surface);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
 .weekly h3{font-size:15px;color:var(--accent-strong);margin-bottom:4px}
 .weekly .who-line{font-size:13px;color:var(--muted);margin-bottom:12px}
@@ -157,10 +167,6 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .history-photos{display:flex;gap:8px;flex-wrap:wrap;padding:0 14px 14px}
 .history-photos img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in}
 .history-photos .cap{font-size:11px;color:var(--muted);text-align:center;margin-top:3px;width:84px;line-height:1.25}
-table.log{width:100%;border-collapse:collapse;font-size:13px}
-table.log th{text-align:left;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--border)}
-table.log td{padding:6px 10px;border-bottom:1px solid var(--border)}
-.log-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)}
 .empty{color:var(--muted);font-size:13px;padding:14px 2px}
 
 /* ---------- stock ---------- */
@@ -225,8 +231,14 @@ table.log td{padding:6px 10px;border-bottom:1px solid var(--border)}
 .cam-actions{display:flex;gap:8px;justify-content:center;padding:14px}
 .cam-fallback{padding:18px;text-align:center}
 .cam-fallback p{color:var(--muted);font-size:13px;margin:0 0 12px}
+.btn-file{position:relative;overflow:hidden}
+.btn-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .lightbox{position:fixed;inset:0;background:rgba(8,18,16,.92);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60;cursor:zoom-out}
 .lightbox img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:10px}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:10px;font-size:14px;z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:90vw;text-align:center}
+#toast.bad{background:var(--bad);color:#fff}
 
 @media(max-width:520px){
   .brand h1{font-size:22px}
@@ -235,60 +247,76 @@ table.log td{padding:6px 10px;border-bottom:1px solid var(--border)}
   .task-action{justify-content:flex-end}
 }
 </style>
-<div id="app"></div>
+</head>
+<body>
+<div id="app"><div class="boot">Cargando…</div></div>
 <div id="cam" hidden></div>
-<script id="app-script">
+<div id="toast" hidden></div>
+<script>
 (function(){
 "use strict";
 
+/* ================= backend ================= */
+var SUPA_URL = "https://lmuiogddgfmmbouaanzo.supabase.co";
+var SUPA_KEY = "sb_publishable_NqIyAof4Y4fYyzf53qjlnA_-xDvYwsc";
+var BUCKET = "casa-fotos";
+
+function api(path, opts){
+  opts = opts || {};
+  var headers = {
+    "apikey": SUPA_KEY,
+    "Authorization": "Bearer " + SUPA_KEY,
+    "Content-Type": "application/json"
+  };
+  if(opts.prefer) headers["Prefer"] = opts.prefer;
+  return fetch(SUPA_URL + "/rest/v1/" + path, {
+    method: opts.method || "GET",
+    headers: headers,
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  }).then(function(r){
+    if(!r.ok){
+      return r.text().then(function(t){ throw new Error("HTTP " + r.status + " " + t); });
+    }
+    if(r.status === 204) return null;
+    return r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+  });
+}
+
+function uploadPhoto(dataUrl, prefix){
+  var blob = dataURLtoBlob(dataUrl);
+  var path = prefix + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,8) + ".jpg";
+  return fetch(SUPA_URL + "/storage/v1/object/" + BUCKET + "/" + path, {
+    method: "POST",
+    headers: {
+      "apikey": SUPA_KEY,
+      "Authorization": "Bearer " + SUPA_KEY,
+      "Content-Type": "image/jpeg"
+    },
+    body: blob
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error("Subida " + r.status + " " + t); });
+    return SUPA_URL + "/storage/v1/object/public/" + BUCKET + "/" + path;
+  });
+}
+
+function dataURLtoBlob(dataUrl){
+  var parts = dataUrl.split(",");
+  var mime = (parts[0].match(/:(.*?);/) || [])[1] || "image/jpeg";
+  var bin = atob(parts[1]);
+  var arr = new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: mime});
+}
+
 /* ================= constants ================= */
-var FONTS_URL = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Karla:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap";
 var PALETTE = ["#D6604D","#DDA63A","#4F8A3D","#2E8B84","#4472C4","#8E5FA8","#B15C8E"];
 var DOW = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
 var DOW_LONG = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 var MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 var STORAGE_KEY = "turnoDeHoy_myName";
-var MAX_STATE_BYTES = 3200000;
 
-/* ================= state (published) ================= */
-var STATE = /*STATE_START*/{
-  "people": ["Yassine","Jorge","Miguel","Noel","Ali","Raul","Alberto"],
-  "admins": ["Miguel","Alberto"],
-  "reviewer": "Miguel",
-  "startDate": "2026-09-07",
-  "binsPerson": null,
-  "taskTemplate": [
-    {"id":"basura","label":"Sacar la basura y poner bolsa nueva","photo":true},
-    {"id":"barrerfregar","label":"Barrer y fregar toda la casa","photo":true}
-  ],
-  "weeklyTasks": [
-    {"id":"cubos-fuera","label":"Sacar los cubos verdes a la calle","photo":true,"dow":0},
-    {"id":"cubos-dentro","label":"Entrar los cubos verdes a casa","photo":true,"dow":1}
-  ],
-  "days": {},
-  "history": {},
-  "zones": ["Cocina","Baño abajo","Baño arriba","Ducha"],
-  "items": [
-    {"id":"i1","name":"Lavavajillas a mano","zone":"Cocina","price":null,"status":"ok"},
-    {"id":"i2","name":"Bolsas de basura","zone":"Cocina","price":null,"status":"ok"},
-    {"id":"i3","name":"Friegasuelos","zone":"Cocina","price":null,"status":"ok"},
-    {"id":"i4","name":"Limpiador multiusos","zone":"Cocina","price":null,"status":"ok"},
-    {"id":"i5","name":"Estropajos y bayetas","zone":"Cocina","price":null,"status":"ok"},
-    {"id":"i6","name":"Papel de cocina","zone":"Cocina","price":null,"status":"ok"},
-    {"id":"i7","name":"Limpiacristales","zone":"Baño abajo","price":null,"status":"ok"},
-    {"id":"i8","name":"Limpiador de WC","zone":"Baño abajo","price":null,"status":"ok"},
-    {"id":"i9","name":"Papel higiénico","zone":"Baño abajo","price":null,"status":"ok"},
-    {"id":"i10","name":"Limpiacristales","zone":"Baño arriba","price":null,"status":"ok"},
-    {"id":"i11","name":"Limpiador de WC","zone":"Baño arriba","price":null,"status":"ok"},
-    {"id":"i12","name":"Papel higiénico","zone":"Baño arriba","price":null,"status":"ok"},
-    {"id":"i13","name":"Antical / quitacal","zone":"Ducha","price":null,"status":"ok"},
-    {"id":"i14","name":"Desatascador","zone":"Ducha","price":null,"status":"ok"}
-  ],
-  "purchases": [],
-  "contributions": []
-}/*STATE_END*/;
-
-/* ================= per-viewer local state (not published) ================= */
+/* ================= state ================= */
+var STATE = null;
 var myName = null;
 try { myName = localStorage.getItem(STORAGE_KEY); } catch(e){}
 var tab = "hoy";
@@ -296,17 +324,12 @@ var expandedDays = {};
 var lightbox = null;
 var purchaseFormOpen = false;
 var purchaseDraft = {amount:"", note:"", ticket:null, items:{}};
-var CAP = null;
-var capStatus = "connecting"; /* connecting | ready | offline | readonly */
-var camStream = null;
-var camOnCapture = null;
-var camShot = null;
-var camMaxDim = 640;
+var saveStatus = "ok"; /* ok | saving | error */
+var camStream = null, camOnCapture = null, camShot = null, camMaxDim = 1024;
 
 /* ================= date helpers ================= */
 function localDateStr(d){
-  var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
-  return y+"-"+m+"-"+day;
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
 function addDays(dateStr,n){
   var d = new Date(dateStr+"T00:00:00");
@@ -340,12 +363,83 @@ function parseNum(v){
   return isNaN(n) ? null : n;
 }
 
+/* ================= load ================= */
+function loadAll(){
+  return Promise.all([
+    api("casa_config?id=eq.1&select=*"),
+    api("casa_days?select=*&order=date.desc&limit=60"),
+    api("casa_items?select=*&order=sort_order.asc,name.asc"),
+    api("casa_purchases?select=*&order=at.desc&limit=40"),
+    api("casa_contributions?select=*&order=at.desc&limit=60")
+  ]).then(function(res){
+    var cfg = (res[0] && res[0][0]) || {};
+    var days = {};
+    (res[1]||[]).forEach(function(row){
+      days[row.date] = {person: row.person, tasks: row.tasks || []};
+    });
+    STATE = {
+      people: cfg.people || [],
+      admins: cfg.admins || [],
+      reviewer: cfg.reviewer || null,
+      startDate: cfg.start_date,
+      binsPerson: cfg.bins_person || null,
+      taskTemplate: cfg.task_template || [],
+      weeklyTasks: cfg.weekly_tasks || [],
+      zones: cfg.zones || [],
+      days: days,
+      items: (res[2]||[]).map(function(i){
+        return {id:i.id, name:i.name, zone:i.zone, price: i.price===null?null:Number(i.price), status:i.status, sort:i.sort_order};
+      }),
+      purchases: (res[3]||[]).map(function(p){
+        return {id:p.id, at:p.at, by:p.by_name, amount:Number(p.amount), note:p.note, ticket:p.ticket_url};
+      }),
+      contributions: (res[4]||[]).map(function(c){
+        return {id:c.id, at:c.at, by:c.by_name, amount:Number(c.amount)};
+      })
+    };
+  });
+}
+
+function refresh(){
+  return loadAll().then(render).catch(function(){ /* silencioso: se reintenta al siguiente ciclo */ });
+}
+
+/* ================= mutations ================= */
+function run(promise, okMsg){
+  saveStatus = "saving";
+  render();
+  return promise
+    .then(function(){ return loadAll(); })
+    .then(function(){
+      saveStatus = "ok";
+      render();
+      if(okMsg) toast(okMsg);
+    })
+    .catch(function(err){
+      saveStatus = "error";
+      render();
+      toast("No se pudo guardar. Revisa la conexión e inténtalo otra vez.", true);
+      if(window.console) console.error(err);
+    });
+}
+
+function saveDay(dateKey, person, tasks){
+  return api("casa_days?on_conflict=date", {
+    method: "POST",
+    prefer: "resolution=merge-duplicates,return=minimal",
+    body: [{date: dateKey, person: person, tasks: tasks, updated_at: new Date().toISOString()}]
+  });
+}
+function patchConfig(patch){
+  patch.updated_at = new Date().toISOString();
+  return api("casa_config?id=eq.1", {method:"PATCH", prefer:"return=minimal", body: patch});
+}
+
 /* ================= rotation & people ================= */
 function personForDate(state, dateStr){
   var n = state.people.length;
   if(!n) return null;
-  var idx = ((daysBetween(state.startDate, dateStr) % n) + n) % n;
-  return state.people[idx];
+  return state.people[((daysBetween(state.startDate, dateStr) % n) + n) % n];
 }
 function colorFor(state, name){
   var idx = state.people.indexOf(name);
@@ -372,7 +466,6 @@ function blankTask(t){
   return {id:t.id, label:t.label, photo:t.photo, kind:t.kind, assignee:t.assignee,
           done:false, by:null, at:null, img:null, verified:false, verifiedAt:null};
 }
-/* merged view: stored progress + any task the template says should exist today */
 function effectiveTasks(state, dateKey){
   var stored = state.days[dateKey] ? state.days[dateKey].tasks : [];
   var wanted = templateTasksFor(state, dateKey);
@@ -388,25 +481,12 @@ function effectiveTasks(state, dateKey){
       out.push(blankTask(w));
     }
   });
-  /* keep completed tasks that are no longer in the template so history is not lost */
   stored.forEach(function(s){
     var stillThere = false;
     for(var i=0;i<out.length;i++){ if(out[i].id===s.id){ stillThere = true; break; } }
     if(!stillThere && s.done) out.push(s);
   });
   return out;
-}
-function ensureDay(state, dateKey){
-  if(!state.days[dateKey]){
-    state.days[dateKey] = {person: personForDate(state, dateKey), tasks: []};
-  }
-  state.days[dateKey].tasks = effectiveTasks(state, dateKey);
-  if(!state.days[dateKey].person) state.days[dateKey].person = personForDate(state, dateKey);
-  return state.days[dateKey];
-}
-function findTask(day, taskId){
-  for(var i=0;i<day.tasks.length;i++){ if(day.tasks[i].id===taskId) return day.tasks[i]; }
-  return null;
 }
 function canDoTask(state, task, dayPerson){
   if(!myName) return false;
@@ -423,69 +503,84 @@ function pendingReview(state){
   });
   return out;
 }
-
-/* ================= stock helpers ================= */
 function itemsToBuy(state){
   return state.items.filter(function(i){ return i.status==="low" || i.status==="out"; });
 }
 function potBalance(state){
-  var inSum = (state.contributions||[]).reduce(function(a,c){return a + (c.amount||0);},0);
-  var outSum = (state.purchases||[]).reduce(function(a,p){return a + (p.amount||0);},0);
+  var inSum = state.contributions.reduce(function(a,c){return a + (c.amount||0);},0);
+  var outSum = state.purchases.reduce(function(a,p){return a + (p.amount||0);},0);
   return inSum - outSum;
 }
 function spentThisMonth(state){
   var now = new Date();
   var pre = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-  return (state.purchases||[]).reduce(function(a,p){
+  return state.purchases.reduce(function(a,p){
     return a + ((p.at||"").slice(0,7)===pre ? (p.amount||0) : 0);
   },0);
 }
 
-/* ================= data upkeep ================= */
-function clone(o){ return JSON.parse(JSON.stringify(o)); }
-function uid(prefix){ return prefix + Date.now().toString(36) + Math.floor(Math.random()*1000).toString(36); }
-function archiveOldDays(state){
-  var today = todayStr();
-  Object.keys(state.days).forEach(function(key){
-    if(key===today) return;
-    if(daysBetween(key, today) > 7){
-      var day = state.days[key];
-      var total = day.tasks.length;
-      var done = day.tasks.filter(function(t){return t.done;}).length;
-      state.history[key] = {person: day.person, done: done, total: total};
-      delete state.days[key];
-    }
-  });
+/* ================= camera ================= */
+function openCamera(title, maxDim, onCapture){
+  camOnCapture = onCapture; camShot = null; camMaxDim = maxDim;
+  var cam = document.getElementById("cam");
+  cam.hidden = false;
+  cam.innerHTML =
+    "<div class=\"cam-backdrop\"><div class=\"cam-box\">" +
+    "<div class=\"cam-head\"><span>" + esc(title) + "</span><button data-cam=\"close\" aria-label=\"Cerrar\">✕</button></div>" +
+    "<div class=\"cam-stage\"><video id=\"cam-video\" playsinline muted></video>" +
+    "<img id=\"cam-preview\" hidden alt=\"\">" +
+    "<div class=\"cam-status\" id=\"cam-status\">Abriendo cámara…</div></div>" +
+    "<div class=\"cam-actions\" id=\"cam-actions\"><button class=\"btn btn-primary\" data-cam=\"shoot\" disabled>📷 Hacer foto</button></div>" +
+    "</div></div>";
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ camFallback(); return; }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}, audio:false})
+    .then(function(stream){
+      camStream = stream;
+      var v = document.getElementById("cam-video");
+      if(!v){ stopCamStream(); return; }
+      v.srcObject = stream; v.play();
+      var st = document.getElementById("cam-status"); if(st) st.textContent = "";
+      var btn = document.querySelector("[data-cam='shoot']"); if(btn) btn.disabled = false;
+    })
+    .catch(function(){ camFallback(); });
 }
-function trimTickets(state){
-  var seen = 0;
-  (state.purchases||[]).forEach(function(p){
-    if(p.ticket){ seen++; if(seen > 12) p.ticket = null; }
-  });
+function camFallback(){
+  var box = document.querySelector(".cam-box");
+  if(!box) return;
+  var stage = box.querySelector(".cam-stage"); if(stage) stage.remove();
+  var actions = box.querySelector(".cam-actions"); if(actions) actions.remove();
+  var div = document.createElement("div");
+  div.className = "cam-fallback";
+  div.innerHTML = "<p>Este navegador no deja abrir la cámara dentro de la app. Pulsa el botón: en el móvil se abrirá la cámara para hacer la foto en el momento.</p>" +
+    "<label class=\"btn btn-primary btn-file\">📷 Abrir cámara<input type=\"file\" accept=\"image/*\" capture=\"environment\" data-cam=\"fallback-file\"></label>";
+  box.appendChild(div);
 }
-function pruneForSize(state){
-  var guard = 0;
-  while(JSON.stringify(state).length > MAX_STATE_BYTES && guard++ < 80){
-    var withTicket = (state.purchases||[]).filter(function(p){return p.ticket;});
-    if(withTicket.length > 3){ withTicket[withTicket.length-1].ticket = null; continue; }
-    var keys = Object.keys(state.days).sort();
-    var dropped = false;
-    for(var i=0;i<keys.length && !dropped;i++){
-      var tasks = state.days[keys[i]].tasks;
-      for(var j=0;j<tasks.length;j++){
-        if(tasks[j].img){ tasks[j].img = null; dropped = true; break; }
-      }
-    }
-    if(!dropped) break;
-  }
+function stopCamStream(){
+  if(camStream){ camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; }
 }
-function upkeep(state){
-  archiveOldDays(state);
-  trimTickets(state);
-  pruneForSize(state);
+function closeCamera(){
+  stopCamStream(); camOnCapture = null; camShot = null;
+  var cam = document.getElementById("cam");
+  cam.innerHTML = ""; cam.hidden = true;
 }
-
-/* ================= image handling ================= */
+function camShoot(){
+  var v = document.getElementById("cam-video");
+  if(!v || !v.videoWidth) return;
+  var w = v.videoWidth, h = v.videoHeight, maxDim = camMaxDim;
+  if(w > h && w > maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
+  else if(h >= w && h > maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
+  var canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  canvas.getContext("2d").drawImage(v,0,0,w,h);
+  camShot = canvas.toDataURL("image/jpeg",0.7);
+  var preview = document.getElementById("cam-preview");
+  preview.src = camShot; preview.hidden = false;
+  v.hidden = true;
+  stopCamStream();
+  document.getElementById("cam-actions").innerHTML =
+    "<button class=\"btn\" data-cam=\"retake\">↺ Repetir</button>" +
+    "<button class=\"btn btn-primary\" data-cam=\"use\">Usar esta foto</button>";
+}
 function shrinkDataURL(src, maxDim){
   return new Promise(function(resolve, reject){
     var img = new Image();
@@ -497,7 +592,7 @@ function shrinkDataURL(src, maxDim){
       var canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
       canvas.getContext("2d").drawImage(img,0,0,w,h);
-      resolve(canvas.toDataURL("image/jpeg",0.6));
+      resolve(canvas.toDataURL("image/jpeg",0.7));
     };
     img.src = src;
   });
@@ -511,114 +606,15 @@ function fileToDataURL(file){
   });
 }
 
-/* ================= camera ================= */
-function openCamera(title, maxDim, onCapture){
-  camOnCapture = onCapture;
-  camShot = null;
-  camMaxDim = maxDim;
-  var cam = document.getElementById("cam");
-  cam.hidden = false;
-  cam.innerHTML =
-    "<div class=\"cam-backdrop\"><div class=\"cam-box\">" +
-    "<div class=\"cam-head\"><span>" + esc(title) + "</span><button data-cam=\"close\" aria-label=\"Cerrar\">✕</button></div>" +
-    "<div class=\"cam-stage\"><video id=\"cam-video\" playsinline muted></video>" +
-    "<img id=\"cam-preview\" hidden alt=\"\">" +
-    "<div class=\"cam-status\" id=\"cam-status\">Abriendo cámara…</div></div>" +
-    "<div class=\"cam-actions\" id=\"cam-actions\"><button class=\"btn btn-primary\" data-cam=\"shoot\" disabled>📷 Hacer foto</button></div>" +
-    "</div></div>";
-
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ camFallback(); return; }
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}, audio:false})
-    .then(function(stream){
-      camStream = stream;
-      var v = document.getElementById("cam-video");
-      if(!v){ stopCamStream(); return; }
-      v.srcObject = stream;
-      v.play();
-      var st = document.getElementById("cam-status");
-      if(st) st.textContent = "";
-      var btn = document.querySelector("[data-cam='shoot']");
-      if(btn) btn.disabled = false;
-    })
-    .catch(function(){ camFallback(); });
-}
-function camFallback(){
-  var box = document.querySelector(".cam-box");
-  if(!box) return;
-  var stage = box.querySelector(".cam-stage");
-  var actions = box.querySelector(".cam-actions");
-  if(stage) stage.remove();
-  if(actions) actions.remove();
-  var div = document.createElement("div");
-  div.className = "cam-fallback";
-  div.innerHTML = "<p>Este navegador no deja abrir la cámara dentro de la app. Pulsa el botón: en el móvil se abrirá la cámara para hacer la foto en el momento.</p>" +
-    "<label class=\"btn btn-primary btn-file\">📷 Abrir cámara<input type=\"file\" accept=\"image/*\" capture=\"environment\" data-cam=\"fallback-file\"></label>";
-  box.appendChild(div);
-}
-function stopCamStream(){
-  if(camStream){
-    camStream.getTracks().forEach(function(t){ t.stop(); });
-    camStream = null;
-  }
-}
-function closeCamera(){
-  stopCamStream();
-  camOnCapture = null;
-  camShot = null;
-  var cam = document.getElementById("cam");
-  cam.innerHTML = "";
-  cam.hidden = true;
-}
-function camShoot(){
-  var v = document.getElementById("cam-video");
-  if(!v || !v.videoWidth) return;
-  var w = v.videoWidth, h = v.videoHeight;
-  var maxDim = camMaxDim;
-  if(w > h && w > maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
-  else if(h >= w && h > maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
-  var canvas = document.createElement("canvas");
-  canvas.width = w; canvas.height = h;
-  canvas.getContext("2d").drawImage(v,0,0,w,h);
-  camShot = canvas.toDataURL("image/jpeg",0.6);
-  var preview = document.getElementById("cam-preview");
-  preview.src = camShot;
-  preview.hidden = false;
-  v.hidden = true;
-  stopCamStream();
-  document.getElementById("cam-actions").innerHTML =
-    "<button class=\"btn\" data-cam=\"retake\">↺ Repetir</button>" +
-    "<button class=\"btn btn-primary\" data-cam=\"use\">Usar esta foto</button>";
-}
-
-/* ================= publish ================= */
-function buildFullDocument(state){
-  var styleText = document.getElementById("app-style").textContent;
-  var scriptSrc = document.getElementById("app-script").textContent;
-  var jsonStr = JSON.stringify(state).split("<" + "/").join("<\\/")
-    .split("STATE_START").join("STATE-START").split("STATE_END").join("STATE-END");
-  var newSrc = scriptSrc.replace(/\/\*STATE_START\*\/[\s\S]*?\/\*STATE_END\*\//, "/*STATE_START*/" + jsonStr + "/*STATE_END*/");
-  var bodyHtml = "<div id=\"app\">" + renderApp(state) + "</div>\n<div id=\"cam\" hidden></div>";
-  var scriptOpen = "<" + "script id=\"app-script\">";
-  var scriptClose = "<" + "/script>";
-  return "<!doctype html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>Turno de Hoy</title>\n<link rel=\"stylesheet\" href=\"" + FONTS_URL + "\">\n<style id=\"app-style\">" + styleText + "</style>\n</head>\n<body>\n" + bodyHtml + "\n" + scriptOpen + newSrc + scriptClose + "\n</body>\n</html>";
-}
-function publishState(newState){
-  upkeep(newState);
-  STATE = newState;
-  render();
-  if(!CAP) return;
-  CAP.publish(buildFullDocument(STATE)).catch(function(err){
-    var code = err && err.code;
-    if(code === "not_writer" || code === "not_granted"){
-      capStatus = "readonly"; CAP = null; render();
-    } else if(code === "conflict"){
-      /* the shell is already reloading every view to the winning version */
-    } else if(code === "too_large"){
-      window.alert("La app ha acumulado demasiadas fotos. Avisa a Alberto para liberar espacio.");
-    } else {
-      window.alert("No se pudo guardar el cambio, inténtalo de nuevo.");
-    }
-  });
+/* ================= toast ================= */
+var toastTimer = null;
+function toast(msg, bad){
+  var el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = bad ? "bad" : "";
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.hidden = true; }, bad ? 5000 : 2500);
 }
 
 /* ================= escaping ================= */
@@ -630,7 +626,8 @@ function escAttr(s){ return esc(s).replace(/"/g, "&quot;"); }
 /* ================= render ================= */
 function render(){
   var el = document.getElementById("app");
-  if(el) el.innerHTML = renderApp(STATE);
+  if(!STATE){ el.innerHTML = "<div class=\"boot\">Cargando…</div>"; return; }
+  el.innerHTML = renderApp(STATE);
 }
 
 function renderApp(state){
@@ -643,11 +640,9 @@ function renderApp(state){
   else if(tab==="admin" && admin) body = renderAdmin(state);
   return renderHeader(state, admin) +
     "<div class=\"wrap\" style=\"padding-top:0\">" +
-    renderAlerts(state) +
-    renderTabs(state, admin) +
-    body +
+    renderAlerts(state) + renderTabs(state, admin) + body +
     "</div>" +
-    (lightbox ? "<div class=\"lightbox\" data-action=\"close-lightbox\"><img src=\"" + lightbox + "\" alt=\"\"></div>" : "");
+    (lightbox ? "<div class=\"lightbox\" data-action=\"close-lightbox\"><img src=\"" + escAttr(lightbox) + "\" alt=\"\"></div>" : "");
 }
 
 function renderPicker(state){
@@ -658,22 +653,19 @@ function renderPicker(state){
   }).join("");
   return "<div class=\"wrap\"><div class=\"picker\">" +
     "<h2>¿Quién eres?</h2>" +
-    "<p>Elige tu nombre para poder marcar tus tareas. Se recordará en este dispositivo.</p>" +
+    "<p>Elige tu nombre para poder marcar tus tareas. Se recordará en este móvil.</p>" +
     "<div class=\"name-grid\">" + buttons + "</div></div></div>";
 }
 
 function renderHeader(state, admin){
-  var statusLabel = {connecting:"Conectando…", ready:"Guardado para todos", offline:"Solo en este dispositivo", readonly:"Solo lectura"}[capStatus];
-  var meHtml = "";
-  if(myName){
-    meHtml = "<div class=\"me-chip\">" +
-      "<span class=\"avatar\" style=\"background:" + colorFor(state,myName) + "\">" + esc(initialsFor(myName)) + "</span>" +
-      "<span>" + esc(myName) + (admin ? " <span class=\"badge-admin\">Admin</span>" : "") + "</span>" +
-      "<button data-action=\"change-user\">cambiar</button></div>";
-  }
+  var label = {ok:"Guardado", saving:"Guardando…", error:"Sin conexión"}[saveStatus];
+  var meHtml = "<div class=\"me-chip\">" +
+    "<span class=\"avatar\" style=\"background:" + colorFor(state,myName) + "\">" + esc(initialsFor(myName)) + "</span>" +
+    "<span>" + esc(myName) + (admin ? " <span class=\"badge-admin\">Admin</span>" : "") + "</span>" +
+    "<button data-action=\"change-user\">cambiar</button></div>";
   return "<div class=\"wrap\" style=\"padding-bottom:0\"><div class=\"topbar\">" +
     "<div class=\"brand\"><h1>Turno de Hoy</h1><span class=\"sub\">Limpieza · Casa Holanda</span></div>" +
-    "<div class=\"who\"><div class=\"status\"><span class=\"dot " + capStatus + "\"></span>" + statusLabel + "</div>" +
+    "<div class=\"who\"><div class=\"status\"><span class=\"dot " + (saveStatus==="ok"?"":saveStatus) + "\"></span>" + label + "</div>" +
     meHtml + "</div></div></div>";
 }
 
@@ -681,12 +673,11 @@ function renderTabs(state, admin){
   var pend = isReviewer(state, myName) ? pendingReview(state).length : 0;
   var buy = itemsToBuy(state).length;
   var defs = [
-    {id:"hoy", label:"Hoy", count:0},
-    {id:"stock", label:"Stock", count:buy},
+    {id:"hoy", label:"Hoy", count: (pend && tab!=="historial") ? pend : 0},
+    {id:"stock", label:"Stock", count: buy},
     {id:"historial", label:"Historial", count:0}
   ];
   if(admin) defs.push({id:"admin", label:"Admin", count:0});
-  if(pend && tab!=="historial") defs[0].count = pend;
   return "<div class=\"tabs\">" + defs.map(function(d){
     return "<button class=\"tab" + (tab===d.id?" active":"") + "\" data-action=\"tab\" data-tab=\"" + d.id + "\">" +
       esc(d.label) + (d.count ? "<span class=\"count\">" + d.count + "</span>" : "") + "</button>";
@@ -720,8 +711,7 @@ function renderToday(state){
   var canAct = myName && (myName === person || isAdmin(state, myName));
   var reviewer = isReviewer(state, myName);
 
-  var hero = "<div class=\"hero\">" +
-    "<div class=\"hero-top\">" +
+  var hero = "<div class=\"hero\"><div class=\"hero-top\">" +
     "<span class=\"avatar lg\" style=\"background:" + colorFor(state,person) + "\">" + esc(initialsFor(person)) + "</span>" +
     "<div><div class=\"date mono\">" + fmtDateLong(today) + "</div><h2>" + esc(person) + "</h2>" +
     "<div class=\"caption\">" + (canAct ? "Te toca hoy — barrer, fregar y sacar la basura" : "Le toca hoy") + "</div></div></div>" +
@@ -729,15 +719,12 @@ function renderToday(state){
       return renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer);
     }).join("") + "</div></div>";
 
-  var weeklyHtml = "";
-  if(weekly.length){
-    weeklyHtml = weekly.map(function(t){
-      var who = state.binsPerson ? state.binsPerson : "sin asignar — cualquiera puede hacerlo";
-      return "<div class=\"weekly\"><h3>♻️ Cubos verdes · " + esc(DOW_LONG[dowOf(today)]) + "</h3>" +
-        "<div class=\"who-line\">Responsable: <b>" + esc(who) + "</b></div>" +
-        "<div class=\"tasks\">" + renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer) + "</div></div>";
-    }).join("");
-  }
+  var weeklyHtml = weekly.map(function(t){
+    var who = state.binsPerson ? state.binsPerson : "sin asignar — cualquiera puede hacerlo";
+    return "<div class=\"weekly\"><h3>♻️ Cubos verdes · " + esc(DOW_LONG[dowOf(today)]) + "</h3>" +
+      "<div class=\"who-line\">Responsable: <b>" + esc(who) + "</b></div>" +
+      "<div class=\"tasks\">" + renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer) + "</div></div>";
+  }).join("");
 
   return hero + weeklyHtml + renderWeekStrip(state);
 }
@@ -745,7 +732,7 @@ function renderToday(state){
 function renderTaskRow(state, t, canAct, dateKey, reviewer){
   var action = "";
   if(t.done){
-    action += (t.img ? "<img class=\"thumb\" src=\"" + t.img + "\" data-action=\"zoom\" data-src-task=\"" + escAttr(dateKey+"|"+t.id) + "\" alt=\"\">" : "");
+    if(t.img) action += "<img class=\"thumb\" src=\"" + escAttr(t.img) + "\" data-action=\"zoom\" data-img=\"" + escAttr(t.img) + "\" alt=\"\" loading=\"lazy\">";
     action += "<span class=\"task-meta\">" + esc(t.by||"") + (t.at ? " · " + fmtTime(t.at) : "") + "</span>";
     if(t.img){
       if(t.verified) action += "<span class=\"pill good\">✓ Verificada</span>";
@@ -753,11 +740,9 @@ function renderTaskRow(state, t, canAct, dateKey, reviewer){
       else action += "<span class=\"pill accent\">Pendiente de revisión</span>";
     }
   } else if(canAct){
-    if(t.photo){
-      action = "<button class=\"btn btn-primary\" data-action=\"shoot-task\" data-task=\"" + escAttr(t.id) + "\">📷 Hacer foto</button>";
-    } else {
-      action = "<button class=\"btn btn-primary\" data-action=\"complete-nophoto\" data-task=\"" + escAttr(t.id) + "\">Marcar hecho</button>";
-    }
+    action = t.photo
+      ? "<button class=\"btn btn-primary\" data-action=\"shoot-task\" data-task=\"" + escAttr(t.id) + "\">📷 Hacer foto</button>"
+      : "<button class=\"btn btn-primary\" data-action=\"complete-nophoto\" data-task=\"" + escAttr(t.id) + "\">Marcar hecho</button>";
   } else {
     action = "<span class=\"pill warn\">Pendiente</span>";
   }
@@ -767,11 +752,9 @@ function renderTaskRow(state, t, canAct, dateKey, reviewer){
 }
 
 function renderWeekStrip(state){
-  var today = todayStr();
-  var cards = [];
+  var today = todayStr(), cards = [];
   for(var i=0;i<7;i++){
-    var d = addDays(today, i);
-    var person = personForDate(state, d);
+    var d = addDays(today, i), person = personForDate(state, d);
     cards.push("<div class=\"week-card" + (i===0 ? " today" : "") + "\">" +
       "<div class=\"d mono\">" + (i===0 ? "HOY" : fmtDateShort(d)) + "</div>" +
       "<span class=\"avatar\" style=\"background:" + colorFor(state,person) + ";margin:0 auto 8px\">" + esc(initialsFor(person)) + "</span>" +
@@ -780,17 +763,12 @@ function renderWeekStrip(state){
   return "<div class=\"section-title\">Esta semana</div><div class=\"week-strip\">" + cards.join("") + "</div>";
 }
 
-/* ---------- stock ---------- */
 function renderStock(state){
-  var buy = itemsToBuy(state);
-  var bal = potBalance(state);
-  var out = "";
-
+  var buy = itemsToBuy(state), bal = potBalance(state), out = "";
   out += "<div class=\"money-row\">" +
     "<div class=\"money-tile\"><div class=\"k\">Bote común</div><div class=\"v" + (bal<0?" neg":"") + "\">" + fmtEur(bal) + "</div></div>" +
     "<div class=\"money-tile\"><div class=\"k\">Gastado este mes</div><div class=\"v\">" + fmtEur(spentThisMonth(state)) + "</div></div>" +
-    "<div class=\"money-tile\"><div class=\"k\">Por comprar</div><div class=\"v\">" + buy.length + "</div></div>" +
-    "</div>";
+    "<div class=\"money-tile\"><div class=\"k\">Por comprar</div><div class=\"v\">" + buy.length + "</div></div></div>";
 
   if(buy.length){
     out += "<div class=\"buy-list\"><h3>🛒 Lista de la compra</h3><ul>" +
@@ -804,7 +782,7 @@ function renderStock(state){
     var items = state.items.filter(function(i){ return i.zone===zone; });
     out += "<div class=\"zone\"><div class=\"zone-head\"><h3>" + esc(zone) + "</h3>" +
       "<span class=\"pill\">" + items.length + " artículos</span></div>" +
-      (items.length ? items.map(function(i){ return renderItem(i); }).join("") : "<div class=\"item\"><span class=\"nm\" style=\"color:var(--muted);font-weight:400\">Sin artículos todavía</span></div>") +
+      (items.length ? items.map(renderItem).join("") : "<div class=\"item\"><span class=\"nm\" style=\"color:var(--muted);font-weight:400\">Sin artículos todavía</span></div>") +
       "</div>";
   });
 
@@ -812,12 +790,10 @@ function renderStock(state){
   out += purchaseFormOpen ? renderPurchaseForm(state) :
     "<button class=\"btn btn-primary\" data-action=\"purchase-open\">＋ Registrar compra</button>";
 
-  var purchases = state.purchases || [];
-  if(purchases.length){
-    out += "<div style=\"margin-top:14px\">" + purchases.slice(0,20).map(function(p){
+  if(state.purchases.length){
+    out += "<div style=\"margin-top:14px\">" + state.purchases.map(function(p){
       return "<div class=\"purchase\">" +
-        (p.ticket ? "<img class=\"ticket-thumb\" src=\"" + p.ticket + "\" data-action=\"zoom\" data-src-purchase=\"" + escAttr(p.id) + "\" alt=\"Ticket\">" :
-                    "<span class=\"pill\">sin ticket</span>") +
+        (p.ticket ? "<img class=\"ticket-thumb\" src=\"" + escAttr(p.ticket) + "\" data-action=\"zoom\" data-img=\"" + escAttr(p.ticket) + "\" alt=\"Ticket\" loading=\"lazy\">" : "<span class=\"pill\">sin ticket</span>") +
         "<div class=\"info\"><div class=\"n\">" + esc(p.note || "Compra") + "</div>" +
         "<div class=\"m\">" + esc(p.by||"") + " · " + fmtDateShort((p.at||"").slice(0,10)) + "</div></div>" +
         "<div class=\"amt\">" + fmtEur(p.amount) + "</div></div>";
@@ -852,8 +828,7 @@ function renderPurchaseForm(state){
     "<div class=\"field\"><label for=\"pf-note\">Concepto</label>" +
     "<input id=\"pf-note\" type=\"text\" placeholder=\"Limpiacristales y bolsas de basura\" value=\"" + escAttr(purchaseDraft.note) + "\"></div>" +
     (buy.length ? "<div class=\"field\"><label>Artículos repuestos (se marcarán como OK)</label><div class=\"chk-list\">" + chks + "</div></div>" : "") +
-    "<div class=\"field\"><label>Ticket de compra (obligatorio)</label>" +
-    "<div class=\"form-actions\">" +
+    "<div class=\"field\"><label>Ticket de compra (obligatorio)</label><div class=\"form-actions\">" +
     (purchaseDraft.ticket ? "<img class=\"ticket-thumb\" src=\"" + purchaseDraft.ticket + "\" alt=\"Ticket\">" : "") +
     "<button class=\"btn\" data-action=\"shoot-ticket\">📷 " + (purchaseDraft.ticket ? "Repetir foto" : "Foto del ticket") + "</button>" +
     "</div></div>" +
@@ -864,19 +839,18 @@ function renderPurchaseForm(state){
     "</div></div>";
 }
 
-/* ---------- history ---------- */
 function renderHistory(state){
   var today = todayStr();
   var reviewer = isReviewer(state, myName);
   var keys = Object.keys(state.days).sort().reverse();
-  var recentHtml = keys.map(function(k){
+  var html = keys.map(function(k){
     var tasks = effectiveTasks(state, k);
     var total = tasks.length;
     var done = tasks.filter(function(t){return t.done;}).length;
     var pend = tasks.filter(function(t){return t.done && t.img && !t.verified;}).length;
     var expanded = !!expandedDays[k];
     var photos = tasks.filter(function(t){return t.img;}).map(function(t){
-      return "<div><img src=\"" + t.img + "\" data-action=\"zoom\" data-src-task=\"" + escAttr(k+"|"+t.id) + "\" alt=\"\">" +
+      return "<div><img src=\"" + escAttr(t.img) + "\" data-action=\"zoom\" data-img=\"" + escAttr(t.img) + "\" alt=\"\" loading=\"lazy\">" +
         "<div class=\"cap\">" + esc(t.label) + "<br>" + (t.verified ? "✓ verificada" : "sin verificar") + "</div>" +
         (reviewer && !t.verified ? "<button class=\"btn btn-primary btn-sm\" style=\"margin-top:4px;width:84px;justify-content:center\" data-action=\"verify\" data-date=\"" + k + "\" data-task=\"" + escAttr(t.id) + "\">✓</button>" : "") +
         "</div>";
@@ -889,23 +863,10 @@ function renderHistory(state){
       (expanded ? "<div class=\"history-photos\">" + (photos || "<span class=\"empty\">Sin fotos adjuntadas</span>") + "</div>" : "") +
       "</div>";
   }).join("");
-
-  var histKeys = Object.keys(state.history).sort().reverse();
-  var logTable = "";
-  if(histKeys.length){
-    logTable = "<div class=\"section-title\">Archivo</div><div class=\"log-wrap\"><table class=\"log\">" +
-      "<thead><tr><th>Fecha</th><th>Persona</th><th>Cumplido</th></tr></thead><tbody>" +
-      histKeys.map(function(k){
-        var h = state.history[k];
-        return "<tr><td class=\"mono\">" + fmtDateShort(k) + "</td><td>" + esc(h.person) + "</td><td>" +
-          "<span class=\"pill " + (h.done===h.total ? "good" : "warn") + "\">" + h.done + "/" + h.total + "</span></td></tr>";
-      }).join("") + "</tbody></table></div>";
-  }
-  return "<div class=\"section-title\">Últimos días</div>" +
-    (recentHtml || "<div class=\"empty\">Todavía no hay días registrados.</div>") + logTable;
+  return "<div class=\"section-title\">Días registrados</div>" +
+    (html || "<div class=\"empty\">Todavía no hay días registrados.</div>");
 }
 
-/* ---------- admin ---------- */
 function renderAdmin(state){
   var taskRows = state.taskTemplate.map(function(t,i){
     return "<div class=\"admin-row\">" +
@@ -913,17 +874,14 @@ function renderAdmin(state){
       "<label class=\"chk\"><input type=\"checkbox\" data-action=\"task-toggle-photo\" data-index=\"" + i + "\"" + (t.photo?" checked":"") + "> foto</label>" +
       "<button class=\"icon-btn\" data-action=\"task-remove\" data-index=\"" + i + "\" title=\"Eliminar\">🗑</button></div>";
   }).join("");
-
-  var weeklyRows = (state.weeklyTasks||[]).map(function(w,i){
+  var weeklyRows = state.weeklyTasks.map(function(w,i){
     return "<div class=\"admin-row\"><span class=\"pill\">" + esc(DOW_LONG[w.dow]) + "</span>" +
       "<input class=\"grow\" type=\"text\" data-field=\"weekly-label\" data-index=\"" + i + "\" value=\"" + escAttr(w.label) + "\">" +
       "<button class=\"icon-btn\" data-action=\"weekly-remove\" data-index=\"" + i + "\" title=\"Eliminar\">🗑</button></div>";
   }).join("");
-
   var binsOptions = "<option value=\"\">Sin asignar</option>" + state.people.map(function(p){
     return "<option value=\"" + escAttr(p) + "\"" + (state.binsPerson===p?" selected":"") + ">" + esc(p) + "</option>";
   }).join("");
-
   var peopleRows = state.people.map(function(name,i){
     return "<div class=\"admin-row\">" +
       "<span class=\"avatar\" style=\"background:" + colorFor(state,name) + "\">" + esc(initialsFor(name)) + "</span>" +
@@ -932,17 +890,15 @@ function renderAdmin(state){
       "<button class=\"icon-btn\" data-action=\"person-down\" data-index=\"" + i + "\" title=\"Bajar\">▼</button>" +
       "<button class=\"icon-btn\" data-action=\"person-remove\" data-index=\"" + i + "\" title=\"Quitar\">🗑</button></div>";
   }).join("");
-
   var zoneSel = state.zones.map(function(z){ return "<option value=\"" + escAttr(z) + "\">" + esc(z) + "</option>"; }).join("");
   var itemRows = state.items.map(function(i){
     return "<div class=\"admin-row\">" +
       "<input class=\"grow\" type=\"text\" data-field=\"item-name\" data-id=\"" + escAttr(i.id) + "\" value=\"" + escAttr(i.name) + "\">" +
       "<span class=\"pill\">" + esc(i.zone) + "</span>" +
-      "<input type=\"number\" step=\"0.01\" min=\"0\" style=\"width:88px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null||i.price===undefined?"":i.price) + "\">" +
+      "<input type=\"number\" step=\"0.01\" min=\"0\" style=\"width:88px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null?"":i.price) + "\">" +
       "<button class=\"icon-btn\" data-action=\"item-remove\" data-id=\"" + escAttr(i.id) + "\" title=\"Eliminar\">🗑</button></div>";
   }).join("");
-
-  var contribRows = (state.contributions||[]).slice(0,10).map(function(c){
+  var contribRows = state.contributions.slice(0,10).map(function(c){
     return "<div class=\"admin-row\"><span style=\"flex:1\">" + esc(c.by) + "</span>" +
       "<span class=\"mono\">" + fmtEur(c.amount) + "</span>" +
       "<span class=\"mono\" style=\"color:var(--muted);font-size:12px\">" + fmtDateShort((c.at||"").slice(0,10)) + "</span></div>";
@@ -978,157 +934,103 @@ function renderAdmin(state){
 }
 
 /* ================= handlers ================= */
-function handlePickName(name){
-  try{ localStorage.setItem(STORAGE_KEY, name); }catch(e){}
-  myName = name;
-  render();
-}
-function handleChangeUser(){
-  if(!window.confirm("¿Cambiar de usuario en este dispositivo?")) return;
-  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
-  myName = null;
-  render();
-}
 function completeTask(taskId, img){
-  var s = clone(STATE);
-  var day = ensureDay(s, todayStr());
-  var task = findTask(day, taskId);
+  var today = todayStr();
+  var tasks = effectiveTasks(STATE, today);
+  var task = null;
+  for(var i=0;i<tasks.length;i++){ if(tasks[i].id===taskId){ task = tasks[i]; break; } }
   if(!task) return;
-  task.done = true;
-  task.by = myName;
-  task.at = new Date().toISOString();
+  task.done = true; task.by = myName; task.at = new Date().toISOString();
   if(img) task.img = img;
-  task.verified = false;
-  task.verifiedAt = null;
-  publishState(s);
+  task.verified = false; task.verifiedAt = null;
+  run(saveDay(today, personForDate(STATE, today), tasks), "Tarea guardada");
 }
-function handleVerify(dateKey, taskId){
-  var s = clone(STATE);
-  var day = ensureDay(s, dateKey);
-  var task = findTask(day, taskId);
-  if(!task) return;
-  task.verified = true;
-  task.verifiedAt = new Date().toISOString();
-  publishState(s);
+function verifyTask(dateKey, taskId){
+  var tasks = effectiveTasks(STATE, dateKey);
+  var found = false;
+  tasks.forEach(function(t){
+    if(t.id===taskId){ t.verified = true; t.verifiedAt = new Date().toISOString(); found = true; }
+  });
+  if(!found) return;
+  var person = (STATE.days[dateKey] && STATE.days[dateKey].person) || personForDate(STATE, dateKey);
+  run(saveDay(dateKey, person, tasks), "Verificada");
 }
-function handleItemStatus(id, status){
-  var s = clone(STATE);
-  s.items.forEach(function(i){ if(i.id===id){ i.status = status; i.updatedBy = myName; i.updatedAt = new Date().toISOString(); } });
-  publishState(s);
+function shootFor(taskId){
+  openCamera("Foto de la tarea", 1024, function(img){
+    saveStatus = "saving"; render();
+    uploadPhoto(img, "tareas").then(function(url){
+      completeTask(taskId, url);
+    }).catch(function(err){
+      saveStatus = "error"; render();
+      toast("No se pudo subir la foto. Inténtalo otra vez.", true);
+      if(window.console) console.error(err);
+    });
+  });
 }
 function syncPurchaseDraft(){
-  var a = document.getElementById("pf-amount");
-  var n = document.getElementById("pf-note");
+  var a = document.getElementById("pf-amount"), n = document.getElementById("pf-note");
   if(a) purchaseDraft.amount = a.value;
   if(n) purchaseDraft.note = n.value;
 }
-function handlePurchaseSave(){
+function savePurchase(){
   syncPurchaseDraft();
   var amount = parseNum(purchaseDraft.amount);
-  if(amount===null || amount<0){ window.alert("Pon el importe de la compra."); return; }
-  if(!purchaseDraft.ticket){ window.alert("Hace falta la foto del ticket."); return; }
-  var s = clone(STATE);
-  s.purchases = s.purchases || [];
-  s.purchases.unshift({
-    id: uid("p"), at: new Date().toISOString(), by: myName,
-    amount: amount, note: purchaseDraft.note || "Compra de limpieza",
-    ticket: purchaseDraft.ticket
+  if(amount===null || amount<0){ toast("Pon el importe de la compra.", true); return; }
+  if(!purchaseDraft.ticket){ toast("Hace falta la foto del ticket.", true); return; }
+  var note = purchaseDraft.note || "Compra de limpieza";
+  var repuestos = Object.keys(purchaseDraft.items).filter(function(id){ return purchaseDraft.items[id]; });
+  saveStatus = "saving"; render();
+  uploadPhoto(purchaseDraft.ticket, "tickets").then(function(url){
+    var jobs = [api("casa_purchases", {method:"POST", prefer:"return=minimal",
+      body:[{by_name: myName, amount: amount, note: note, ticket_url: url}]})];
+    repuestos.forEach(function(id){
+      jobs.push(api("casa_items?id=eq." + encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+        body:{status:"ok", updated_by: myName, updated_at: new Date().toISOString()}}));
+    });
+    purchaseFormOpen = false;
+    purchaseDraft = {amount:"", note:"", ticket:null, items:{}};
+    return run(Promise.all(jobs), "Compra registrada");
+  }).catch(function(err){
+    saveStatus = "error"; render();
+    toast("No se pudo guardar la compra. Inténtalo otra vez.", true);
+    if(window.console) console.error(err);
   });
-  Object.keys(purchaseDraft.items).forEach(function(id){
-    if(purchaseDraft.items[id]){
-      s.items.forEach(function(i){ if(i.id===id) i.status = "ok"; });
-    }
-  });
-  purchaseFormOpen = false;
-  purchaseDraft = {amount:"", note:"", ticket:null, items:{}};
-  publishState(s);
-}
-function handleTaskAdd(){
-  var el = document.getElementById("new-task-label");
-  var label = el.value.trim();
-  if(!label) return;
-  var s = clone(STATE);
-  s.taskTemplate.push({id: uid("t"), label: label, photo: true});
-  publishState(s);
-}
-function handlePersonMove(index, dir){
-  var s = clone(STATE);
-  var j = index + dir;
-  if(j<0 || j>=s.people.length) return;
-  var tmp = s.people[index]; s.people[index] = s.people[j]; s.people[j] = tmp;
-  publishState(s);
-}
-function handlePersonAdd(){
-  var el = document.getElementById("new-person-name");
-  var name = el.value.trim();
-  if(!name) return;
-  var s = clone(STATE);
-  if(s.people.indexOf(name)!==-1) return;
-  s.people.push(name);
-  publishState(s);
-}
-function handleItemAdd(){
-  var nameEl = document.getElementById("new-item-name");
-  var zoneEl = document.getElementById("new-item-zone");
-  var name = nameEl.value.trim();
-  if(!name) return;
-  var s = clone(STATE);
-  s.items.push({id: uid("i"), name: name, zone: zoneEl.value, price: null, status: "ok"});
-  publishState(s);
-}
-function handleZoneAdd(){
-  var el = document.getElementById("new-zone-name");
-  var zone = el.value.trim();
-  if(!zone) return;
-  var s = clone(STATE);
-  if(s.zones.indexOf(zone)!==-1) return;
-  s.zones.push(zone);
-  publishState(s);
-}
-function handleContribAdd(){
-  var who = document.getElementById("new-contrib-who").value;
-  var amount = parseNum(document.getElementById("new-contrib-amount").value);
-  if(amount===null || amount<=0){ window.alert("Pon la cantidad aportada."); return; }
-  var s = clone(STATE);
-  s.contributions = s.contributions || [];
-  s.contributions.unshift({id: uid("c"), at: new Date().toISOString(), by: who, amount: amount});
-  publishState(s);
 }
 
 /* ================= events ================= */
 document.getElementById("app").addEventListener("click", function(e){
   var el = e.target.closest("[data-action]");
-  if(!el) return;
+  if(!el || !STATE) return;
   var a = el.getAttribute("data-action");
+  var i, s;
 
-  if(a==="pick-name") handlePickName(el.getAttribute("data-name"));
-  else if(a==="change-user") handleChangeUser();
+  if(a==="pick-name"){
+    myName = el.getAttribute("data-name");
+    try{ localStorage.setItem(STORAGE_KEY, myName); }catch(err){}
+    render();
+  }
+  else if(a==="change-user"){
+    if(!window.confirm("¿Cambiar de usuario en este dispositivo?")) return;
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(err){}
+    myName = null; render();
+  }
   else if(a==="tab"){ tab = el.getAttribute("data-tab"); render(); }
   else if(a==="toggle-history"){
     var k = el.getAttribute("data-date");
     expandedDays[k] = !expandedDays[k];
     render();
   }
-  else if(a==="zoom"){
-    var ref = el.getAttribute("data-src-task");
-    if(ref){
-      var parts = ref.split("|");
-      var tasks = effectiveTasks(STATE, parts[0]);
-      for(var i=0;i<tasks.length;i++){ if(tasks[i].id===parts[1] && tasks[i].img){ lightbox = tasks[i].img; break; } }
-    } else {
-      var pid = el.getAttribute("data-src-purchase");
-      (STATE.purchases||[]).forEach(function(p){ if(p.id===pid && p.ticket) lightbox = p.ticket; });
-    }
-    render();
-  }
+  else if(a==="zoom"){ lightbox = el.getAttribute("data-img"); render(); }
   else if(a==="close-lightbox"){ lightbox = null; render(); }
-  else if(a==="shoot-task"){
-    var taskId = el.getAttribute("data-task");
-    openCamera("Foto de la tarea", 640, function(img){ completeTask(taskId, img); });
-  }
+  else if(a==="shoot-task") shootFor(el.getAttribute("data-task"));
   else if(a==="complete-nophoto") completeTask(el.getAttribute("data-task"), null);
-  else if(a==="verify") handleVerify(el.getAttribute("data-date"), el.getAttribute("data-task"));
-  else if(a==="item-status") handleItemStatus(el.getAttribute("data-id"), el.getAttribute("data-status"));
+  else if(a==="verify") verifyTask(el.getAttribute("data-date"), el.getAttribute("data-task"));
+  else if(a==="item-status"){
+    run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {
+      method:"PATCH", prefer:"return=minimal",
+      body:{status: el.getAttribute("data-status"), updated_by: myName, updated_at: new Date().toISOString()}
+    }));
+  }
   else if(a==="purchase-open"){ purchaseFormOpen = true; render(); }
   else if(a==="purchase-cancel"){
     purchaseFormOpen = false;
@@ -1137,78 +1039,99 @@ document.getElementById("app").addEventListener("click", function(e){
   }
   else if(a==="shoot-ticket"){
     syncPurchaseDraft();
-    openCamera("Foto del ticket", 900, function(img){ purchaseDraft.ticket = img; render(); });
+    openCamera("Foto del ticket", 1400, function(img){ purchaseDraft.ticket = img; render(); });
   }
-  else if(a==="purchase-save") handlePurchaseSave();
-  else if(a==="task-add") handleTaskAdd();
+  else if(a==="purchase-save") savePurchase();
+  else if(a==="task-add"){
+    var label = document.getElementById("new-task-label").value.trim();
+    if(!label) return;
+    s = STATE.taskTemplate.slice();
+    s.push({id:"t"+Date.now().toString(36), label:label, photo:true});
+    run(patchConfig({task_template: s}), "Tarea añadida");
+  }
   else if(a==="task-remove"){
     if(!window.confirm("¿Eliminar esta tarea diaria?")) return;
-    var s = clone(STATE);
-    s.taskTemplate.splice(parseInt(el.getAttribute("data-index"),10),1);
-    publishState(s);
+    s = STATE.taskTemplate.slice();
+    s.splice(parseInt(el.getAttribute("data-index"),10),1);
+    run(patchConfig({task_template: s}));
   }
   else if(a==="weekly-remove"){
     if(!window.confirm("¿Eliminar esta tarea semanal?")) return;
-    var s2 = clone(STATE);
-    s2.weeklyTasks.splice(parseInt(el.getAttribute("data-index"),10),1);
-    publishState(s2);
+    s = STATE.weeklyTasks.slice();
+    s.splice(parseInt(el.getAttribute("data-index"),10),1);
+    run(patchConfig({weekly_tasks: s}));
   }
-  else if(a==="person-up") handlePersonMove(parseInt(el.getAttribute("data-index"),10), -1);
-  else if(a==="person-down") handlePersonMove(parseInt(el.getAttribute("data-index"),10), 1);
+  else if(a==="person-up" || a==="person-down"){
+    i = parseInt(el.getAttribute("data-index"),10);
+    var j = i + (a==="person-up" ? -1 : 1);
+    if(j<0 || j>=STATE.people.length) return;
+    s = STATE.people.slice();
+    var tmp = s[i]; s[i] = s[j]; s[j] = tmp;
+    run(patchConfig({people: s}));
+  }
   else if(a==="person-remove"){
-    var s3 = clone(STATE);
-    var idx = parseInt(el.getAttribute("data-index"),10);
-    if(s3.people.length<=1) return;
-    if(!window.confirm("¿Quitar a " + s3.people[idx] + " de la rotación?")) return;
-    s3.people.splice(idx,1);
-    publishState(s3);
+    i = parseInt(el.getAttribute("data-index"),10);
+    if(STATE.people.length<=1) return;
+    if(!window.confirm("¿Quitar a " + STATE.people[i] + " de la rotación?")) return;
+    s = STATE.people.slice(); s.splice(i,1);
+    run(patchConfig({people: s}));
   }
-  else if(a==="person-add") handlePersonAdd();
-  else if(a==="item-add") handleItemAdd();
+  else if(a==="person-add"){
+    var nm = document.getElementById("new-person-name").value.trim();
+    if(!nm || STATE.people.indexOf(nm)!==-1) return;
+    run(patchConfig({people: STATE.people.concat([nm])}), "Añadido");
+  }
+  else if(a==="item-add"){
+    var iname = document.getElementById("new-item-name").value.trim();
+    var izone = document.getElementById("new-item-zone").value;
+    if(!iname) return;
+    run(api("casa_items", {method:"POST", prefer:"return=minimal",
+      body:[{name:iname, zone:izone, sort_order: STATE.items.length+1}]}), "Artículo añadido");
+  }
   else if(a==="item-remove"){
     if(!window.confirm("¿Eliminar este artículo?")) return;
-    var s4 = clone(STATE);
-    var id = el.getAttribute("data-id");
-    s4.items = s4.items.filter(function(i){ return i.id!==id; });
-    publishState(s4);
+    run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {method:"DELETE", prefer:"return=minimal"}));
   }
-  else if(a==="zone-add") handleZoneAdd();
-  else if(a==="contrib-add") handleContribAdd();
+  else if(a==="zone-add"){
+    var zn = document.getElementById("new-zone-name").value.trim();
+    if(!zn || STATE.zones.indexOf(zn)!==-1) return;
+    run(patchConfig({zones: STATE.zones.concat([zn])}), "Zona añadida");
+  }
+  else if(a==="contrib-add"){
+    var who = document.getElementById("new-contrib-who").value;
+    var amt = parseNum(document.getElementById("new-contrib-amount").value);
+    if(amt===null || amt<=0){ toast("Pon la cantidad aportada.", true); return; }
+    run(api("casa_contributions", {method:"POST", prefer:"return=minimal",
+      body:[{by_name: who, amount: amt}]}), "Aportación registrada");
+  }
 });
 
 document.getElementById("app").addEventListener("change", function(e){
-  var el = e.target;
-  var s;
+  var el = e.target, s;
+  if(!STATE) return;
   if(el.matches("[data-action='draft-item']")){
     purchaseDraft.items[el.getAttribute("data-id")] = el.checked;
   } else if(el.matches("[data-action='task-toggle-photo']")){
-    s = clone(STATE);
-    var i1 = parseInt(el.getAttribute("data-index"),10);
-    s.taskTemplate[i1].photo = !s.taskTemplate[i1].photo;
-    publishState(s);
+    s = JSON.parse(JSON.stringify(STATE.taskTemplate));
+    var idx = parseInt(el.getAttribute("data-index"),10);
+    s[idx].photo = !s[idx].photo;
+    run(patchConfig({task_template: s}));
   } else if(el.matches("[data-field='task-label']")){
-    s = clone(STATE);
-    s.taskTemplate[parseInt(el.getAttribute("data-index"),10)].label = el.value;
-    publishState(s);
+    s = JSON.parse(JSON.stringify(STATE.taskTemplate));
+    s[parseInt(el.getAttribute("data-index"),10)].label = el.value;
+    run(patchConfig({task_template: s}));
   } else if(el.matches("[data-field='weekly-label']")){
-    s = clone(STATE);
-    s.weeklyTasks[parseInt(el.getAttribute("data-index"),10)].label = el.value;
-    publishState(s);
+    s = JSON.parse(JSON.stringify(STATE.weeklyTasks));
+    s[parseInt(el.getAttribute("data-index"),10)].label = el.value;
+    run(patchConfig({weekly_tasks: s}));
   } else if(el.matches("[data-field='bins-person']")){
-    s = clone(STATE);
-    s.binsPerson = el.value || null;
-    publishState(s);
+    run(patchConfig({bins_person: el.value || null}), "Responsable actualizado");
   } else if(el.matches("[data-field='item-name']")){
-    s = clone(STATE);
-    var idn = el.getAttribute("data-id");
-    s.items.forEach(function(i){ if(i.id===idn) i.name = el.value; });
-    publishState(s);
+    run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {method:"PATCH", prefer:"return=minimal",
+      body:{name: el.value, updated_at: new Date().toISOString()}}));
   } else if(el.matches("[data-field='item-price']")){
-    s = clone(STATE);
-    var idp = el.getAttribute("data-id");
-    var price = parseNum(el.value);
-    s.items.forEach(function(i){ if(i.id===idp) i.price = price; });
-    publishState(s);
+    run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {method:"PATCH", prefer:"return=minimal",
+      body:{price: parseNum(el.value), updated_at: new Date().toISOString()}}));
   }
 });
 
@@ -1219,10 +1142,11 @@ document.getElementById("cam").addEventListener("click", function(e){
   if(a==="close") closeCamera();
   else if(a==="shoot") camShoot();
   else if(a==="retake"){
-    var shot = camShot, cb = camOnCapture, dim = camMaxDim;
-    var title = document.querySelector(".cam-head span");
+    var cb = camOnCapture, dim = camMaxDim;
+    var titleEl = document.querySelector(".cam-head span");
+    var title = titleEl ? titleEl.textContent : "Hacer foto";
     closeCamera();
-    openCamera(title ? title.textContent : "Hacer foto", dim, cb);
+    openCamera(title, dim, cb);
   }
   else if(a==="use"){
     var img = camShot, cb2 = camOnCapture;
@@ -1239,26 +1163,20 @@ document.getElementById("cam").addEventListener("change", function(e){
   fileToDataURL(file).then(function(src){ return shrinkDataURL(src, dim); }).then(function(img){
     closeCamera();
     if(cb) cb(img);
-  }).catch(function(){
-    window.alert("No se pudo procesar la foto, inténtalo de nuevo.");
-  });
+  }).catch(function(){ toast("No se pudo procesar la foto.", true); });
 });
 
-/* ================= capability init ================= */
-(function initCapability(){
-  if(window.claude && typeof window.claude.use === "function"){
-    window.claude.use("artifact").then(function(cap){
-      capStatus = cap ? "ready" : "offline";
-      CAP = cap || null;
-      render();
-    }).catch(function(){ capStatus = "offline"; render(); });
-  } else {
-    capStatus = "offline";
-  }
-})();
+/* ================= boot ================= */
+loadAll().then(render).catch(function(err){
+  document.getElementById("app").innerHTML =
+    "<div class=\"boot\">No se pudo conectar con el servidor.<br>Comprueba tu conexión y recarga la página.</div>";
+  if(window.console) console.error(err);
+});
 
-/* ================= initial paint ================= */
-render();
+setInterval(function(){ if(!document.hidden && STATE) refresh(); }, 30000);
+window.addEventListener("focus", function(){ if(STATE) refresh(); });
 
 })();
 </script>
+</body>
+</html>
