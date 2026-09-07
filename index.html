@@ -383,7 +383,8 @@ function loadAll(){
       admins: cfg.admins || [],
       reviewer: cfg.reviewer || null,
       startDate: cfg.start_date,
-      binsPerson: cfg.bins_person || null,
+      binsStartDate: cfg.bins_start_date || null,
+      binsStartPerson: cfg.bins_start_person || null,
       taskTemplate: cfg.task_template || [],
       weeklyTasks: cfg.weekly_tasks || [],
       zones: cfg.zones || [],
@@ -454,6 +455,27 @@ function initialsFor(name){ return (name||"?").slice(0,1).toUpperCase(); }
 function isAdmin(state, name){ return !!name && state.admins.indexOf(name) !== -1; }
 function isReviewer(state, name){ return !!name && state.reviewer === name; }
 
+/* ---- cubos verdes: una persona por semana, correlativa ----
+   La "semana de cubos" va del domingo (sacarlos) al lunes (entrarlos), así
+   que el lunes sigue siendo responsabilidad de quien los sacó el día antes. */
+function binsAnchorSunday(dateStr){
+  return dowOf(dateStr) === 1 ? addDays(dateStr, -1) : dateStr;
+}
+function nextBinsSunday(){
+  var t = todayStr(), dow = dowOf(t);
+  return dow === 0 ? t : addDays(t, 7 - dow);
+}
+function binsPersonForDate(state, dateStr){
+  var n = state.people.length;
+  if(!n || !state.binsStartDate || !state.binsStartPerson) return null;
+  var sunday = binsAnchorSunday(dateStr);
+  if(sunday < state.binsStartDate) return null; /* antes de empezar la rotación */
+  var weeks = Math.floor(daysBetween(state.binsStartDate, sunday) / 7);
+  var start = state.people.indexOf(state.binsStartPerson);
+  if(start < 0) start = 0;
+  return state.people[(((start + weeks) % n) + n) % n];
+}
+
 /* ================= day tasks ================= */
 function templateTasksFor(state, dateKey){
   var out = state.taskTemplate.map(function(t){
@@ -462,7 +484,7 @@ function templateTasksFor(state, dateKey){
   var dow = dowOf(dateKey);
   (state.weeklyTasks||[]).forEach(function(w){
     if(w.dow === dow){
-      out.push({id:w.id, label:w.label, photo:!!w.photo, kind:"weekly", assignee: state.binsPerson || null});
+      out.push({id:w.id, label:w.label, photo:!!w.photo, kind:"weekly", assignee: binsPersonForDate(state, dateKey)});
     }
   });
   return out;
@@ -723,9 +745,9 @@ function renderToday(state){
     }).join("") + "</div></div>";
 
   var weeklyHtml = weekly.map(function(t){
-    var who = state.binsPerson ? state.binsPerson : "sin asignar — cualquiera puede hacerlo";
+    var who = t.assignee ? t.assignee : "sin asignar — cualquiera puede hacerlo";
     return "<div class=\"weekly\"><h3>♻️ Cubos verdes · " + esc(DOW_LONG[dowOf(today)]) + "</h3>" +
-      "<div class=\"who-line\">Responsable: <b>" + esc(who) + "</b></div>" +
+      "<div class=\"who-line\">Responsable esta semana: <b>" + esc(who) + "</b></div>" +
       "<div class=\"tasks\">" + renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer) + "</div></div>";
   }).join("");
 
@@ -882,9 +904,19 @@ function renderAdmin(state){
       "<input class=\"grow\" type=\"text\" data-field=\"weekly-label\" data-index=\"" + i + "\" value=\"" + escAttr(w.label) + "\">" +
       "<button class=\"icon-btn\" data-action=\"weekly-remove\" data-index=\"" + i + "\" title=\"Eliminar\">🗑</button></div>";
   }).join("");
+  var proximoDomingo = nextBinsSunday();
+  var responsableProximo = binsPersonForDate(state, proximoDomingo);
   var binsOptions = "<option value=\"\">Sin asignar</option>" + state.people.map(function(p){
-    return "<option value=\"" + escAttr(p) + "\"" + (state.binsPerson===p?" selected":"") + ">" + esc(p) + "</option>";
+    return "<option value=\"" + escAttr(p) + "\"" + (responsableProximo===p?" selected":"") + ">" + esc(p) + "</option>";
   }).join("");
+  var proximasSemanas = "";
+  for(var w=0; w<4; w++){
+    var dom = addDays(proximoDomingo, w*7);
+    var quien = binsPersonForDate(state, dom);
+    proximasSemanas += "<div class=\"admin-row\"><span class=\"date mono\" style=\"min-width:80px;color:var(--muted);font-size:12px\">" +
+      fmtDateShort(dom) + "</span><span style=\"flex:1\">" + esc(quien || "sin asignar") + "</span>" +
+      (w===0 ? "<span class=\"pill accent\">este domingo</span>" : "") + "</div>";
+  }
   var peopleRows = state.people.map(function(name,i){
     return "<div class=\"admin-row\">" +
       "<span class=\"avatar\" style=\"background:" + colorFor(state,name) + "\">" + esc(initialsFor(name)) + "</span>" +
@@ -913,8 +945,10 @@ function renderAdmin(state){
     "<button class=\"btn btn-primary\" data-action=\"task-add\">Añadir</button></div></div>" +
 
     "<div class=\"admin-block\"><h3>Cubos verdes (semanal)</h3>" + weeklyRows +
-    "<div class=\"admin-row\"><span style=\"flex:1\">Responsable de los cubos</span>" +
-    "<select data-field=\"bins-person\">" + binsOptions + "</select></div></div>" +
+    "<div class=\"admin-row\"><span style=\"flex:1\">Quién los saca el próximo domingo</span>" +
+    "<select data-field=\"bins-person\">" + binsOptions + "</select></div>" +
+    "<p style=\"font-size:12px;color:var(--muted);margin:10px 0 6px\">Cada semana pasa al siguiente de la lista de turnos. Si cambias el del próximo domingo, la rotación continúa desde ahí.</p>" +
+    proximasSemanas + "</div>" +
 
     "<div class=\"admin-block\"><h3>Orden de turnos</h3>" + peopleRows +
     "<div class=\"new-row\"><input type=\"text\" id=\"new-person-name\" placeholder=\"Nombre…\">" +
@@ -1148,7 +1182,12 @@ document.getElementById("app").addEventListener("change", function(e){
     s[parseInt(el.getAttribute("data-index"),10)].label = el.value;
     run(patchConfig({weekly_tasks: s}));
   } else if(el.matches("[data-field='bins-person']")){
-    run(patchConfig({bins_person: el.value || null}), "Responsable actualizado");
+    /* Re-ancla la rotación en el próximo domingo: a partir de ahí sigue
+       pasando de uno al siguiente cada semana. */
+    run(patchConfig({
+      bins_start_person: el.value || null,
+      bins_start_date: el.value ? nextBinsSunday() : null
+    }), "Rotación de cubos actualizada");
   } else if(el.matches("[data-field='item-name']")){
     run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {method:"PATCH", prefer:"return=minimal",
       body:{name: el.value, updated_at: new Date().toISOString()}}));

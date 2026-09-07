@@ -11,7 +11,9 @@ Se abre desde cualquier navegador y desde el móvil, **sin cuenta ni contraseña
 ### Turnos
 - Un turno por día, en orden fijo, rotando cada semana: Yassine → Jorge → Miguel → Noel → Ali → Raul → Alberto. Empezó el 2026-09-07.
 - Cada día, a quien le toca debe **sacar la basura (poniendo bolsa nueva)** y **barrer y fregar toda la casa**, adjuntando una foto de cada tarea.
-- **Cubos verdes**: los domingos hay que sacarlos a la calle y los lunes volver a meterlos. Tarea semanal aparte, con responsable configurable desde Admin.
+- **Cubos verdes**: los domingos hay que sacarlos a la calle y los lunes volver a meterlos. Es una rotación semanal **aparte** de la diaria: cada semana pasa a la siguiente persona de la lista. Empieza **Alberto el domingo 13/09**, luego Yassine, Jorge, Miguel… Quien los saca el domingo es quien los entra el lunes.
+
+  Va aparte a propósito: como son 7 personas y 7 días, en la rotación diaria cada uno cae **siempre en el mismo día de la semana** (Yassine siempre lunes, Alberto siempre domingo), así que si los cubos fueran del turno del día los haría siempre el mismo. Desde Admin se puede cambiar quién los saca el próximo domingo, y la rotación continúa correlativamente desde ahí.
 
 ### Fotos: solo cámara, nunca galería
 Al pulsar "Hacer foto" se abre la cámara **dentro de la app** (`getUserMedia`) con visor en directo y botón de disparo: no hay forma de elegir una imagen de la galería. Como el sitio va por HTTPS, esto funciona de verdad en el móvil. Si algún navegador no lo permitiera, cae en un `input` con `capture="environment"`, que abre la cámara del teléfono.
@@ -44,7 +46,7 @@ Cada push a `main` despliega solo en Vercel.
 
 ### Tablas
 
-`casa_config` (fila única con la gente, admins, revisor, fecha de inicio, responsable de cubos, plantillas de tareas y zonas), `casa_days` (una fila por día con sus tareas en JSON), `casa_items`, `casa_purchases`, `casa_contributions`.
+`casa_config` (fila única con la gente, admins, revisor, fecha de inicio de los turnos, ancla de la rotación de cubos —`bins_start_date` y `bins_start_person`—, plantillas de tareas y zonas), `casa_summary` (vista con los totales del bote), `casa_days` (una fila por día con sus tareas en JSON), `casa_items`, `casa_purchases`, `casa_contributions`.
 
 La web habla con PostgREST usando `fetch` y la clave **publicable** de Supabase (la que va en el navegador, no es un secreto). Refresca cada 30 s y al volver a la pestaña, así todos ven lo mismo.
 
@@ -77,6 +79,5 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 
 ## Pendiente
 
-- Asignar el responsable de los cubos verdes (pestaña Admin → Cubos verdes).
-- Decidir si montamos el correo instantáneo con Resend.
+- Montar el correo instantáneo a Miguel con Resend (Edge Function de Supabase).
 - Más secciones y tareas que se irán añadiendo.

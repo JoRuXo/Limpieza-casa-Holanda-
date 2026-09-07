@@ -28,6 +28,26 @@ function daysBetween(a, b) {
   return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000);
 }
 
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/* Los cubos rotan una persona por semana. La semana va del domingo (sacarlos)
+   al lunes (entrarlos), así que el lunes sigue siendo de quien los sacó. */
+function binsPersonForDate(cfg, dateStr) {
+  const people = cfg.people || [];
+  if (!people.length || !cfg.bins_start_date || !cfg.bins_start_person) return null;
+  const dow = new Date(dateStr + "T00:00:00").getDay();
+  const sunday = dow === 1 ? addDays(dateStr, -1) : dateStr;
+  if (sunday < cfg.bins_start_date) return null;
+  const weeks = Math.floor(daysBetween(cfg.bins_start_date, sunday) / 7);
+  let start = people.indexOf(cfg.bins_start_person);
+  if (start < 0) start = 0;
+  return people[(((start + weeks) % people.length) + people.length) % people.length];
+}
+
 try {
   const now = new Date();
   const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -106,7 +126,7 @@ try {
         fecha: today,
         dia_semana: DOW[dow],
         le_tocaba: leTocaba,
-        responsable_cubos: cfg.bins_person || null,
+        responsable_cubos: binsPersonForDate(cfg, today),
         tareas,
         pendientes_de_revisar,
         por_comprar,
