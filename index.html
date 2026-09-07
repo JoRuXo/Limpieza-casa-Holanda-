@@ -370,7 +370,8 @@ function loadAll(){
     api("casa_days?select=*&order=date.desc&limit=60"),
     api("casa_items?select=*&order=sort_order.asc,name.asc"),
     api("casa_purchases?select=*&order=at.desc&limit=40"),
-    api("casa_contributions?select=*&order=at.desc&limit=60")
+    api("casa_contributions?select=*&order=at.desc&limit=60"),
+    api("casa_summary?select=*")
   ]).then(function(res){
     var cfg = (res[0] && res[0][0]) || {};
     var days = {};
@@ -395,7 +396,11 @@ function loadAll(){
       }),
       contributions: (res[4]||[]).map(function(c){
         return {id:c.id, at:c.at, by:c.by_name, amount:Number(c.amount)};
-      })
+      }),
+      /* Totales calculados en el servidor sobre TODAS las filas. Sumarlos
+         aquí sobre las listas cargadas daría un saldo falso en cuanto haya
+         más compras de las que se traen. */
+      summary: (res[5] && res[5][0]) || null
     };
   });
 }
@@ -468,6 +473,10 @@ function blankTask(t){
 }
 function effectiveTasks(state, dateKey){
   var stored = state.days[dateKey] ? state.days[dateKey].tasks : [];
+  /* Los días pasados se muestran tal y como se registraron. Si les
+     aplicáramos la plantilla actual, añadir una tarea nueva dejaría
+     "incompletos" todos los días anteriores, que ya no se pueden arreglar. */
+  if(dateKey < todayStr()) return JSON.parse(JSON.stringify(stored));
   var wanted = templateTasksFor(state, dateKey);
   var out = [];
   wanted.forEach(function(w){
@@ -507,16 +516,10 @@ function itemsToBuy(state){
   return state.items.filter(function(i){ return i.status==="low" || i.status==="out"; });
 }
 function potBalance(state){
-  var inSum = state.contributions.reduce(function(a,c){return a + (c.amount||0);},0);
-  var outSum = state.purchases.reduce(function(a,p){return a + (p.amount||0);},0);
-  return inSum - outSum;
+  return state.summary ? Number(state.summary.bote) : null;
 }
 function spentThisMonth(state){
-  var now = new Date();
-  var pre = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-  return state.purchases.reduce(function(a,p){
-    return a + ((p.at||"").slice(0,7)===pre ? (p.amount||0) : 0);
-  },0);
+  return state.summary ? Number(state.summary.gastado_mes) : null;
 }
 
 /* ================= camera ================= */
@@ -824,7 +827,7 @@ function renderPurchaseForm(state){
   }).join("");
   return "<div class=\"form-card\"><h3>Registrar compra</h3>" +
     "<div class=\"field\"><label for=\"pf-amount\">Importe total (€)</label>" +
-    "<input id=\"pf-amount\" type=\"number\" inputmode=\"decimal\" step=\"0.01\" min=\"0\" placeholder=\"12,50\" value=\"" + escAttr(purchaseDraft.amount) + "\"></div>" +
+    "<input id=\"pf-amount\" type=\"text\" inputmode=\"decimal\" placeholder=\"12,50\" value=\"" + escAttr(purchaseDraft.amount) + "\"></div>" +
     "<div class=\"field\"><label for=\"pf-note\">Concepto</label>" +
     "<input id=\"pf-note\" type=\"text\" placeholder=\"Limpiacristales y bolsas de basura\" value=\"" + escAttr(purchaseDraft.note) + "\"></div>" +
     (buy.length ? "<div class=\"field\"><label>Artículos repuestos (se marcarán como OK)</label><div class=\"chk-list\">" + chks + "</div></div>" : "") +
@@ -895,7 +898,7 @@ function renderAdmin(state){
     return "<div class=\"admin-row\">" +
       "<input class=\"grow\" type=\"text\" data-field=\"item-name\" data-id=\"" + escAttr(i.id) + "\" value=\"" + escAttr(i.name) + "\">" +
       "<span class=\"pill\">" + esc(i.zone) + "</span>" +
-      "<input type=\"number\" step=\"0.01\" min=\"0\" style=\"width:88px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null?"":i.price) + "\">" +
+      "<input type=\"text\" inputmode=\"decimal\" style=\"width:88px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null?"":Number(i.price).toFixed(2).replace(".",",")) + "\">" +
       "<button class=\"icon-btn\" data-action=\"item-remove\" data-id=\"" + escAttr(i.id) + "\" title=\"Eliminar\">🗑</button></div>";
   }).join("");
   var contribRows = state.contributions.slice(0,10).map(function(c){
@@ -928,32 +931,52 @@ function renderAdmin(state){
     (contribRows || "<div class=\"empty\">Sin aportaciones registradas.</div>") +
     "<div class=\"new-row\"><select id=\"new-contrib-who\">" + state.people.map(function(p){
       return "<option value=\"" + escAttr(p) + "\">" + esc(p) + "</option>"; }).join("") + "</select>" +
-    "<input type=\"number\" step=\"0.01\" min=\"0\" id=\"new-contrib-amount\" placeholder=\"€\">" +
+    "<input type=\"text\" inputmode=\"decimal\" id=\"new-contrib-amount\" placeholder=\"€\">" +
     "<button class=\"btn btn-primary\" data-action=\"contrib-add\">Añadir</button></div></div>" +
     "</div>";
 }
 
 /* ================= handlers ================= */
+/* Relee el día justo antes de escribirlo: dos personas actuando con pocos
+   segundos de diferencia (uno sube la foto, Miguel verifica otra tarea) ya no
+   se pisan, porque cada uno guarda sobre la versión recién leída. */
+function editDay(dateKey, apply, okMsg){
+  return run(
+    api("casa_days?date=eq." + dateKey + "&select=*").then(function(rows){
+      var fresh = rows && rows[0];
+      if(fresh) STATE.days[dateKey] = {person: fresh.person, tasks: fresh.tasks || []};
+      var tasks = effectiveTasks(STATE, dateKey);
+      if(!apply(tasks)) return null;
+      var person = (fresh && fresh.person) || personForDate(STATE, dateKey);
+      return saveDay(dateKey, person, tasks);
+    }),
+    okMsg
+  );
+}
 function completeTask(taskId, img){
-  var today = todayStr();
-  var tasks = effectiveTasks(STATE, today);
-  var task = null;
-  for(var i=0;i<tasks.length;i++){ if(tasks[i].id===taskId){ task = tasks[i]; break; } }
-  if(!task) return;
-  task.done = true; task.by = myName; task.at = new Date().toISOString();
-  if(img) task.img = img;
-  task.verified = false; task.verifiedAt = null;
-  run(saveDay(today, personForDate(STATE, today), tasks), "Tarea guardada");
+  editDay(todayStr(), function(tasks){
+    for(var i=0;i<tasks.length;i++){
+      if(tasks[i].id===taskId){
+        tasks[i].done = true;
+        tasks[i].by = myName;
+        tasks[i].at = new Date().toISOString();
+        if(img) tasks[i].img = img;
+        tasks[i].verified = false;
+        tasks[i].verifiedAt = null;
+        return true;
+      }
+    }
+    return false;
+  }, "Tarea guardada");
 }
 function verifyTask(dateKey, taskId){
-  var tasks = effectiveTasks(STATE, dateKey);
-  var found = false;
-  tasks.forEach(function(t){
-    if(t.id===taskId){ t.verified = true; t.verifiedAt = new Date().toISOString(); found = true; }
-  });
-  if(!found) return;
-  var person = (STATE.days[dateKey] && STATE.days[dateKey].person) || personForDate(STATE, dateKey);
-  run(saveDay(dateKey, person, tasks), "Verificada");
+  editDay(dateKey, function(tasks){
+    var found = false;
+    tasks.forEach(function(t){
+      if(t.id===taskId){ t.verified = true; t.verifiedAt = new Date().toISOString(); found = true; }
+    });
+    return found;
+  }, "Verificada");
 }
 function shootFor(taskId){
   openCamera("Foto de la tarea", 1024, function(img){
@@ -1173,8 +1196,15 @@ loadAll().then(render).catch(function(err){
   if(window.console) console.error(err);
 });
 
-setInterval(function(){ if(!document.hidden && STATE) refresh(); }, 30000);
-window.addEventListener("focus", function(){ if(STATE) refresh(); });
+/* El refresco vuelve a pintar la pantalla entera, así que no puede saltar
+   mientras alguien está rellenando algo: le borraría lo escrito a media frase. */
+function escribiendo(){
+  if(purchaseFormOpen) return true;
+  var el = document.activeElement;
+  return !!el && (el.tagName==="INPUT" || el.tagName==="SELECT" || el.tagName==="TEXTAREA");
+}
+setInterval(function(){ if(!document.hidden && STATE && !escribiendo()) refresh(); }, 30000);
+window.addEventListener("focus", function(){ if(STATE && !escribiendo()) refresh(); });
 
 })();
 </script>

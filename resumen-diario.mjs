@@ -33,12 +33,13 @@ try {
   const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const dow = new Date(today + "T00:00:00").getDay();
 
-  const [cfgRows, dayRows, items, purchases, contributions] = await Promise.all([
+  const [cfgRows, dayRows, items, purchases, summaryRows] = await Promise.all([
     api("casa_config?id=eq.1&select=*"),
     api("casa_days?select=*&order=date.desc&limit=60"),
     api("casa_items?select=*&order=sort_order.asc"),
     api("casa_purchases?select=*&order=at.desc&limit=40"),
-    api("casa_contributions?select=amount"),
+    // El saldo lo calcula el servidor sobre todas las filas, no sobre las cargadas
+    api("casa_summary?select=*"),
   ]);
 
   const cfg = cfgRows[0];
@@ -97,8 +98,7 @@ try {
       con_ticket: !!p.ticket_url,
     }));
 
-  const potIn = contributions.reduce((a, c) => a + Number(c.amount || 0), 0);
-  const potOut = purchases.reduce((a, p) => a + Number(p.amount || 0), 0);
+  const bote = summaryRows[0] ? Number(summaryRows[0].bote) : null;
 
   console.log(
     JSON.stringify(
@@ -111,7 +111,7 @@ try {
         pendientes_de_revisar,
         por_comprar,
         compras_hoy,
-        bote_comun: Number((potIn - potOut).toFixed(2)),
+        bote_comun: bote,
         url_app: APP_URL,
       },
       null,
