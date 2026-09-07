@@ -107,6 +107,8 @@ try {
       articulo: i.name,
       zona: i.zone,
       estado: i.status === "out" ? "agotado" : "queda poco",
+      cantidad_actual: Number(i.quantity),
+      minimo: Number(i.low_threshold),
     }));
 
   const compras_hoy = purchases

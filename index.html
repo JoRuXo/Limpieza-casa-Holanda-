@@ -181,11 +181,8 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--border);flex-wrap:wrap}
 .item .nm{flex:1;min-width:130px;font-weight:600}
 .item .pr{font-family:var(--font-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.state-group{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:8px}
-.state-btn{border:0;background:none;padding:4px 9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted)}
-.state-btn.on.ok{background:var(--good);color:#fff}
-.state-btn.on.low{background:var(--warn);color:#fff}
-.state-btn.on.out{background:var(--bad);color:#fff}
+.qty-group{display:flex;align-items:center;gap:5px}
+.qty-input{width:46px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:5px 2px;background:var(--bg);color:var(--ink)}
 .buy-list{background:var(--warn-soft);border:1px solid var(--warn);border-radius:12px;padding:14px 16px;margin-bottom:16px}
 .buy-list h3{font-size:15px;color:var(--warn);margin-bottom:8px}
 .buy-list ul{margin:0;padding-left:18px}
@@ -362,6 +359,10 @@ function parseNum(v){
   var n = parseFloat(String(v).replace(",","."));
   return isNaN(n) ? null : n;
 }
+function fmtQty(n){
+  n = Math.round(Number(n||0)*100)/100;
+  return String(n).replace(".",",");
+}
 
 /* ================= load ================= */
 function loadAll(){
@@ -390,7 +391,8 @@ function loadAll(){
       zones: cfg.zones || [],
       days: days,
       items: (res[2]||[]).map(function(i){
-        return {id:i.id, name:i.name, zone:i.zone, price: i.price===null?null:Number(i.price), status:i.status, sort:i.sort_order};
+        return {id:i.id, name:i.name, zone:i.zone, price: i.price===null?null:Number(i.price),
+                quantity: Number(i.quantity), threshold: Number(i.low_threshold), status:i.status, sort:i.sort_order};
       }),
       purchases: (res[3]||[]).map(function(p){
         return {id:p.id, at:p.at, by:p.by_name, amount:Number(p.amount), note:p.note, ticket:p.ticket_url};
@@ -834,11 +836,13 @@ function renderItem(i){
   return "<div class=\"item\">" +
     "<span class=\"nm\">" + esc(i.name) + "</span>" +
     "<span class=\"pr\">" + fmtEur(i.price) + "</span>" +
-    "<span class=\"state-group\">" +
-    "<button class=\"state-btn ok" + (st==="ok"?" on":"") + "\" data-action=\"item-status\" data-id=\"" + escAttr(i.id) + "\" data-status=\"ok\">OK</button>" +
-    "<button class=\"state-btn low" + (st==="low"?" on":"") + "\" data-action=\"item-status\" data-id=\"" + escAttr(i.id) + "\" data-status=\"low\">Queda poco</button>" +
-    "<button class=\"state-btn out" + (st==="out"?" on":"") + "\" data-action=\"item-status\" data-id=\"" + escAttr(i.id) + "\" data-status=\"out\">Agotado</button>" +
-    "</span></div>";
+    "<span class=\"qty-group\">" +
+    "<button class=\"icon-btn\" data-action=\"qty-step\" data-id=\"" + escAttr(i.id) + "\" data-dir=\"-1\" aria-label=\"Quitar uno\">－</button>" +
+    "<input class=\"qty-input mono\" type=\"text\" inputmode=\"decimal\" data-field=\"item-quantity\" data-id=\"" + escAttr(i.id) + "\" value=\"" + fmtQty(i.quantity) + "\">" +
+    "<button class=\"icon-btn\" data-action=\"qty-step\" data-id=\"" + escAttr(i.id) + "\" data-dir=\"1\" aria-label=\"Añadir uno\">＋</button>" +
+    "</span>" +
+    "<span class=\"pill " + (st==="out"?"bad":st==="low"?"warn":"good") + "\">" + (st==="out"?"Agotado":st==="low"?"Queda poco":"OK") + "</span>" +
+    "</div>";
 }
 
 function renderPurchaseForm(state){
@@ -930,7 +934,8 @@ function renderAdmin(state){
     return "<div class=\"admin-row\">" +
       "<input class=\"grow\" type=\"text\" data-field=\"item-name\" data-id=\"" + escAttr(i.id) + "\" value=\"" + escAttr(i.name) + "\">" +
       "<span class=\"pill\">" + esc(i.zone) + "</span>" +
-      "<input type=\"text\" inputmode=\"decimal\" style=\"width:88px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null?"":Number(i.price).toFixed(2).replace(".",",")) + "\">" +
+      "<input type=\"text\" inputmode=\"decimal\" style=\"width:78px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null?"":Number(i.price).toFixed(2).replace(".",",")) + "\">" +
+      "<label class=\"chk\" title=\"A partir de esta cantidad salta el aviso de stock bajo\">mín. <input type=\"text\" inputmode=\"decimal\" style=\"width:48px\" data-field=\"item-threshold\" data-id=\"" + escAttr(i.id) + "\" value=\"" + fmtQty(i.threshold) + "\"></label>" +
       "<button class=\"icon-btn\" data-action=\"item-remove\" data-id=\"" + escAttr(i.id) + "\" title=\"Eliminar\">🗑</button></div>";
   }).join("");
   var contribRows = state.contributions.slice(0,10).map(function(c){
@@ -1012,6 +1017,11 @@ function verifyTask(dateKey, taskId){
     return found;
   }, "Verificada");
 }
+function setItemQuantity(id, qty){
+  if(qty===null || isNaN(qty) || qty<0) qty = 0;
+  run(api("casa_items?id=eq." + encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+    body:{quantity: qty, updated_by: myName, updated_at: new Date().toISOString()}}));
+}
 function shootFor(taskId){
   openCamera("Foto de la tarea", 1024, function(img){
     saveStatus = "saving"; render();
@@ -1041,8 +1051,13 @@ function savePurchase(){
     var jobs = [api("casa_purchases", {method:"POST", prefer:"return=minimal",
       body:[{by_name: myName, amount: amount, note: note, ticket_url: url}]})];
     repuestos.forEach(function(id){
+      /* "status" ya no se marca a mano: se recalcula solo a partir de la
+         cantidad. Al reponer, sube la cantidad por encima del mínimo. */
+      var item = null;
+      for(var i=0;i<STATE.items.length;i++){ if(STATE.items[i].id===id){ item = STATE.items[i]; break; } }
+      var newQty = (item ? Number(item.threshold||0) : 0) + 2;
       jobs.push(api("casa_items?id=eq." + encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-        body:{status:"ok", updated_by: myName, updated_at: new Date().toISOString()}}));
+        body:{quantity: newQty, updated_by: myName, updated_at: new Date().toISOString()}}));
     });
     purchaseFormOpen = false;
     purchaseDraft = {amount:"", note:"", ticket:null, items:{}};
@@ -1082,11 +1097,12 @@ document.getElementById("app").addEventListener("click", function(e){
   else if(a==="shoot-task") shootFor(el.getAttribute("data-task"));
   else if(a==="complete-nophoto") completeTask(el.getAttribute("data-task"), null);
   else if(a==="verify") verifyTask(el.getAttribute("data-date"), el.getAttribute("data-task"));
-  else if(a==="item-status"){
-    run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {
-      method:"PATCH", prefer:"return=minimal",
-      body:{status: el.getAttribute("data-status"), updated_by: myName, updated_at: new Date().toISOString()}
-    }));
+  else if(a==="qty-step"){
+    i = null;
+    for(var qi=0; qi<STATE.items.length; qi++){ if(STATE.items[qi].id===el.getAttribute("data-id")){ i = STATE.items[qi]; break; } }
+    if(!i) return;
+    var dir = parseInt(el.getAttribute("data-dir"),10);
+    setItemQuantity(i.id, Math.max(0, Number(i.quantity||0) + dir));
   }
   else if(a==="purchase-open"){ purchaseFormOpen = true; render(); }
   else if(a==="purchase-cancel"){
@@ -1194,6 +1210,13 @@ document.getElementById("app").addEventListener("change", function(e){
   } else if(el.matches("[data-field='item-price']")){
     run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {method:"PATCH", prefer:"return=minimal",
       body:{price: parseNum(el.value), updated_at: new Date().toISOString()}}));
+  } else if(el.matches("[data-field='item-quantity']")){
+    setItemQuantity(el.getAttribute("data-id"), parseNum(el.value));
+  } else if(el.matches("[data-field='item-threshold']")){
+    var th = parseNum(el.value);
+    if(th===null || th<0) th = 0;
+    run(api("casa_items?id=eq." + encodeURIComponent(el.getAttribute("data-id")), {method:"PATCH", prefer:"return=minimal",
+      body:{low_threshold: th, updated_at: new Date().toISOString()}}));
   }
 });
 

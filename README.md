@@ -23,7 +23,8 @@ Cada foto queda como *pendiente de revisión* hasta que Miguel pulse **✓ Verif
 
 ### Stock de material de limpieza
 - Artículos por zonas: **Cocina, Baño abajo, Baño arriba, Ducha** (se pueden añadir más).
-- Cualquiera marca un artículo como **OK / Queda poco / Agotado**. En cuanto algo baja, salta el aviso de stock bajo y se genera la lista de la compra.
+- Cada artículo lleva una **cantidad real** (botones －/＋ o escribirla directamente) y un **umbral mínimo** que decide el admin (pestaña Admin → "mín."). El estado —OK / Queda poco / Agotado— ya no se marca a mano: se calcula solo comparando cantidad con umbral, así nadie tiene que acordarse de "desmarcarlo" luego.
+- En cuanto un artículo cae a su umbral (o a 0), salta el aviso de stock bajo y entra en la lista de la compra.
 - Cada artículo puede llevar un precio de referencia.
 
 ### Bote común y tickets
@@ -46,7 +47,7 @@ Cada push a `main` despliega solo en Vercel.
 
 ### Tablas
 
-`casa_config` (fila única con la gente, admins, revisor, fecha de inicio de los turnos, ancla de la rotación de cubos —`bins_start_date` y `bins_start_person`—, plantillas de tareas y zonas), `casa_summary` (vista con los totales del bote), `casa_days` (una fila por día con sus tareas en JSON), `casa_items`, `casa_purchases`, `casa_contributions`.
+`casa_config` (fila única con la gente, admins, revisor, fecha de inicio de los turnos, ancla de la rotación de cubos —`bins_start_date` y `bins_start_person`—, plantillas de tareas y zonas), `casa_summary` (vista con los totales del bote), `casa_items` (`quantity` y `low_threshold` por artículo; `status` es una columna calculada, no se escribe directamente), `casa_days` (una fila por día con sus tareas en JSON), `casa_items`, `casa_purchases`, `casa_contributions`.
 
 La web habla con PostgREST usando `fetch` y la clave **publicable** de Supabase (la que va en el navegador, no es un secreto). Refresca cada 30 s y al volver a la pestaña, así todos ven lo mismo.
 
@@ -72,6 +73,7 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 
 ## Historial de cambios
 
+- **2026-09-07 (stock por cantidades)**: Los artículos ya no se marcan a mano como OK/Queda poco/Agotado. Ahora llevan una cantidad real (editable por cualquiera, con botones －/＋ o escribiéndola) y un umbral mínimo que decide el admin por artículo; el estado se calcula solo. `status` pasa a ser una columna generada en la base de datos.
 - **2026-09-07 (auditoría)**: Repaso completo con cuatro fallos corregidos — el bote se calculaba mal a partir de la compra 41, el refresco automático borraba lo que estabas escribiendo, el historial de días pasados se reescribía con la plantilla de tareas actual, y los campos de dinero rechazaban la coma decimal. Además, las escrituras releen el día antes de guardar para que dos personas a la vez no se pisen.
 - **2026-09-07 (v3)**: Migración a web real. Datos en Supabase, fotos en Storage, despliegue en Vercel desde GitHub. Adiós al requisito de tener cuenta de Claude: ahora entra cualquiera con el enlace desde el móvil. El artifact viejo queda como aviso apuntando a la URL nueva.
 - **2026-09-07 (v2)**: Fotos solo desde cámara. Tareas reducidas a basura + barrer/fregar. Tarea semanal de cubos verdes. Verificación de fotos por Miguel. Sección de stock por zonas con avisos. Registro de compras con ticket y bote común. Pestañas Hoy / Stock / Historial / Admin. Correo diario a Miguel.
