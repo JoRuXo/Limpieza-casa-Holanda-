@@ -1,120 +1,123 @@
 /**
- * Extrae un resumen compacto del estado de la app "Turno de Hoy".
+ * Resumen diario de la app "Turno de Hoy" (Limpieza Casa Holanda).
  *
- * Uso:  node resumen-diario.mjs <ruta-al-html-del-artifact>
+ * Uso:  node resumen-diario.mjs
  *
- * El HTML publicado lleva el estado incrustado entre los marcadores
- * STATE_START / STATE_END. Este script lo saca, descarta las fotos en base64
- * (que ocupan megas) y escribe por pantalla un JSON pequeño con lo que hace
- * falta para el correo diario a Miguel.
+ * Lee el estado directamente de Supabase y escribe por pantalla un JSON
+ * pequeño con lo que hace falta para el correo nocturno a Miguel.
+ * La clave que usa es la pública (la misma que va en la web), así que
+ * este archivo no contiene ningún secreto.
  */
-import fs from "node:fs";
 
-const file = process.argv[2];
-if (!file) {
-  console.log(JSON.stringify({ error: "falta_ruta_html" }));
-  process.exit(0);
-}
+const SUPA_URL = "https://lmuiogddgfmmbouaanzo.supabase.co";
+const SUPA_KEY = "sb_publishable_NqIyAof4Y4fYyzf53qjlnA_-xDvYwsc";
+const APP_URL = "https://limpieza-casa-holanda.vercel.app";
 
-let html;
-try {
-  html = fs.readFileSync(file, "utf8");
-} catch (e) {
-  console.log(JSON.stringify({ error: "no_se_pudo_leer", detalle: String(e.message) }));
-  process.exit(0);
-}
-
-const m = html.match(/\/\*STATE_START\*\/([\s\S]*?)\/\*STATE_END\*\//);
-if (!m) {
-  console.log(JSON.stringify({ error: "no_se_encontro_el_estado" }));
-  process.exit(0);
-}
-
-let state;
-try {
-  state = JSON.parse(m[1]);
-} catch (e) {
-  console.log(JSON.stringify({ error: "estado_ilegible", detalle: String(e.message) }));
-  process.exit(0);
-}
-
-const pad = (n) => String(n).padStart(2, "0");
-const now = new Date();
-const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 const DOW = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const pad = (n) => String(n).padStart(2, "0");
 
-const daysBetween = (a, b) =>
-  Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000);
-
-function personForDate(d) {
-  const n = (state.people || []).length;
-  if (!n) return null;
-  return state.people[((daysBetween(state.startDate, d) % n) + n) % n];
+async function api(path) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status} en ${path}: ${await r.text()}`);
+  return r.json();
 }
 
-const dow = new Date(today + "T00:00:00").getDay();
+function daysBetween(a, b) {
+  return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000);
+}
 
-// Tareas que tocaban hoy: las diarias + las semanales de este día de la semana
-const wanted = [
-  ...(state.taskTemplate || []).map((t) => ({ id: t.id, label: t.label, kind: "diaria" })),
-  ...(state.weeklyTasks || [])
-    .filter((w) => w.dow === dow)
-    .map((w) => ({ id: w.id, label: w.label, kind: "semanal" })),
-];
-const stored = (state.days?.[today]?.tasks) || [];
-const tareas = wanted.map((w) => {
-  const s = stored.find((x) => x.id === w.id) || {};
-  return {
-    tarea: w.label,
-    tipo: w.kind,
-    hecha: !!s.done,
-    por: s.by || null,
-    hora: s.at ? `${pad(new Date(s.at).getHours())}:${pad(new Date(s.at).getMinutes())}` : null,
-    con_foto: !!s.img,
-    verificada: !!s.verified,
-  };
-});
+try {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const dow = new Date(today + "T00:00:00").getDay();
 
-// Fotos subidas hoy y fotos pendientes de revisar (de cualquier día guardado)
-const subidas_hoy = stored
-  .filter((t) => t.done && t.img && (t.at || "").slice(0, 10) === today)
-  .map((t) => ({ tarea: t.label, por: t.by, verificada: !!t.verified }));
+  const [cfgRows, dayRows, items, purchases, contributions] = await Promise.all([
+    api("casa_config?id=eq.1&select=*"),
+    api("casa_days?select=*&order=date.desc&limit=60"),
+    api("casa_items?select=*&order=sort_order.asc"),
+    api("casa_purchases?select=*&order=at.desc&limit=40"),
+    api("casa_contributions?select=amount"),
+  ]);
 
-const pendientes_de_revisar = [];
-for (const [fecha, day] of Object.entries(state.days || {})) {
-  for (const t of day.tasks || []) {
-    if (t.done && t.img && !t.verified) {
-      pendientes_de_revisar.push({ fecha, tarea: t.label, por: t.by });
+  const cfg = cfgRows[0];
+  if (!cfg) throw new Error("no hay fila de configuración (casa_config)");
+
+  const people = cfg.people || [];
+  const leTocaba = people.length
+    ? people[((daysBetween(cfg.start_date, today) % people.length) + people.length) % people.length]
+    : null;
+
+  // Tareas que tocaban hoy: las diarias + las semanales de este día de la semana
+  const wanted = [
+    ...(cfg.task_template || []).map((t) => ({ id: t.id, label: t.label, kind: "diaria" })),
+    ...(cfg.weekly_tasks || [])
+      .filter((w) => w.dow === dow)
+      .map((w) => ({ id: w.id, label: w.label, kind: "semanal" })),
+  ];
+  const stored = (dayRows.find((d) => d.date === today)?.tasks) || [];
+
+  const tareas = wanted.map((w) => {
+    const s = stored.find((x) => x.id === w.id) || {};
+    return {
+      tarea: w.label,
+      tipo: w.kind,
+      hecha: !!s.done,
+      por: s.by || null,
+      hora: s.at ? `${pad(new Date(s.at).getHours())}:${pad(new Date(s.at).getMinutes())}` : null,
+      con_foto: !!s.img,
+      verificada: !!s.verified,
+    };
+  });
+
+  const pendientes_de_revisar = [];
+  for (const day of dayRows) {
+    for (const t of day.tasks || []) {
+      if (t.done && t.img && !t.verified) {
+        pendientes_de_revisar.push({ fecha: day.date, tarea: t.label, por: t.by });
+      }
     }
   }
+
+  const por_comprar = items
+    .filter((i) => i.status === "low" || i.status === "out")
+    .map((i) => ({
+      articulo: i.name,
+      zona: i.zone,
+      estado: i.status === "out" ? "agotado" : "queda poco",
+    }));
+
+  const compras_hoy = purchases
+    .filter((p) => (p.at || "").slice(0, 10) === today)
+    .map((p) => ({
+      por: p.by_name,
+      importe: Number(p.amount),
+      concepto: p.note,
+      con_ticket: !!p.ticket_url,
+    }));
+
+  const potIn = contributions.reduce((a, c) => a + Number(c.amount || 0), 0);
+  const potOut = purchases.reduce((a, p) => a + Number(p.amount || 0), 0);
+
+  console.log(
+    JSON.stringify(
+      {
+        fecha: today,
+        dia_semana: DOW[dow],
+        le_tocaba: leTocaba,
+        responsable_cubos: cfg.bins_person || null,
+        tareas,
+        pendientes_de_revisar,
+        por_comprar,
+        compras_hoy,
+        bote_comun: Number((potIn - potOut).toFixed(2)),
+        url_app: APP_URL,
+      },
+      null,
+      2
+    )
+  );
+} catch (e) {
+  console.log(JSON.stringify({ error: String(e.message || e) }));
 }
-
-const por_comprar = (state.items || [])
-  .filter((i) => i.status === "low" || i.status === "out")
-  .map((i) => ({ articulo: i.name, zona: i.zone, estado: i.status === "out" ? "agotado" : "queda poco" }));
-
-const compras_hoy = (state.purchases || [])
-  .filter((p) => (p.at || "").slice(0, 10) === today)
-  .map((p) => ({ por: p.by, importe: p.amount, concepto: p.note, con_ticket: !!p.ticket }));
-
-const potIn = (state.contributions || []).reduce((a, c) => a + (c.amount || 0), 0);
-const potOut = (state.purchases || []).reduce((a, p) => a + (p.amount || 0), 0);
-
-console.log(
-  JSON.stringify(
-    {
-      fecha: today,
-      dia_semana: DOW[dow],
-      le_tocaba: personForDate(today),
-      responsable_cubos: state.binsPerson || null,
-      tareas,
-      subidas_hoy,
-      pendientes_de_revisar,
-      por_comprar,
-      compras_hoy,
-      bote_comun: Number((potIn - potOut).toFixed(2)),
-    },
-    null,
-    2
-  )
-);
