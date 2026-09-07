@@ -60,10 +60,11 @@ body{
 }
 img{max-width:100%;display:block}
 [hidden]{display:none!important}
-button,input{font-family:inherit;font-size:inherit;color:inherit}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.02em;text-wrap:balance;margin:0}
 .mono{font-family:var(--font-mono)}
 .wrap{max-width:900px;margin:0 auto;padding:18px 16px 72px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* ---------- header ---------- */
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid var(--border)}
@@ -74,10 +75,10 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .status{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .dot.ready{background:var(--good)}
-.dot.offline{background:var(--muted)}
 .dot.readonly{background:var(--warn)}
 .dot.connecting{background:var(--muted);animation:pulse 1.4s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.dot.connecting{animation:none}}
 .me-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:5px 12px 5px 5px;box-shadow:var(--shadow)}
 .me-chip button{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0;font-size:12px}
 .avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:800;font-size:14px;flex-shrink:0}
@@ -93,8 +94,20 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .name-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
 .name-btn span{font-family:var(--font-display);font-weight:700;font-size:17px;text-transform:none}
 
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:11px;margin-bottom:18px;overflow-x:auto}
+.tab{flex:1;min-width:84px;border:0;background:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);white-space:nowrap}
+.tab.active{background:var(--surface);color:var(--accent-strong);box-shadow:var(--shadow)}
+.tab .count{font-family:var(--font-mono);font-size:11px;background:var(--bad);color:#fff;border-radius:999px;padding:1px 5px;margin-left:4px}
+
+/* ---------- alerts ---------- */
+.alert{display:flex;align-items:flex-start;gap:10px;border-radius:11px;padding:11px 14px;margin-bottom:10px;font-size:14px;cursor:pointer;border:1px solid transparent}
+.alert.buy{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.alert.review{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent)}
+.alert b{font-weight:700}
+
 /* ---------- hero (today) ---------- */
-.hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:20px}
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:16px}
 .hero-top{display:flex;align-items:center;gap:16px;margin-bottom:18px}
 .hero-top .date{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
 .hero-top h2{font-size:32px;line-height:1}
@@ -107,18 +120,26 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .is-done .task-check{background:var(--good);border-color:var(--good);color:#fff}
 .task-label{font-weight:600}
 .task-meta{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
-.task-action{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border)}
-.pill{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.task-action{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:zoom-in}
+.pill{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.good{background:var(--good-soft);color:var(--good)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.accent{background:var(--accent-soft);color:var(--accent-strong)}
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:8px 13px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn-primary:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
-.btn-danger{color:var(--bad);border-color:var(--bad)}
+.btn-sm{padding:5px 9px;font-size:12px}
 .btn-file{position:relative;overflow:hidden}
 .btn-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* ---------- weekly (cubos) ---------- */
+.weekly{background:var(--surface);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+.weekly h3{font-size:15px;color:var(--accent-strong);margin-bottom:4px}
+.weekly .who-line{font-size:13px;color:var(--muted);margin-bottom:12px}
 
 /* ---------- week strip ---------- */
 .section-title{font-size:13px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:26px 0 10px}
@@ -134,26 +155,78 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .history-head .left{display:flex;align-items:center;gap:10px}
 .history-head .date{font-family:var(--font-mono);font-size:12px;color:var(--muted);min-width:64px}
 .history-photos{display:flex;gap:8px;flex-wrap:wrap;padding:0 14px 14px}
-.history-photos img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
-.history-photos .cap{font-size:11px;color:var(--muted);text-align:center;margin-top:3px;width:84px}
+.history-photos img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in}
+.history-photos .cap{font-size:11px;color:var(--muted);text-align:center;margin-top:3px;width:84px;line-height:1.25}
 table.log{width:100%;border-collapse:collapse;font-size:13px}
-table.log th{text-align:left;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--border)}
-table.log td{padding:6px 8px;border-bottom:1px solid var(--border)}
+table.log th{text-align:left;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--border)}
+table.log td{padding:6px 10px;border-bottom:1px solid var(--border)}
 .log-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)}
 .empty{color:var(--muted);font-size:13px;padding:14px 2px}
 
+/* ---------- stock ---------- */
+.money-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.money-tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+.money-tile .k{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.money-tile .v{font-family:var(--font-display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums;margin-top:2px}
+.money-tile .v.neg{color:var(--bad)}
+.zone{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+.zone-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface-2)}
+.zone-head h3{font-size:15px}
+.item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--border);flex-wrap:wrap}
+.item .nm{flex:1;min-width:130px;font-weight:600}
+.item .pr{font-family:var(--font-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.state-group{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:8px}
+.state-btn{border:0;background:none;padding:4px 9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted)}
+.state-btn.on.ok{background:var(--good);color:#fff}
+.state-btn.on.low{background:var(--warn);color:#fff}
+.state-btn.on.out{background:var(--bad);color:#fff}
+.buy-list{background:var(--warn-soft);border:1px solid var(--warn);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.buy-list h3{font-size:15px;color:var(--warn);margin-bottom:8px}
+.buy-list ul{margin:0;padding-left:18px}
+.buy-list li{margin-bottom:3px}
+.purchase{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.purchase .amt{font-family:var(--font-display);font-weight:800;font-size:20px;font-variant-numeric:tabular-nums}
+.purchase .info{flex:1;min-width:0}
+.purchase .info .n{font-weight:600}
+.purchase .info .m{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+.form-card{background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:14px}
+.form-card h3{font-size:15px;color:var(--accent-strong);margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field label{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.field input,.field select{border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink);width:100%}
+.chk-list{display:flex;flex-wrap:wrap;gap:6px}
+.chk-list label{display:flex;align-items:center;gap:5px;background:var(--surface-2);border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer}
+.form-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.ticket-thumb{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+
 /* ---------- admin ---------- */
-.admin-toggle{margin-top:26px}
-.admin-panel{margin-top:14px;background:var(--admin-soft);border:1px solid var(--admin);border-radius:var(--radius);padding:18px}
+.admin-panel{background:var(--admin-soft);border:1px solid var(--admin);border-radius:var(--radius);padding:18px}
 .admin-panel h3{font-size:15px;color:var(--admin);margin-bottom:10px}
 .admin-block{margin-bottom:22px}
 .admin-block:last-child{margin-bottom:0}
-.admin-row{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:6px}
-.admin-row input[type=text]{flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--bg);color:var(--ink);min-width:0}
+.admin-row{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap}
+.admin-row input[type=text],.admin-row input[type=number],.admin-row select{border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--bg);color:var(--ink);min-width:0}
+.admin-row input.grow{flex:1}
 .admin-row label.chk{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);white-space:nowrap}
-.icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .icon-btn:hover{border-color:var(--accent)}
-.new-row{display:flex;gap:8px;margin-top:8px}
+.new-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.new-row input,.new-row select{border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:var(--surface);color:var(--ink);flex:1;min-width:120px}
+
+/* ---------- camera ---------- */
+.cam-backdrop{position:fixed;inset:0;background:rgba(8,18,16,.86);display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
+.cam-box{background:var(--surface);border-radius:var(--radius);width:100%;max-width:560px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.cam-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.cam-head span{font-family:var(--font-display);font-weight:700;font-size:16px;text-transform:uppercase}
+.cam-head button{border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
+.cam-stage{position:relative;background:#0B1614;min-height:220px;display:flex;align-items:center;justify-content:center}
+.cam-stage video,.cam-stage img{width:100%;max-height:58vh;object-fit:contain;background:#0B1614}
+.cam-status{position:absolute;color:#DCEBE7;font-family:var(--font-mono);font-size:12px;text-align:center;padding:0 20px}
+.cam-actions{display:flex;gap:8px;justify-content:center;padding:14px}
+.cam-fallback{padding:18px;text-align:center}
+.cam-fallback p{color:var(--muted);font-size:13px;margin:0 0 12px}
+.lightbox{position:fixed;inset:0;background:rgba(8,18,16,.92);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:10px}
 
 @media(max-width:520px){
   .brand h1{font-size:22px}
@@ -163,6 +236,7 @@ table.log td{padding:6px 8px;border-bottom:1px solid var(--border)}
 }
 </style>
 <div id="app"></div>
+<div id="cam" hidden></div>
 <script id="app-script">
 (function(){
 "use strict";
@@ -171,29 +245,63 @@ table.log td{padding:6px 8px;border-bottom:1px solid var(--border)}
 var FONTS_URL = "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Karla:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap";
 var PALETTE = ["#D6604D","#DDA63A","#4F8A3D","#2E8B84","#4472C4","#8E5FA8","#B15C8E"];
 var DOW = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
+var DOW_LONG = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+var MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 var STORAGE_KEY = "turnoDeHoy_myName";
+var MAX_STATE_BYTES = 3200000;
 
 /* ================= state (published) ================= */
 var STATE = /*STATE_START*/{
   "people": ["Yassine","Jorge","Miguel","Noel","Ali","Raul","Alberto"],
   "admins": ["Miguel","Alberto"],
+  "reviewer": "Miguel",
   "startDate": "2026-09-07",
+  "binsPerson": null,
   "taskTemplate": [
-    {"id":"basura","label":"Sacar la basura","photo":true},
-    {"id":"barrer","label":"Barrer toda la casa","photo":true},
-    {"id":"cocina","label":"Dejar la cocina limpia y recogida","photo":true}
+    {"id":"basura","label":"Sacar la basura y poner bolsa nueva","photo":true},
+    {"id":"barrerfregar","label":"Barrer y fregar toda la casa","photo":true}
+  ],
+  "weeklyTasks": [
+    {"id":"cubos-fuera","label":"Sacar los cubos verdes a la calle","photo":true,"dow":0},
+    {"id":"cubos-dentro","label":"Entrar los cubos verdes a casa","photo":true,"dow":1}
   ],
   "days": {},
-  "history": {}
+  "history": {},
+  "zones": ["Cocina","Baño abajo","Baño arriba","Ducha"],
+  "items": [
+    {"id":"i1","name":"Lavavajillas a mano","zone":"Cocina","price":null,"status":"ok"},
+    {"id":"i2","name":"Bolsas de basura","zone":"Cocina","price":null,"status":"ok"},
+    {"id":"i3","name":"Friegasuelos","zone":"Cocina","price":null,"status":"ok"},
+    {"id":"i4","name":"Limpiador multiusos","zone":"Cocina","price":null,"status":"ok"},
+    {"id":"i5","name":"Estropajos y bayetas","zone":"Cocina","price":null,"status":"ok"},
+    {"id":"i6","name":"Papel de cocina","zone":"Cocina","price":null,"status":"ok"},
+    {"id":"i7","name":"Limpiacristales","zone":"Baño abajo","price":null,"status":"ok"},
+    {"id":"i8","name":"Limpiador de WC","zone":"Baño abajo","price":null,"status":"ok"},
+    {"id":"i9","name":"Papel higiénico","zone":"Baño abajo","price":null,"status":"ok"},
+    {"id":"i10","name":"Limpiacristales","zone":"Baño arriba","price":null,"status":"ok"},
+    {"id":"i11","name":"Limpiador de WC","zone":"Baño arriba","price":null,"status":"ok"},
+    {"id":"i12","name":"Papel higiénico","zone":"Baño arriba","price":null,"status":"ok"},
+    {"id":"i13","name":"Antical / quitacal","zone":"Ducha","price":null,"status":"ok"},
+    {"id":"i14","name":"Desatascador","zone":"Ducha","price":null,"status":"ok"}
+  ],
+  "purchases": [],
+  "contributions": []
 }/*STATE_END*/;
 
 /* ================= per-viewer local state (not published) ================= */
 var myName = null;
 try { myName = localStorage.getItem(STORAGE_KEY); } catch(e){}
+var tab = "hoy";
 var expandedDays = {};
-var adminPanelOpen = false;
+var lightbox = null;
+var purchaseFormOpen = false;
+var purchaseDraft = {amount:"", note:"", ticket:null, items:{}};
 var CAP = null;
 var capStatus = "connecting"; /* connecting | ready | offline | readonly */
+var camStream = null;
+var camOnCapture = null;
+var camShot = null;
+var camMaxDim = 640;
 
 /* ================= date helpers ================= */
 function localDateStr(d){
@@ -206,17 +314,13 @@ function addDays(dateStr,n){
   return localDateStr(d);
 }
 function daysBetween(a,b){
-  var da = new Date(a+"T00:00:00");
-  var db = new Date(b+"T00:00:00");
-  return Math.round((db-da)/86400000);
+  return Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000);
 }
 function todayStr(){ return localDateStr(new Date()); }
+function dowOf(dateStr){ return new Date(dateStr+"T00:00:00").getDay(); }
 function fmtDateLong(dateStr){
   var d = new Date(dateStr+"T00:00:00");
-  var dow = DOW[d.getDay()];
-  var day = String(d.getDate()).padStart(2,"0");
-  var mon = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"][d.getMonth()];
-  return dow+" "+day+" "+mon;
+  return DOW[d.getDay()]+" "+String(d.getDate()).padStart(2,"0")+" "+MONTHS[d.getMonth()];
 }
 function fmtDateShort(dateStr){
   var d = new Date(dateStr+"T00:00:00");
@@ -227,40 +331,119 @@ function fmtTime(iso){
   var d = new Date(iso);
   return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
 }
+function fmtEur(n){
+  if(n===null || n===undefined || isNaN(n)) return "—";
+  return Number(n).toFixed(2).replace(".",",")+" €";
+}
+function parseNum(v){
+  var n = parseFloat(String(v).replace(",","."));
+  return isNaN(n) ? null : n;
+}
 
-/* ================= rotation ================= */
+/* ================= rotation & people ================= */
 function personForDate(state, dateStr){
   var n = state.people.length;
-  if(n===0) return null;
-  var diff = daysBetween(state.startDate, dateStr);
-  var idx = ((diff % n) + n) % n;
+  if(!n) return null;
+  var idx = ((daysBetween(state.startDate, dateStr) % n) + n) % n;
   return state.people[idx];
 }
 function colorFor(state, name){
   var idx = state.people.indexOf(name);
-  if(idx<0) idx = 0;
-  return PALETTE[idx % PALETTE.length];
+  return PALETTE[(idx<0?0:idx) % PALETTE.length];
 }
-function initialsFor(name){
-  return (name||"?").slice(0,1).toUpperCase();
-}
-function isAdmin(state, name){
-  return !!name && state.admins.indexOf(name) !== -1;
-}
+function initialsFor(name){ return (name||"?").slice(0,1).toUpperCase(); }
+function isAdmin(state, name){ return !!name && state.admins.indexOf(name) !== -1; }
+function isReviewer(state, name){ return !!name && state.reviewer === name; }
 
-/* ================= data helpers ================= */
-function clone(o){ return JSON.parse(JSON.stringify(o)); }
+/* ================= day tasks ================= */
+function templateTasksFor(state, dateKey){
+  var out = state.taskTemplate.map(function(t){
+    return {id:t.id, label:t.label, photo:!!t.photo, kind:"daily", assignee:null};
+  });
+  var dow = dowOf(dateKey);
+  (state.weeklyTasks||[]).forEach(function(w){
+    if(w.dow === dow){
+      out.push({id:w.id, label:w.label, photo:!!w.photo, kind:"weekly", assignee: state.binsPerson || null});
+    }
+  });
+  return out;
+}
+function blankTask(t){
+  return {id:t.id, label:t.label, photo:t.photo, kind:t.kind, assignee:t.assignee,
+          done:false, by:null, at:null, img:null, verified:false, verifiedAt:null};
+}
+/* merged view: stored progress + any task the template says should exist today */
+function effectiveTasks(state, dateKey){
+  var stored = state.days[dateKey] ? state.days[dateKey].tasks : [];
+  var wanted = templateTasksFor(state, dateKey);
+  var out = [];
+  wanted.forEach(function(w){
+    var found = null;
+    for(var i=0;i<stored.length;i++){ if(stored[i].id===w.id){ found = stored[i]; break; } }
+    if(found){
+      var merged = JSON.parse(JSON.stringify(found));
+      merged.label = w.label; merged.photo = w.photo; merged.kind = w.kind; merged.assignee = w.assignee;
+      out.push(merged);
+    } else {
+      out.push(blankTask(w));
+    }
+  });
+  /* keep completed tasks that are no longer in the template so history is not lost */
+  stored.forEach(function(s){
+    var stillThere = false;
+    for(var i=0;i<out.length;i++){ if(out[i].id===s.id){ stillThere = true; break; } }
+    if(!stillThere && s.done) out.push(s);
+  });
+  return out;
+}
 function ensureDay(state, dateKey){
   if(!state.days[dateKey]){
-    state.days[dateKey] = {
-      person: personForDate(state, dateKey),
-      tasks: state.taskTemplate.map(function(t){
-        return {id:t.id, label:t.label, photo:!!t.photo, done:false, by:null, at:null, img:null};
-      })
-    };
+    state.days[dateKey] = {person: personForDate(state, dateKey), tasks: []};
   }
+  state.days[dateKey].tasks = effectiveTasks(state, dateKey);
+  if(!state.days[dateKey].person) state.days[dateKey].person = personForDate(state, dateKey);
   return state.days[dateKey];
 }
+function findTask(day, taskId){
+  for(var i=0;i<day.tasks.length;i++){ if(day.tasks[i].id===taskId) return day.tasks[i]; }
+  return null;
+}
+function canDoTask(state, task, dayPerson){
+  if(!myName) return false;
+  if(isAdmin(state, myName)) return true;
+  if(task.kind === "weekly") return !task.assignee || task.assignee === myName;
+  return myName === dayPerson;
+}
+function pendingReview(state){
+  var out = [];
+  Object.keys(state.days).sort().reverse().forEach(function(k){
+    effectiveTasks(state, k).forEach(function(t){
+      if(t.done && t.img && !t.verified) out.push({date:k, task:t});
+    });
+  });
+  return out;
+}
+
+/* ================= stock helpers ================= */
+function itemsToBuy(state){
+  return state.items.filter(function(i){ return i.status==="low" || i.status==="out"; });
+}
+function potBalance(state){
+  var inSum = (state.contributions||[]).reduce(function(a,c){return a + (c.amount||0);},0);
+  var outSum = (state.purchases||[]).reduce(function(a,p){return a + (p.amount||0);},0);
+  return inSum - outSum;
+}
+function spentThisMonth(state){
+  var now = new Date();
+  var pre = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  return (state.purchases||[]).reduce(function(a,p){
+    return a + ((p.at||"").slice(0,7)===pre ? (p.amount||0) : 0);
+  },0);
+}
+
+/* ================= data upkeep ================= */
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function uid(prefix){ return prefix + Date.now().toString(36) + Math.floor(Math.random()*1000).toString(36); }
 function archiveOldDays(state){
   var today = todayStr();
   Object.keys(state.days).forEach(function(key){
@@ -274,156 +457,313 @@ function archiveOldDays(state){
     }
   });
 }
+function trimTickets(state){
+  var seen = 0;
+  (state.purchases||[]).forEach(function(p){
+    if(p.ticket){ seen++; if(seen > 12) p.ticket = null; }
+  });
+}
+function pruneForSize(state){
+  var guard = 0;
+  while(JSON.stringify(state).length > MAX_STATE_BYTES && guard++ < 80){
+    var withTicket = (state.purchases||[]).filter(function(p){return p.ticket;});
+    if(withTicket.length > 3){ withTicket[withTicket.length-1].ticket = null; continue; }
+    var keys = Object.keys(state.days).sort();
+    var dropped = false;
+    for(var i=0;i<keys.length && !dropped;i++){
+      var tasks = state.days[keys[i]].tasks;
+      for(var j=0;j<tasks.length;j++){
+        if(tasks[j].img){ tasks[j].img = null; dropped = true; break; }
+      }
+    }
+    if(!dropped) break;
+  }
+}
+function upkeep(state){
+  archiveOldDays(state);
+  trimTickets(state);
+  pruneForSize(state);
+}
 
-/* ================= image compression ================= */
-function fileToCompressedDataURL(file){
+/* ================= image handling ================= */
+function shrinkDataURL(src, maxDim){
+  return new Promise(function(resolve, reject){
+    var img = new Image();
+    img.onerror = function(){ reject(new Error("decode_failed")); };
+    img.onload = function(){
+      var w = img.width, h = img.height;
+      if(w > h && w > maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
+      else if(h >= w && h > maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
+      var canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL("image/jpeg",0.6));
+    };
+    img.src = src;
+  });
+}
+function fileToDataURL(file){
   return new Promise(function(resolve, reject){
     var reader = new FileReader();
     reader.onerror = function(){ reject(new Error("read_failed")); };
-    reader.onload = function(e){
-      var img = new Image();
-      img.onerror = function(){ reject(new Error("decode_failed")); };
-      img.onload = function(){
-        var maxDim = 640;
-        var w = img.width, h = img.height;
-        if(w > h && w > maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
-        else if(h >= w && h > maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
-        var canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        canvas.getContext("2d").drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL("image/jpeg",0.6));
-      };
-      img.src = e.target.result;
-    };
+    reader.onload = function(e){ resolve(e.target.result); };
     reader.readAsDataURL(file);
   });
+}
+
+/* ================= camera ================= */
+function openCamera(title, maxDim, onCapture){
+  camOnCapture = onCapture;
+  camShot = null;
+  camMaxDim = maxDim;
+  var cam = document.getElementById("cam");
+  cam.hidden = false;
+  cam.innerHTML =
+    "<div class=\"cam-backdrop\"><div class=\"cam-box\">" +
+    "<div class=\"cam-head\"><span>" + esc(title) + "</span><button data-cam=\"close\" aria-label=\"Cerrar\">✕</button></div>" +
+    "<div class=\"cam-stage\"><video id=\"cam-video\" playsinline muted></video>" +
+    "<img id=\"cam-preview\" hidden alt=\"\">" +
+    "<div class=\"cam-status\" id=\"cam-status\">Abriendo cámara…</div></div>" +
+    "<div class=\"cam-actions\" id=\"cam-actions\"><button class=\"btn btn-primary\" data-cam=\"shoot\" disabled>📷 Hacer foto</button></div>" +
+    "</div></div>";
+
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ camFallback(); return; }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}, audio:false})
+    .then(function(stream){
+      camStream = stream;
+      var v = document.getElementById("cam-video");
+      if(!v){ stopCamStream(); return; }
+      v.srcObject = stream;
+      v.play();
+      var st = document.getElementById("cam-status");
+      if(st) st.textContent = "";
+      var btn = document.querySelector("[data-cam='shoot']");
+      if(btn) btn.disabled = false;
+    })
+    .catch(function(){ camFallback(); });
+}
+function camFallback(){
+  var box = document.querySelector(".cam-box");
+  if(!box) return;
+  var stage = box.querySelector(".cam-stage");
+  var actions = box.querySelector(".cam-actions");
+  if(stage) stage.remove();
+  if(actions) actions.remove();
+  var div = document.createElement("div");
+  div.className = "cam-fallback";
+  div.innerHTML = "<p>Este navegador no deja abrir la cámara dentro de la app. Pulsa el botón: en el móvil se abrirá la cámara para hacer la foto en el momento.</p>" +
+    "<label class=\"btn btn-primary btn-file\">📷 Abrir cámara<input type=\"file\" accept=\"image/*\" capture=\"environment\" data-cam=\"fallback-file\"></label>";
+  box.appendChild(div);
+}
+function stopCamStream(){
+  if(camStream){
+    camStream.getTracks().forEach(function(t){ t.stop(); });
+    camStream = null;
+  }
+}
+function closeCamera(){
+  stopCamStream();
+  camOnCapture = null;
+  camShot = null;
+  var cam = document.getElementById("cam");
+  cam.innerHTML = "";
+  cam.hidden = true;
+}
+function camShoot(){
+  var v = document.getElementById("cam-video");
+  if(!v || !v.videoWidth) return;
+  var w = v.videoWidth, h = v.videoHeight;
+  var maxDim = camMaxDim;
+  if(w > h && w > maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
+  else if(h >= w && h > maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
+  var canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  canvas.getContext("2d").drawImage(v,0,0,w,h);
+  camShot = canvas.toDataURL("image/jpeg",0.6);
+  var preview = document.getElementById("cam-preview");
+  preview.src = camShot;
+  preview.hidden = false;
+  v.hidden = true;
+  stopCamStream();
+  document.getElementById("cam-actions").innerHTML =
+    "<button class=\"btn\" data-cam=\"retake\">↺ Repetir</button>" +
+    "<button class=\"btn btn-primary\" data-cam=\"use\">Usar esta foto</button>";
 }
 
 /* ================= publish ================= */
 function buildFullDocument(state){
   var styleText = document.getElementById("app-style").textContent;
   var scriptSrc = document.getElementById("app-script").textContent;
-  var jsonStr = JSON.stringify(state).split("<" + "/").join("<\\/");
+  var jsonStr = JSON.stringify(state).split("<" + "/").join("<\\/")
+    .split("STATE_START").join("STATE-START").split("STATE_END").join("STATE-END");
   var newSrc = scriptSrc.replace(/\/\*STATE_START\*\/[\s\S]*?\/\*STATE_END\*\//, "/*STATE_START*/" + jsonStr + "/*STATE_END*/");
-  var bodyHtml = "<div id=\"app\">" + renderApp(state) + "</div>";
+  var bodyHtml = "<div id=\"app\">" + renderApp(state) + "</div>\n<div id=\"cam\" hidden></div>";
   var scriptOpen = "<" + "script id=\"app-script\">";
   var scriptClose = "<" + "/script>";
   return "<!doctype html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>Turno de Hoy</title>\n<link rel=\"stylesheet\" href=\"" + FONTS_URL + "\">\n<style id=\"app-style\">" + styleText + "</style>\n</head>\n<body>\n" + bodyHtml + "\n" + scriptOpen + newSrc + scriptClose + "\n</body>\n</html>";
 }
-
 function publishState(newState){
+  upkeep(newState);
   STATE = newState;
   render();
-  if(!CAP){ return; }
-  var html = buildFullDocument(STATE);
-  CAP.publish(html).catch(function(err){
+  if(!CAP) return;
+  CAP.publish(buildFullDocument(STATE)).catch(function(err){
     var code = err && err.code;
     if(code === "not_writer" || code === "not_granted"){
-      capStatus = "readonly";
-      CAP = null;
-      render();
+      capStatus = "readonly"; CAP = null; render();
     } else if(code === "conflict"){
-      /* another version is already replacing this view; nothing to do */
+      /* the shell is already reloading every view to the winning version */
+    } else if(code === "too_large"){
+      window.alert("La app ha acumulado demasiadas fotos. Avisa a Alberto para liberar espacio.");
     } else {
       window.alert("No se pudo guardar el cambio, inténtalo de nuevo.");
     }
   });
 }
 
-/* ================= rendering ================= */
+/* ================= escaping ================= */
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; });
+}
+function escAttr(s){ return esc(s).replace(/"/g, "&quot;"); }
+
+/* ================= render ================= */
 function render(){
   var el = document.getElementById("app");
   if(el) el.innerHTML = renderApp(STATE);
 }
 
 function renderApp(state){
-  if(!myName){ return renderPicker(state); }
+  if(!myName) return renderPicker(state);
   var admin = isAdmin(state, myName);
+  var body = "";
+  if(tab==="hoy") body = renderToday(state);
+  else if(tab==="stock") body = renderStock(state);
+  else if(tab==="historial") body = renderHistory(state);
+  else if(tab==="admin" && admin) body = renderAdmin(state);
   return renderHeader(state, admin) +
     "<div class=\"wrap\" style=\"padding-top:0\">" +
-    renderHero(state) +
-    renderWeekStrip(state) +
-    renderHistory(state) +
-    (admin ? renderAdminToggle() + (adminPanelOpen ? renderAdmin(state) : "") : "") +
-    "</div>";
+    renderAlerts(state) +
+    renderTabs(state, admin) +
+    body +
+    "</div>" +
+    (lightbox ? "<div class=\"lightbox\" data-action=\"close-lightbox\"><img src=\"" + lightbox + "\" alt=\"\"></div>" : "");
 }
 
 function renderPicker(state){
   var buttons = state.people.map(function(name){
-    var c = colorFor(state, name);
-    return "<button class=\"name-btn\" data-action=\"pick-name\" data-name=\"" + esc(name) + "\">" +
-      "<span class=\"avatar lg\" style=\"background:" + c + "\">" + esc(initialsFor(name)) + "</span>" +
-      "<span>" + esc(name) + "</span>" +
-      "</button>";
+    return "<button class=\"name-btn\" data-action=\"pick-name\" data-name=\"" + escAttr(name) + "\">" +
+      "<span class=\"avatar lg\" style=\"background:" + colorFor(state,name) + "\">" + esc(initialsFor(name)) + "</span>" +
+      "<span>" + esc(name) + "</span></button>";
   }).join("");
   return "<div class=\"wrap\"><div class=\"picker\">" +
     "<h2>¿Quién eres?</h2>" +
     "<p>Elige tu nombre para poder marcar tus tareas. Se recordará en este dispositivo.</p>" +
-    "<div class=\"name-grid\">" + buttons + "</div>" +
-    "</div></div>";
+    "<div class=\"name-grid\">" + buttons + "</div></div></div>";
 }
 
 function renderHeader(state, admin){
   var statusLabel = {connecting:"Conectando…", ready:"Guardado para todos", offline:"Solo en este dispositivo", readonly:"Solo lectura"}[capStatus];
   var meHtml = "";
   if(myName){
-    var c = colorFor(state, myName);
     meHtml = "<div class=\"me-chip\">" +
-      "<span class=\"avatar\" style=\"background:" + c + "\">" + esc(initialsFor(myName)) + "</span>" +
+      "<span class=\"avatar\" style=\"background:" + colorFor(state,myName) + "\">" + esc(initialsFor(myName)) + "</span>" +
       "<span>" + esc(myName) + (admin ? " <span class=\"badge-admin\">Admin</span>" : "") + "</span>" +
-      "<button data-action=\"change-user\">cambiar</button>" +
-      "</div>";
+      "<button data-action=\"change-user\">cambiar</button></div>";
   }
   return "<div class=\"wrap\" style=\"padding-bottom:0\"><div class=\"topbar\">" +
     "<div class=\"brand\"><h1>Turno de Hoy</h1><span class=\"sub\">Limpieza · Casa Holanda</span></div>" +
-    "<div class=\"who\">" +
-    "<div class=\"status\"><span class=\"dot " + capStatus + "\"></span>" + statusLabel + "</div>" +
-    meHtml +
-    "</div></div></div>";
+    "<div class=\"who\"><div class=\"status\"><span class=\"dot " + capStatus + "\"></span>" + statusLabel + "</div>" +
+    meHtml + "</div></div></div>";
 }
 
-function renderHero(state){
+function renderTabs(state, admin){
+  var pend = isReviewer(state, myName) ? pendingReview(state).length : 0;
+  var buy = itemsToBuy(state).length;
+  var defs = [
+    {id:"hoy", label:"Hoy", count:0},
+    {id:"stock", label:"Stock", count:buy},
+    {id:"historial", label:"Historial", count:0}
+  ];
+  if(admin) defs.push({id:"admin", label:"Admin", count:0});
+  if(pend && tab!=="historial") defs[0].count = pend;
+  return "<div class=\"tabs\">" + defs.map(function(d){
+    return "<button class=\"tab" + (tab===d.id?" active":"") + "\" data-action=\"tab\" data-tab=\"" + d.id + "\">" +
+      esc(d.label) + (d.count ? "<span class=\"count\">" + d.count + "</span>" : "") + "</button>";
+  }).join("") + "</div>";
+}
+
+function renderAlerts(state){
+  var out = "";
+  var buy = itemsToBuy(state);
+  if(buy.length && tab!=="stock"){
+    var names = buy.slice(0,3).map(function(i){ return i.name + " (" + i.zone + ")"; }).join(", ");
+    out += "<div class=\"alert buy\" data-action=\"tab\" data-tab=\"stock\">🧴 <span><b>Hay que comprar (" + buy.length + "):</b> " +
+      esc(names) + (buy.length>3 ? " y " + (buy.length-3) + " más" : "") + "</span></div>";
+  }
+  if(isReviewer(state, myName)){
+    var pend = pendingReview(state);
+    if(pend.length){
+      out += "<div class=\"alert review\" data-action=\"tab\" data-tab=\"historial\">📷 <span><b>" + pend.length +
+        " foto" + (pend.length>1?"s":"") + " pendiente" + (pend.length>1?"s":"") + " de tu revisión.</b> Compruébalas y márcalas como verificadas.</span></div>";
+    }
+  }
+  return out;
+}
+
+function renderToday(state){
   var today = todayStr();
   var person = personForDate(state, today);
-  var day = state.days[today];
-  var tasks = day ? day.tasks : state.taskTemplate.map(function(t){
-    return {id:t.id, label:t.label, photo:!!t.photo, done:false, by:null, at:null, img:null};
-  });
-  var admin = isAdmin(state, myName);
-  var canAct = myName && (myName === person || admin);
-  var c = colorFor(state, person);
-  var rows = tasks.map(function(t){
-    return renderTaskRow(t, canAct);
-  }).join("");
-  return "<div class=\"hero\">" +
+  var tasks = effectiveTasks(state, today);
+  var daily = tasks.filter(function(t){ return t.kind !== "weekly"; });
+  var weekly = tasks.filter(function(t){ return t.kind === "weekly"; });
+  var canAct = myName && (myName === person || isAdmin(state, myName));
+  var reviewer = isReviewer(state, myName);
+
+  var hero = "<div class=\"hero\">" +
     "<div class=\"hero-top\">" +
-    "<span class=\"avatar lg\" style=\"background:" + c + "\">" + esc(initialsFor(person)) + "</span>" +
-    "<div><div class=\"date mono\">" + fmtDateLong(today) + "</div>" +
-    "<h2>" + esc(person) + "</h2>" +
-    "<div class=\"caption\">" + (canAct ? "Te toca hoy — completa las tareas de abajo" : "Le toca hoy") + "</div>" +
-    "</div></div>" +
-    "<div class=\"tasks\">" + rows + "</div>" +
-    "</div>";
+    "<span class=\"avatar lg\" style=\"background:" + colorFor(state,person) + "\">" + esc(initialsFor(person)) + "</span>" +
+    "<div><div class=\"date mono\">" + fmtDateLong(today) + "</div><h2>" + esc(person) + "</h2>" +
+    "<div class=\"caption\">" + (canAct ? "Te toca hoy — barrer, fregar y sacar la basura" : "Le toca hoy") + "</div></div></div>" +
+    "<div class=\"tasks\">" + daily.map(function(t){
+      return renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer);
+    }).join("") + "</div></div>";
+
+  var weeklyHtml = "";
+  if(weekly.length){
+    weeklyHtml = weekly.map(function(t){
+      var who = state.binsPerson ? state.binsPerson : "sin asignar — cualquiera puede hacerlo";
+      return "<div class=\"weekly\"><h3>♻️ Cubos verdes · " + esc(DOW_LONG[dowOf(today)]) + "</h3>" +
+        "<div class=\"who-line\">Responsable: <b>" + esc(who) + "</b></div>" +
+        "<div class=\"tasks\">" + renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer) + "</div></div>";
+    }).join("");
+  }
+
+  return hero + weeklyHtml + renderWeekStrip(state);
 }
 
-function renderTaskRow(t, canAct){
+function renderTaskRow(state, t, canAct, dateKey, reviewer){
   var action = "";
   if(t.done){
-    action = (t.img ? "<img class=\"thumb\" src=\"" + t.img + "\">" : "") +
-      "<span class=\"task-meta\">" + esc(t.by||"") + (t.at ? " · " + fmtTime(t.at) : "") + "</span>";
+    action += (t.img ? "<img class=\"thumb\" src=\"" + t.img + "\" data-action=\"zoom\" data-src-task=\"" + escAttr(dateKey+"|"+t.id) + "\" alt=\"\">" : "");
+    action += "<span class=\"task-meta\">" + esc(t.by||"") + (t.at ? " · " + fmtTime(t.at) : "") + "</span>";
+    if(t.img){
+      if(t.verified) action += "<span class=\"pill good\">✓ Verificada</span>";
+      else if(reviewer) action += "<button class=\"btn btn-primary btn-sm\" data-action=\"verify\" data-date=\"" + dateKey + "\" data-task=\"" + escAttr(t.id) + "\">✓ Verificar</button>";
+      else action += "<span class=\"pill accent\">Pendiente de revisión</span>";
+    }
   } else if(canAct){
     if(t.photo){
-      action = "<label class=\"btn btn-primary btn-file\">📷 Adjuntar foto<input type=\"file\" accept=\"image/*\" capture=\"environment\" data-action=\"upload-photo\" data-task=\"" + esc(t.id) + "\"></label>";
+      action = "<button class=\"btn btn-primary\" data-action=\"shoot-task\" data-task=\"" + escAttr(t.id) + "\">📷 Hacer foto</button>";
     } else {
-      action = "<button class=\"btn btn-primary\" data-action=\"complete-nophoto\" data-task=\"" + esc(t.id) + "\">Marcar hecho</button>";
+      action = "<button class=\"btn btn-primary\" data-action=\"complete-nophoto\" data-task=\"" + escAttr(t.id) + "\">Marcar hecho</button>";
     }
   } else {
     action = "<span class=\"pill warn\">Pendiente</span>";
   }
   return "<div class=\"task-row" + (t.done ? " is-done" : "") + "\">" +
     "<div class=\"task-main\"><span class=\"task-check\">✓</span><span class=\"task-label\">" + esc(t.label) + (t.photo ? " 📷" : "") + "</span></div>" +
-    "<div class=\"task-action\">" + action + "</div>" +
-    "</div>";
+    "<div class=\"task-action\">" + action + "</div></div>";
 }
 
 function renderWeekStrip(state){
@@ -432,112 +772,212 @@ function renderWeekStrip(state){
   for(var i=0;i<7;i++){
     var d = addDays(today, i);
     var person = personForDate(state, d);
-    var c = colorFor(state, person);
     cards.push("<div class=\"week-card" + (i===0 ? " today" : "") + "\">" +
       "<div class=\"d mono\">" + (i===0 ? "HOY" : fmtDateShort(d)) + "</div>" +
-      "<span class=\"avatar\" style=\"background:" + c + ";margin:0 auto 8px\">" + esc(initialsFor(person)) + "</span>" +
-      "<div class=\"name\">" + esc(person) + "</div>" +
-      "</div>");
+      "<span class=\"avatar\" style=\"background:" + colorFor(state,person) + ";margin:0 auto 8px\">" + esc(initialsFor(person)) + "</span>" +
+      "<div class=\"name\">" + esc(person) + "</div></div>");
   }
   return "<div class=\"section-title\">Esta semana</div><div class=\"week-strip\">" + cards.join("") + "</div>";
 }
 
+/* ---------- stock ---------- */
+function renderStock(state){
+  var buy = itemsToBuy(state);
+  var bal = potBalance(state);
+  var out = "";
+
+  out += "<div class=\"money-row\">" +
+    "<div class=\"money-tile\"><div class=\"k\">Bote común</div><div class=\"v" + (bal<0?" neg":"") + "\">" + fmtEur(bal) + "</div></div>" +
+    "<div class=\"money-tile\"><div class=\"k\">Gastado este mes</div><div class=\"v\">" + fmtEur(spentThisMonth(state)) + "</div></div>" +
+    "<div class=\"money-tile\"><div class=\"k\">Por comprar</div><div class=\"v\">" + buy.length + "</div></div>" +
+    "</div>";
+
+  if(buy.length){
+    out += "<div class=\"buy-list\"><h3>🛒 Lista de la compra</h3><ul>" +
+      buy.map(function(i){
+        return "<li><b>" + esc(i.name) + "</b> — " + esc(i.zone) +
+          " <span class=\"pill " + (i.status==="out"?"bad":"warn") + "\">" + (i.status==="out"?"Agotado":"Queda poco") + "</span></li>";
+      }).join("") + "</ul></div>";
+  }
+
+  state.zones.forEach(function(zone){
+    var items = state.items.filter(function(i){ return i.zone===zone; });
+    out += "<div class=\"zone\"><div class=\"zone-head\"><h3>" + esc(zone) + "</h3>" +
+      "<span class=\"pill\">" + items.length + " artículos</span></div>" +
+      (items.length ? items.map(function(i){ return renderItem(i); }).join("") : "<div class=\"item\"><span class=\"nm\" style=\"color:var(--muted);font-weight:400\">Sin artículos todavía</span></div>") +
+      "</div>";
+  });
+
+  out += "<div class=\"section-title\">Compras y tickets</div>";
+  out += purchaseFormOpen ? renderPurchaseForm(state) :
+    "<button class=\"btn btn-primary\" data-action=\"purchase-open\">＋ Registrar compra</button>";
+
+  var purchases = state.purchases || [];
+  if(purchases.length){
+    out += "<div style=\"margin-top:14px\">" + purchases.slice(0,20).map(function(p){
+      return "<div class=\"purchase\">" +
+        (p.ticket ? "<img class=\"ticket-thumb\" src=\"" + p.ticket + "\" data-action=\"zoom\" data-src-purchase=\"" + escAttr(p.id) + "\" alt=\"Ticket\">" :
+                    "<span class=\"pill\">sin ticket</span>") +
+        "<div class=\"info\"><div class=\"n\">" + esc(p.note || "Compra") + "</div>" +
+        "<div class=\"m\">" + esc(p.by||"") + " · " + fmtDateShort((p.at||"").slice(0,10)) + "</div></div>" +
+        "<div class=\"amt\">" + fmtEur(p.amount) + "</div></div>";
+    }).join("") + "</div>";
+  } else {
+    out += "<div class=\"empty\">Todavía no hay compras registradas.</div>";
+  }
+  return out;
+}
+
+function renderItem(i){
+  var st = i.status || "ok";
+  return "<div class=\"item\">" +
+    "<span class=\"nm\">" + esc(i.name) + "</span>" +
+    "<span class=\"pr\">" + fmtEur(i.price) + "</span>" +
+    "<span class=\"state-group\">" +
+    "<button class=\"state-btn ok" + (st==="ok"?" on":"") + "\" data-action=\"item-status\" data-id=\"" + escAttr(i.id) + "\" data-status=\"ok\">OK</button>" +
+    "<button class=\"state-btn low" + (st==="low"?" on":"") + "\" data-action=\"item-status\" data-id=\"" + escAttr(i.id) + "\" data-status=\"low\">Queda poco</button>" +
+    "<button class=\"state-btn out" + (st==="out"?" on":"") + "\" data-action=\"item-status\" data-id=\"" + escAttr(i.id) + "\" data-status=\"out\">Agotado</button>" +
+    "</span></div>";
+}
+
+function renderPurchaseForm(state){
+  var buy = itemsToBuy(state);
+  var chks = buy.map(function(i){
+    return "<label><input type=\"checkbox\" data-action=\"draft-item\" data-id=\"" + escAttr(i.id) + "\"" +
+      (purchaseDraft.items[i.id] ? " checked" : "") + "> " + esc(i.name) + " <span style=\"color:var(--muted)\">(" + esc(i.zone) + ")</span></label>";
+  }).join("");
+  return "<div class=\"form-card\"><h3>Registrar compra</h3>" +
+    "<div class=\"field\"><label for=\"pf-amount\">Importe total (€)</label>" +
+    "<input id=\"pf-amount\" type=\"number\" inputmode=\"decimal\" step=\"0.01\" min=\"0\" placeholder=\"12,50\" value=\"" + escAttr(purchaseDraft.amount) + "\"></div>" +
+    "<div class=\"field\"><label for=\"pf-note\">Concepto</label>" +
+    "<input id=\"pf-note\" type=\"text\" placeholder=\"Limpiacristales y bolsas de basura\" value=\"" + escAttr(purchaseDraft.note) + "\"></div>" +
+    (buy.length ? "<div class=\"field\"><label>Artículos repuestos (se marcarán como OK)</label><div class=\"chk-list\">" + chks + "</div></div>" : "") +
+    "<div class=\"field\"><label>Ticket de compra (obligatorio)</label>" +
+    "<div class=\"form-actions\">" +
+    (purchaseDraft.ticket ? "<img class=\"ticket-thumb\" src=\"" + purchaseDraft.ticket + "\" alt=\"Ticket\">" : "") +
+    "<button class=\"btn\" data-action=\"shoot-ticket\">📷 " + (purchaseDraft.ticket ? "Repetir foto" : "Foto del ticket") + "</button>" +
+    "</div></div>" +
+    "<div class=\"form-actions\">" +
+    "<button class=\"btn btn-primary\" data-action=\"purchase-save\"" + (purchaseDraft.ticket ? "" : " disabled") + ">Guardar compra</button>" +
+    "<button class=\"btn\" data-action=\"purchase-cancel\">Cancelar</button>" +
+    (purchaseDraft.ticket ? "" : "<span style=\"font-size:12px;color:var(--muted)\">Haz la foto del ticket para poder guardar</span>") +
+    "</div></div>";
+}
+
+/* ---------- history ---------- */
 function renderHistory(state){
   var today = todayStr();
-  var recentKeys = Object.keys(state.days).filter(function(k){return k!==today;}).sort().reverse();
-  var recentHtml = recentKeys.map(function(k){
-    var day = state.days[k];
-    var total = day.tasks.length;
-    var done = day.tasks.filter(function(t){return t.done;}).length;
-    var complete = done===total;
+  var reviewer = isReviewer(state, myName);
+  var keys = Object.keys(state.days).sort().reverse();
+  var recentHtml = keys.map(function(k){
+    var tasks = effectiveTasks(state, k);
+    var total = tasks.length;
+    var done = tasks.filter(function(t){return t.done;}).length;
+    var pend = tasks.filter(function(t){return t.done && t.img && !t.verified;}).length;
     var expanded = !!expandedDays[k];
-    var photos = day.tasks.filter(function(t){return t.img;}).map(function(t){
-      return "<div><img src=\"" + t.img + "\"><div class=\"cap\">" + esc(t.label) + "</div></div>";
+    var photos = tasks.filter(function(t){return t.img;}).map(function(t){
+      return "<div><img src=\"" + t.img + "\" data-action=\"zoom\" data-src-task=\"" + escAttr(k+"|"+t.id) + "\" alt=\"\">" +
+        "<div class=\"cap\">" + esc(t.label) + "<br>" + (t.verified ? "✓ verificada" : "sin verificar") + "</div>" +
+        (reviewer && !t.verified ? "<button class=\"btn btn-primary btn-sm\" style=\"margin-top:4px;width:84px;justify-content:center\" data-action=\"verify\" data-date=\"" + k + "\" data-task=\"" + escAttr(t.id) + "\">✓</button>" : "") +
+        "</div>";
     }).join("");
-    return "<div class=\"history-item\">" +
-      "<div class=\"history-head\" data-action=\"toggle-history\" data-date=\"" + k + "\">" +
-      "<div class=\"left\"><span class=\"date mono\">" + fmtDateShort(k) + "</span><span>" + esc(day.person) + "</span></div>" +
-      "<span class=\"pill " + (complete ? "good" : "warn") + "\">" + done + "/" + total + "</span>" +
-      "</div>" +
+    return "<div class=\"history-item\"><div class=\"history-head\" data-action=\"toggle-history\" data-date=\"" + k + "\">" +
+      "<div class=\"left\"><span class=\"date mono\">" + (k===today ? "HOY" : fmtDateShort(k)) + "</span><span>" + esc(state.days[k].person) + "</span></div>" +
+      "<div style=\"display:flex;gap:6px;align-items:center\">" +
+      (pend ? "<span class=\"pill accent\">" + pend + " sin revisar</span>" : "") +
+      "<span class=\"pill " + (done===total ? "good" : "warn") + "\">" + done + "/" + total + "</span></div></div>" +
       (expanded ? "<div class=\"history-photos\">" + (photos || "<span class=\"empty\">Sin fotos adjuntadas</span>") + "</div>" : "") +
       "</div>";
   }).join("");
 
   var histKeys = Object.keys(state.history).sort().reverse();
-  var logRows = histKeys.map(function(k){
-    var h = state.history[k];
-    var complete = h.done === h.total;
-    return "<tr><td class=\"mono\">" + fmtDateShort(k) + "</td><td>" + esc(h.person) + "</td><td>" +
-      "<span class=\"pill " + (complete ? "good" : "warn") + "\">" + h.done + "/" + h.total + "</span></td></tr>";
-  }).join("");
-  var logTable = histKeys.length ?
-    "<div class=\"log-wrap\"><table class=\"log\"><thead><tr><th>Fecha</th><th>Persona</th><th>Cumplido</th></tr></thead><tbody>" + logRows + "</tbody></table></div>" :
-    "";
-
-  return "<div class=\"section-title\">Historial reciente</div>" +
-    (recentHtml || "<div class=\"empty\">Todavía no hay días registrados.</div>") +
-    (histKeys.length ? "<div class=\"section-title\">Archivo</div>" + logTable : "");
+  var logTable = "";
+  if(histKeys.length){
+    logTable = "<div class=\"section-title\">Archivo</div><div class=\"log-wrap\"><table class=\"log\">" +
+      "<thead><tr><th>Fecha</th><th>Persona</th><th>Cumplido</th></tr></thead><tbody>" +
+      histKeys.map(function(k){
+        var h = state.history[k];
+        return "<tr><td class=\"mono\">" + fmtDateShort(k) + "</td><td>" + esc(h.person) + "</td><td>" +
+          "<span class=\"pill " + (h.done===h.total ? "good" : "warn") + "\">" + h.done + "/" + h.total + "</span></td></tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+  return "<div class=\"section-title\">Últimos días</div>" +
+    (recentHtml || "<div class=\"empty\">Todavía no hay días registrados.</div>") + logTable;
 }
 
-function renderAdminToggle(){
-  return "<div class=\"admin-toggle\"><button class=\"btn\" data-action=\"toggle-admin\">⚙️ Panel de administración" + (adminPanelOpen ? " (ocultar)" : "") + "</button></div>";
-}
-
+/* ---------- admin ---------- */
 function renderAdmin(state){
-  var taskRows = state.taskTemplate.map(function(t, i){
+  var taskRows = state.taskTemplate.map(function(t,i){
     return "<div class=\"admin-row\">" +
-      "<input type=\"text\" data-field=\"label\" data-index=\"" + i + "\" value=\"" + escAttr(t.label) + "\">" +
-      "<label class=\"chk\"><input type=\"checkbox\" data-action=\"task-toggle-photo\" data-index=\"" + i + "\" " + (t.photo?"checked":"") + "> foto</label>" +
-      "<button class=\"icon-btn\" data-action=\"task-remove\" data-index=\"" + i + "\" title=\"Eliminar\">🗑</button>" +
-      "</div>";
+      "<input class=\"grow\" type=\"text\" data-field=\"task-label\" data-index=\"" + i + "\" value=\"" + escAttr(t.label) + "\">" +
+      "<label class=\"chk\"><input type=\"checkbox\" data-action=\"task-toggle-photo\" data-index=\"" + i + "\"" + (t.photo?" checked":"") + "> foto</label>" +
+      "<button class=\"icon-btn\" data-action=\"task-remove\" data-index=\"" + i + "\" title=\"Eliminar\">🗑</button></div>";
   }).join("");
 
-  var peopleRows = state.people.map(function(name, i){
+  var weeklyRows = (state.weeklyTasks||[]).map(function(w,i){
+    return "<div class=\"admin-row\"><span class=\"pill\">" + esc(DOW_LONG[w.dow]) + "</span>" +
+      "<input class=\"grow\" type=\"text\" data-field=\"weekly-label\" data-index=\"" + i + "\" value=\"" + escAttr(w.label) + "\">" +
+      "<button class=\"icon-btn\" data-action=\"weekly-remove\" data-index=\"" + i + "\" title=\"Eliminar\">🗑</button></div>";
+  }).join("");
+
+  var binsOptions = "<option value=\"\">Sin asignar</option>" + state.people.map(function(p){
+    return "<option value=\"" + escAttr(p) + "\"" + (state.binsPerson===p?" selected":"") + ">" + esc(p) + "</option>";
+  }).join("");
+
+  var peopleRows = state.people.map(function(name,i){
     return "<div class=\"admin-row\">" +
       "<span class=\"avatar\" style=\"background:" + colorFor(state,name) + "\">" + esc(initialsFor(name)) + "</span>" +
       "<span style=\"flex:1\">" + esc(name) + "</span>" +
       "<button class=\"icon-btn\" data-action=\"person-up\" data-index=\"" + i + "\" title=\"Subir\">▲</button>" +
       "<button class=\"icon-btn\" data-action=\"person-down\" data-index=\"" + i + "\" title=\"Bajar\">▼</button>" +
-      "<button class=\"icon-btn\" data-action=\"person-remove\" data-index=\"" + i + "\" title=\"Quitar\">🗑</button>" +
-      "</div>";
+      "<button class=\"icon-btn\" data-action=\"person-remove\" data-index=\"" + i + "\" title=\"Quitar\">🗑</button></div>";
   }).join("");
 
-  var today = todayStr();
-  var day = state.days[today];
-  var manualRows = "";
-  if(day){
-    manualRows = day.tasks.map(function(t){
-      return "<div class=\"admin-row\"><span style=\"flex:1\">" + esc(t.label) + "</span>" +
-        "<button class=\"btn\" data-action=\"admin-toggle-task\" data-task=\"" + esc(t.id) + "\">" + (t.done ? "Marcar pendiente" : "Marcar hecho") + "</button>" +
-        "</div>";
-    }).join("");
-  } else {
-    manualRows = "<div class=\"empty\">Aún no hay tareas de hoy iniciadas.</div>";
-  }
+  var zoneSel = state.zones.map(function(z){ return "<option value=\"" + escAttr(z) + "\">" + esc(z) + "</option>"; }).join("");
+  var itemRows = state.items.map(function(i){
+    return "<div class=\"admin-row\">" +
+      "<input class=\"grow\" type=\"text\" data-field=\"item-name\" data-id=\"" + escAttr(i.id) + "\" value=\"" + escAttr(i.name) + "\">" +
+      "<span class=\"pill\">" + esc(i.zone) + "</span>" +
+      "<input type=\"number\" step=\"0.01\" min=\"0\" style=\"width:88px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null||i.price===undefined?"":i.price) + "\">" +
+      "<button class=\"icon-btn\" data-action=\"item-remove\" data-id=\"" + escAttr(i.id) + "\" title=\"Eliminar\">🗑</button></div>";
+  }).join("");
+
+  var contribRows = (state.contributions||[]).slice(0,10).map(function(c){
+    return "<div class=\"admin-row\"><span style=\"flex:1\">" + esc(c.by) + "</span>" +
+      "<span class=\"mono\">" + fmtEur(c.amount) + "</span>" +
+      "<span class=\"mono\" style=\"color:var(--muted);font-size:12px\">" + fmtDateShort((c.at||"").slice(0,10)) + "</span></div>";
+  }).join("");
 
   return "<div class=\"admin-panel\">" +
-    "<div class=\"admin-block\"><h3>Tareas diarias</h3>" + taskRows +
-    "<div class=\"new-row\"><input type=\"text\" id=\"new-task-label\" placeholder=\"Nueva tarea…\">" +
-    "<label class=\"chk\"><input type=\"checkbox\" id=\"new-task-photo\" checked> foto</label>" +
+    "<div class=\"admin-block\"><h3>Tareas de cada día</h3>" + taskRows +
+    "<div class=\"new-row\"><input type=\"text\" id=\"new-task-label\" placeholder=\"Nueva tarea diaria…\">" +
     "<button class=\"btn btn-primary\" data-action=\"task-add\">Añadir</button></div></div>" +
+
+    "<div class=\"admin-block\"><h3>Cubos verdes (semanal)</h3>" + weeklyRows +
+    "<div class=\"admin-row\"><span style=\"flex:1\">Responsable de los cubos</span>" +
+    "<select data-field=\"bins-person\">" + binsOptions + "</select></div></div>" +
 
     "<div class=\"admin-block\"><h3>Orden de turnos</h3>" + peopleRows +
     "<div class=\"new-row\"><input type=\"text\" id=\"new-person-name\" placeholder=\"Nombre…\">" +
     "<button class=\"btn btn-primary\" data-action=\"person-add\">Añadir</button></div></div>" +
 
-    "<div class=\"admin-block\"><h3>Marcar manualmente (hoy)</h3>" + manualRows + "</div>" +
+    "<div class=\"admin-block\"><h3>Artículos de limpieza</h3>" + itemRows +
+    "<div class=\"new-row\"><input type=\"text\" id=\"new-item-name\" placeholder=\"Artículo…\">" +
+    "<select id=\"new-item-zone\">" + zoneSel + "</select>" +
+    "<button class=\"btn btn-primary\" data-action=\"item-add\">Añadir</button></div>" +
+    "<div class=\"new-row\"><input type=\"text\" id=\"new-zone-name\" placeholder=\"Nueva zona (ej. Salón)…\">" +
+    "<button class=\"btn\" data-action=\"zone-add\">Añadir zona</button></div></div>" +
+
+    "<div class=\"admin-block\"><h3>Bote común — aportaciones</h3>" +
+    (contribRows || "<div class=\"empty\">Sin aportaciones registradas.</div>") +
+    "<div class=\"new-row\"><select id=\"new-contrib-who\">" + state.people.map(function(p){
+      return "<option value=\"" + escAttr(p) + "\">" + esc(p) + "</option>"; }).join("") + "</select>" +
+    "<input type=\"number\" step=\"0.01\" min=\"0\" id=\"new-contrib-amount\" placeholder=\"€\">" +
+    "<button class=\"btn btn-primary\" data-action=\"contrib-add\">Añadir</button></div></div>" +
     "</div>";
 }
 
-/* ================= escaping ================= */
-function esc(s){
-  return String(s==null?"":s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; });
-}
-function escAttr(s){
-  return esc(s).replace(/"/g, "&quot;");
-}
-
-/* ================= action handlers ================= */
+/* ================= handlers ================= */
 function handlePickName(name){
   try{ localStorage.setItem(STORAGE_KEY, name); }catch(e){}
   myName = name;
@@ -549,79 +989,73 @@ function handleChangeUser(){
   myName = null;
   render();
 }
-function handleCompleteNoPhoto(taskId){
+function completeTask(taskId, img){
   var s = clone(STATE);
   var day = ensureDay(s, todayStr());
-  var task = day.tasks.filter(function(t){return t.id===taskId;})[0];
+  var task = findTask(day, taskId);
   if(!task) return;
-  task.done = true; task.by = myName; task.at = new Date().toISOString();
-  archiveOldDays(s);
+  task.done = true;
+  task.by = myName;
+  task.at = new Date().toISOString();
+  if(img) task.img = img;
+  task.verified = false;
+  task.verifiedAt = null;
   publishState(s);
 }
-function handleUploadPhoto(taskId, file){
-  fileToCompressedDataURL(file).then(function(dataUrl){
-    var s = clone(STATE);
-    var day = ensureDay(s, todayStr());
-    var task = day.tasks.filter(function(t){return t.id===taskId;})[0];
-    if(!task) return;
-    task.done = true; task.img = dataUrl; task.by = myName; task.at = new Date().toISOString();
-    archiveOldDays(s);
-    publishState(s);
-  }).catch(function(){
-    window.alert("No se pudo procesar la foto, inténtalo de nuevo.");
+function handleVerify(dateKey, taskId){
+  var s = clone(STATE);
+  var day = ensureDay(s, dateKey);
+  var task = findTask(day, taskId);
+  if(!task) return;
+  task.verified = true;
+  task.verifiedAt = new Date().toISOString();
+  publishState(s);
+}
+function handleItemStatus(id, status){
+  var s = clone(STATE);
+  s.items.forEach(function(i){ if(i.id===id){ i.status = status; i.updatedBy = myName; i.updatedAt = new Date().toISOString(); } });
+  publishState(s);
+}
+function syncPurchaseDraft(){
+  var a = document.getElementById("pf-amount");
+  var n = document.getElementById("pf-note");
+  if(a) purchaseDraft.amount = a.value;
+  if(n) purchaseDraft.note = n.value;
+}
+function handlePurchaseSave(){
+  syncPurchaseDraft();
+  var amount = parseNum(purchaseDraft.amount);
+  if(amount===null || amount<0){ window.alert("Pon el importe de la compra."); return; }
+  if(!purchaseDraft.ticket){ window.alert("Hace falta la foto del ticket."); return; }
+  var s = clone(STATE);
+  s.purchases = s.purchases || [];
+  s.purchases.unshift({
+    id: uid("p"), at: new Date().toISOString(), by: myName,
+    amount: amount, note: purchaseDraft.note || "Compra de limpieza",
+    ticket: purchaseDraft.ticket
   });
-}
-function handleAdminToggleTask(taskId){
-  var s = clone(STATE);
-  var day = ensureDay(s, todayStr());
-  var task = day.tasks.filter(function(t){return t.id===taskId;})[0];
-  if(!task) return;
-  task.done = !task.done;
-  if(task.done){ task.by = myName + " (manual)"; task.at = new Date().toISOString(); }
-  else { task.by = null; task.at = null; task.img = null; }
-  archiveOldDays(s);
-  publishState(s);
-}
-function handleTaskToggle(index){
-  var s = clone(STATE);
-  if(!s.taskTemplate[index]) return;
-  s.taskTemplate[index].photo = !s.taskTemplate[index].photo;
-  publishState(s);
-}
-function handleTaskLabelChange(index, value){
-  var s = clone(STATE);
-  if(!s.taskTemplate[index]) return;
-  s.taskTemplate[index].label = value;
-  publishState(s);
-}
-function handleTaskRemove(index){
-  var s = clone(STATE);
-  if(!window.confirm("¿Eliminar esta tarea de la lista diaria?")) return;
-  s.taskTemplate.splice(index,1);
+  Object.keys(purchaseDraft.items).forEach(function(id){
+    if(purchaseDraft.items[id]){
+      s.items.forEach(function(i){ if(i.id===id) i.status = "ok"; });
+    }
+  });
+  purchaseFormOpen = false;
+  purchaseDraft = {amount:"", note:"", ticket:null, items:{}};
   publishState(s);
 }
 function handleTaskAdd(){
-  var labelEl = document.getElementById("new-task-label");
-  var photoEl = document.getElementById("new-task-photo");
-  var label = labelEl.value.trim();
+  var el = document.getElementById("new-task-label");
+  var label = el.value.trim();
   if(!label) return;
   var s = clone(STATE);
-  var id = "t" + Date.now();
-  s.taskTemplate.push({id:id, label:label, photo: photoEl.checked});
+  s.taskTemplate.push({id: uid("t"), label: label, photo: true});
   publishState(s);
 }
 function handlePersonMove(index, dir){
   var s = clone(STATE);
   var j = index + dir;
   if(j<0 || j>=s.people.length) return;
-  var tmp = s.people[index]; s.people[index]=s.people[j]; s.people[j]=tmp;
-  publishState(s);
-}
-function handlePersonRemove(index){
-  var s = clone(STATE);
-  if(s.people.length<=1) return;
-  if(!window.confirm("¿Quitar a " + s.people[index] + " de la rotación?")) return;
-  s.people.splice(index,1);
+  var tmp = s.people[index]; s.people[index] = s.people[j]; s.people[j] = tmp;
   publishState(s);
 }
 function handlePersonAdd(){
@@ -633,47 +1067,189 @@ function handlePersonAdd(){
   s.people.push(name);
   publishState(s);
 }
+function handleItemAdd(){
+  var nameEl = document.getElementById("new-item-name");
+  var zoneEl = document.getElementById("new-item-zone");
+  var name = nameEl.value.trim();
+  if(!name) return;
+  var s = clone(STATE);
+  s.items.push({id: uid("i"), name: name, zone: zoneEl.value, price: null, status: "ok"});
+  publishState(s);
+}
+function handleZoneAdd(){
+  var el = document.getElementById("new-zone-name");
+  var zone = el.value.trim();
+  if(!zone) return;
+  var s = clone(STATE);
+  if(s.zones.indexOf(zone)!==-1) return;
+  s.zones.push(zone);
+  publishState(s);
+}
+function handleContribAdd(){
+  var who = document.getElementById("new-contrib-who").value;
+  var amount = parseNum(document.getElementById("new-contrib-amount").value);
+  if(amount===null || amount<=0){ window.alert("Pon la cantidad aportada."); return; }
+  var s = clone(STATE);
+  s.contributions = s.contributions || [];
+  s.contributions.unshift({id: uid("c"), at: new Date().toISOString(), by: who, amount: amount});
+  publishState(s);
+}
 
 /* ================= events ================= */
 document.getElementById("app").addEventListener("click", function(e){
   var el = e.target.closest("[data-action]");
   if(!el) return;
-  var action = el.getAttribute("data-action");
-  if(action==="pick-name") handlePickName(el.getAttribute("data-name"));
-  else if(action==="change-user") handleChangeUser();
-  else if(action==="complete-nophoto") handleCompleteNoPhoto(el.getAttribute("data-task"));
-  else if(action==="toggle-admin"){ adminPanelOpen = !adminPanelOpen; render(); }
-  else if(action==="toggle-history"){
+  var a = el.getAttribute("data-action");
+
+  if(a==="pick-name") handlePickName(el.getAttribute("data-name"));
+  else if(a==="change-user") handleChangeUser();
+  else if(a==="tab"){ tab = el.getAttribute("data-tab"); render(); }
+  else if(a==="toggle-history"){
     var k = el.getAttribute("data-date");
     expandedDays[k] = !expandedDays[k];
     render();
   }
-  else if(action==="admin-toggle-task") handleAdminToggleTask(el.getAttribute("data-task"));
-  else if(action==="task-remove") handleTaskRemove(parseInt(el.getAttribute("data-index"),10));
-  else if(action==="task-add") handleTaskAdd();
-  else if(action==="person-up") handlePersonMove(parseInt(el.getAttribute("data-index"),10), -1);
-  else if(action==="person-down") handlePersonMove(parseInt(el.getAttribute("data-index"),10), 1);
-  else if(action==="person-remove") handlePersonRemove(parseInt(el.getAttribute("data-index"),10));
-  else if(action==="person-add") handlePersonAdd();
+  else if(a==="zoom"){
+    var ref = el.getAttribute("data-src-task");
+    if(ref){
+      var parts = ref.split("|");
+      var tasks = effectiveTasks(STATE, parts[0]);
+      for(var i=0;i<tasks.length;i++){ if(tasks[i].id===parts[1] && tasks[i].img){ lightbox = tasks[i].img; break; } }
+    } else {
+      var pid = el.getAttribute("data-src-purchase");
+      (STATE.purchases||[]).forEach(function(p){ if(p.id===pid && p.ticket) lightbox = p.ticket; });
+    }
+    render();
+  }
+  else if(a==="close-lightbox"){ lightbox = null; render(); }
+  else if(a==="shoot-task"){
+    var taskId = el.getAttribute("data-task");
+    openCamera("Foto de la tarea", 640, function(img){ completeTask(taskId, img); });
+  }
+  else if(a==="complete-nophoto") completeTask(el.getAttribute("data-task"), null);
+  else if(a==="verify") handleVerify(el.getAttribute("data-date"), el.getAttribute("data-task"));
+  else if(a==="item-status") handleItemStatus(el.getAttribute("data-id"), el.getAttribute("data-status"));
+  else if(a==="purchase-open"){ purchaseFormOpen = true; render(); }
+  else if(a==="purchase-cancel"){
+    purchaseFormOpen = false;
+    purchaseDraft = {amount:"", note:"", ticket:null, items:{}};
+    render();
+  }
+  else if(a==="shoot-ticket"){
+    syncPurchaseDraft();
+    openCamera("Foto del ticket", 900, function(img){ purchaseDraft.ticket = img; render(); });
+  }
+  else if(a==="purchase-save") handlePurchaseSave();
+  else if(a==="task-add") handleTaskAdd();
+  else if(a==="task-remove"){
+    if(!window.confirm("¿Eliminar esta tarea diaria?")) return;
+    var s = clone(STATE);
+    s.taskTemplate.splice(parseInt(el.getAttribute("data-index"),10),1);
+    publishState(s);
+  }
+  else if(a==="weekly-remove"){
+    if(!window.confirm("¿Eliminar esta tarea semanal?")) return;
+    var s2 = clone(STATE);
+    s2.weeklyTasks.splice(parseInt(el.getAttribute("data-index"),10),1);
+    publishState(s2);
+  }
+  else if(a==="person-up") handlePersonMove(parseInt(el.getAttribute("data-index"),10), -1);
+  else if(a==="person-down") handlePersonMove(parseInt(el.getAttribute("data-index"),10), 1);
+  else if(a==="person-remove"){
+    var s3 = clone(STATE);
+    var idx = parseInt(el.getAttribute("data-index"),10);
+    if(s3.people.length<=1) return;
+    if(!window.confirm("¿Quitar a " + s3.people[idx] + " de la rotación?")) return;
+    s3.people.splice(idx,1);
+    publishState(s3);
+  }
+  else if(a==="person-add") handlePersonAdd();
+  else if(a==="item-add") handleItemAdd();
+  else if(a==="item-remove"){
+    if(!window.confirm("¿Eliminar este artículo?")) return;
+    var s4 = clone(STATE);
+    var id = el.getAttribute("data-id");
+    s4.items = s4.items.filter(function(i){ return i.id!==id; });
+    publishState(s4);
+  }
+  else if(a==="zone-add") handleZoneAdd();
+  else if(a==="contrib-add") handleContribAdd();
 });
 
 document.getElementById("app").addEventListener("change", function(e){
   var el = e.target;
-  if(el.matches("[data-action='upload-photo']")){
-    var file = el.files && el.files[0];
-    if(file) handleUploadPhoto(el.getAttribute("data-task"), file);
+  var s;
+  if(el.matches("[data-action='draft-item']")){
+    purchaseDraft.items[el.getAttribute("data-id")] = el.checked;
   } else if(el.matches("[data-action='task-toggle-photo']")){
-    handleTaskToggle(parseInt(el.getAttribute("data-index"),10));
-  } else if(el.matches("[data-field='label']")){
-    handleTaskLabelChange(parseInt(el.getAttribute("data-index"),10), el.value);
+    s = clone(STATE);
+    var i1 = parseInt(el.getAttribute("data-index"),10);
+    s.taskTemplate[i1].photo = !s.taskTemplate[i1].photo;
+    publishState(s);
+  } else if(el.matches("[data-field='task-label']")){
+    s = clone(STATE);
+    s.taskTemplate[parseInt(el.getAttribute("data-index"),10)].label = el.value;
+    publishState(s);
+  } else if(el.matches("[data-field='weekly-label']")){
+    s = clone(STATE);
+    s.weeklyTasks[parseInt(el.getAttribute("data-index"),10)].label = el.value;
+    publishState(s);
+  } else if(el.matches("[data-field='bins-person']")){
+    s = clone(STATE);
+    s.binsPerson = el.value || null;
+    publishState(s);
+  } else if(el.matches("[data-field='item-name']")){
+    s = clone(STATE);
+    var idn = el.getAttribute("data-id");
+    s.items.forEach(function(i){ if(i.id===idn) i.name = el.value; });
+    publishState(s);
+  } else if(el.matches("[data-field='item-price']")){
+    s = clone(STATE);
+    var idp = el.getAttribute("data-id");
+    var price = parseNum(el.value);
+    s.items.forEach(function(i){ if(i.id===idp) i.price = price; });
+    publishState(s);
   }
+});
+
+document.getElementById("cam").addEventListener("click", function(e){
+  var el = e.target.closest("[data-cam]");
+  if(!el) return;
+  var a = el.getAttribute("data-cam");
+  if(a==="close") closeCamera();
+  else if(a==="shoot") camShoot();
+  else if(a==="retake"){
+    var shot = camShot, cb = camOnCapture, dim = camMaxDim;
+    var title = document.querySelector(".cam-head span");
+    closeCamera();
+    openCamera(title ? title.textContent : "Hacer foto", dim, cb);
+  }
+  else if(a==="use"){
+    var img = camShot, cb2 = camOnCapture;
+    closeCamera();
+    if(img && cb2) cb2(img);
+  }
+});
+document.getElementById("cam").addEventListener("change", function(e){
+  var el = e.target;
+  if(!el.matches("[data-cam='fallback-file']")) return;
+  var file = el.files && el.files[0];
+  if(!file) return;
+  var cb = camOnCapture, dim = camMaxDim;
+  fileToDataURL(file).then(function(src){ return shrinkDataURL(src, dim); }).then(function(img){
+    closeCamera();
+    if(cb) cb(img);
+  }).catch(function(){
+    window.alert("No se pudo procesar la foto, inténtalo de nuevo.");
+  });
 });
 
 /* ================= capability init ================= */
 (function initCapability(){
   if(window.claude && typeof window.claude.use === "function"){
     window.claude.use("artifact").then(function(cap){
-      if(cap){ CAP = cap; capStatus = "ready"; } else { capStatus = "offline"; }
+      capStatus = cap ? "ready" : "offline";
+      CAP = cap || null;
       render();
     }).catch(function(){ capStatus = "offline"; render(); });
   } else {
