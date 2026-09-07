@@ -209,7 +209,13 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 .admin-block:last-child{margin-bottom:0}
 .admin-row{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap}
 .admin-row input[type=text],.admin-row input[type=number],.admin-row select{border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--bg);color:var(--ink);min-width:0}
-.admin-row input.grow{flex:1}
+.admin-row input.grow{flex:1;min-width:120px}
+/* Fila de artículo: el nombre en su propia línea siempre — con zona, precio,
+   mínimo y borrar compitiendo por sitio, un input flex:1 puede encogerse
+   hasta casi desaparecer en pantallas estrechas (bug clásico de flexbox). */
+.admin-row.item-row{flex-direction:column;align-items:stretch}
+.admin-row.item-row input.grow{width:100%;min-width:0}
+.item-row-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .admin-row label.chk{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);white-space:nowrap}
 .icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .icon-btn:hover{border-color:var(--accent)}
@@ -931,12 +937,14 @@ function renderAdmin(state){
   }).join("");
   var zoneSel = state.zones.map(function(z){ return "<option value=\"" + escAttr(z) + "\">" + esc(z) + "</option>"; }).join("");
   var itemRows = state.items.map(function(i){
-    return "<div class=\"admin-row\">" +
+    return "<div class=\"admin-row item-row\">" +
       "<input class=\"grow\" type=\"text\" data-field=\"item-name\" data-id=\"" + escAttr(i.id) + "\" value=\"" + escAttr(i.name) + "\">" +
+      "<div class=\"item-row-meta\">" +
       "<span class=\"pill\">" + esc(i.zone) + "</span>" +
       "<input type=\"text\" inputmode=\"decimal\" style=\"width:78px\" placeholder=\"€\" data-field=\"item-price\" data-id=\"" + escAttr(i.id) + "\" value=\"" + (i.price===null?"":Number(i.price).toFixed(2).replace(".",",")) + "\">" +
       "<label class=\"chk\" title=\"A partir de esta cantidad salta el aviso de stock bajo\">mín. <input type=\"text\" inputmode=\"decimal\" style=\"width:48px\" data-field=\"item-threshold\" data-id=\"" + escAttr(i.id) + "\" value=\"" + fmtQty(i.threshold) + "\"></label>" +
-      "<button class=\"icon-btn\" data-action=\"item-remove\" data-id=\"" + escAttr(i.id) + "\" title=\"Eliminar\">🗑</button></div>";
+      "<button class=\"icon-btn\" data-action=\"item-remove\" data-id=\"" + escAttr(i.id) + "\" title=\"Eliminar\">🗑</button>" +
+      "</div></div>";
   }).join("");
   var contribRows = state.contributions.slice(0,10).map(function(c){
     return "<div class=\"admin-row\"><span style=\"flex:1\">" + esc(c.by) + "</span>" +
