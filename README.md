@@ -21,7 +21,9 @@ Está publicada como un **Claude Artifact** (una página web con enlace propio).
 
 ## Enlace de la app
 
-_(se añade aquí tras publicarla)_
+https://claude.ai/code/artifact/e2732477-bc6b-4405-aaef-b56f51859ca7
+
+Por defecto los artifacts se publican privados. Para que los 7 podáis acceder, compártelo desde el propio menú de la página (arriba a la derecha) con permiso de **edición**, no solo de vista.
 
 ## Historial de cambios
 
