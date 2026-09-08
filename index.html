@@ -938,7 +938,6 @@ function renderAdmin(state){
       "<button class=\"icon-btn\" data-action=\"person-down\" data-index=\"" + i + "\" title=\"Bajar\">▼</button>" +
       "<button class=\"icon-btn\" data-action=\"person-remove\" data-index=\"" + i + "\" title=\"Quitar\">🗑</button></div>";
   }).join("");
-  var zoneSel = state.zones.map(function(z){ return "<option value=\"" + escAttr(z) + "\">" + esc(z) + "</option>"; }).join("");
   function renderAdminItemRow(i){
     return "<div class=\"admin-row item-row\">" +
       "<input class=\"grow\" type=\"text\" data-field=\"item-name\" data-id=\"" + escAttr(i.id) + "\" value=\"" + escAttr(i.name) + "\">" +
@@ -955,6 +954,11 @@ function renderAdmin(state){
       (itemsInZone.length
         ? itemsInZone.map(renderAdminItemRow).join("")
         : "<p class=\"empty\" style=\"margin:0 0 10px\">Sin artículos en esta zona todavía.</p>") +
+      /* Cada zona añade a la suya: no hay que elegir zona en un desplegable. */
+      "<div class=\"new-row\">" +
+      "<input type=\"text\" placeholder=\"Añadir a " + escAttr(zone) + "…\" data-field=\"nuevo-articulo\">" +
+      "<button class=\"btn btn-primary\" data-action=\"item-add\" data-zone=\"" + escAttr(zone) + "\">Añadir</button>" +
+      "</div>" +
       "</div>";
   }).join("");
   var contribRows = state.contributions.slice(0,10).map(function(c){
@@ -979,9 +983,6 @@ function renderAdmin(state){
     "<button class=\"btn btn-primary\" data-action=\"person-add\">Añadir</button></div></div>" +
 
     "<div class=\"admin-block\"><h3>Artículos de limpieza</h3>" + itemRows +
-    "<div class=\"new-row\"><input type=\"text\" id=\"new-item-name\" placeholder=\"Artículo…\">" +
-    "<select id=\"new-item-zone\">" + zoneSel + "</select>" +
-    "<button class=\"btn btn-primary\" data-action=\"item-add\">Añadir</button></div>" +
     "<div class=\"new-row\"><input type=\"text\" id=\"new-zone-name\" placeholder=\"Nueva zona (ej. Salón)…\">" +
     "<button class=\"btn\" data-action=\"zone-add\">Añadir zona</button></div></div>" +
 
@@ -1174,9 +1175,12 @@ document.getElementById("app").addEventListener("click", function(e){
     run(patchConfig({people: STATE.people.concat([nm])}), "Añadido");
   }
   else if(a==="item-add"){
-    var iname = document.getElementById("new-item-name").value.trim();
-    var izone = document.getElementById("new-item-zone").value;
+    /* El campo es el de su propia fila, así cada zona añade a la suya. */
+    var campo = el.closest(".new-row").querySelector("[data-field='nuevo-articulo']");
+    var iname = campo.value.trim();
+    var izone = el.getAttribute("data-zone");
     if(!iname) return;
+    campo.value = "";
     run(api("casa_items", {method:"POST", prefer:"return=minimal",
       body:[{name:iname, zone:izone, sort_order: STATE.items.length+1}]}), "Artículo añadido");
   }
