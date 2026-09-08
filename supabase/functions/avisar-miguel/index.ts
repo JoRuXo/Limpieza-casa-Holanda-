@@ -99,7 +99,7 @@ async function registrar(fecha: string, ok: boolean, destino: string | null, det
   }
 }
 
-async function enviarCorreo(destino: string, asunto: string, cuerpo: string) {
+async function enviarCorreo(destinos: string[], asunto: string, cuerpo: string) {
   if (!BREVO_API_KEY) throw new Error("falta el secreto BREVO_API_KEY");
   if (!REMITENTE) throw new Error("falta el secreto EMAIL_REMITENTE");
   const r = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -111,7 +111,7 @@ async function enviarCorreo(destino: string, asunto: string, cuerpo: string) {
     },
     body: JSON.stringify({
       sender: { email: REMITENTE, name: "Turno de Hoy - Casa Holanda" },
-      to: [{ email: destino }],
+      to: destinos.map((email) => ({ email })),
       subject: asunto,
       textContent: cuerpo,
     }),
@@ -212,10 +212,14 @@ async function componerResumen(hoy: string) {
 
   lineas.push("", `Bote comun: ${eur(bote)}`, "", `Abrir la app: ${APP_URL}`);
 
+  // Destinatarios: la lista de casa_config. Se admite más de uno.
+  const destinos: string[] = (cfg.aviso_emails ?? [])
+    .filter((e: unknown) => typeof e === "string" && (e as string).includes("@"));
+
   return {
     asunto: `Limpieza Casa Holanda - ${DOW[diaSemana(hoy)]} ${fechaCorta(hoy)}: ${leTocaba} (${hechas}/${tareas.length})`,
     cuerpo: lineas.join("\n"),
-    destino: cfg.reviewer_email as string | null,
+    destinos,
   };
 }
 
@@ -241,14 +245,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const aviso = await componerResumen(hoy);
-    if (!aviso.destino) {
-      await registrar(hoy, false, null, "casa_config.reviewer_email esta vacio");
-      return responder({ ok: false, enviado: false, motivo: "falta reviewer_email en casa_config" }, 500);
+    if (!aviso.destinos.length) {
+      await registrar(hoy, false, null, "casa_config.aviso_emails esta vacio");
+      return responder({ ok: false, enviado: false, motivo: "falta aviso_emails en casa_config" }, 500);
     }
 
-    await enviarCorreo(aviso.destino, aviso.asunto, aviso.cuerpo);
-    await registrar(hoy, true, aviso.destino, aviso.asunto);
-    return responder({ ok: true, enviado: true, destino: aviso.destino, asunto: aviso.asunto });
+    const destinatarios = aviso.destinos.join(", ");
+    await enviarCorreo(aviso.destinos, aviso.asunto, aviso.cuerpo);
+    await registrar(hoy, true, destinatarios, aviso.asunto);
+    return responder({ ok: true, enviado: true, destinos: aviso.destinos, asunto: aviso.asunto });
   } catch (e) {
     const msg = String((e as Error)?.message ?? e);
     await registrar(hoy, false, null, msg);

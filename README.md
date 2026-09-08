@@ -57,7 +57,7 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 
 ## Avisos por correo a Miguel
 
-Un único correo, **cada noche a las 23:00 hora de Holanda**, para que Miguel compruebe si se han hecho las tareas del día. Lo envía la Edge Function **`avisar-miguel`** (`supabase/functions/avisar-miguel/`), disparada por `pg_cron` desde dentro de Supabase: **no depende de que ningún ordenador esté encendido**.
+Un único correo, **cada noche a las 23:00 hora de Holanda**, a **Miguel y Alberto**, para comprobar si se han hecho las tareas del día. Los destinatarios salen de `casa_config.aviso_emails` (una lista), así que añadir o quitar a alguien es cambiar esa fila, sin tocar código ni volver a desplegar. Lo envía la Edge Function **`avisar-miguel`** (`supabase/functions/avisar-miguel/`), disparada por `pg_cron` desde dentro de Supabase: **no depende de que ningún ordenador esté encendido**.
 
 Contiene: quién tenía turno, cuántas tareas hizo de las que tocaban (con hora y si llevan foto), las fotos pendientes de revisar, los productos por comprar, las compras del día y el saldo del bote.
 
@@ -76,7 +76,7 @@ Para probarlo a mano sin esperar a las 23:00, se llama con `{"forzar":true}`.
 | `BREVO_API_KEY` | Clave de API de [Brevo](https://brevo.com) (plan gratuito: 300 correos/día) |
 | `EMAIL_REMITENTE` | La dirección verificada en Brevo desde la que se envía |
 
-El destinatario sale de `casa_config.reviewer_email`, así que se cambia sin tocar código.
+Ambos están ya configurados y probados: el envío de prueba del 08/09 llegó correctamente.
 
 ### Por qué no se usa Resend
 
