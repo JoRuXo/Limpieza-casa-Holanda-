@@ -57,16 +57,17 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 
 ## Avisos por correo a Miguel
 
-Los envía la Edge Function **`avisar-miguel`** (`supabase/functions/avisar-miguel/`), en dos momentos:
+Un único correo, **cada noche a las 23:00 hora de Holanda**, para que Miguel compruebe si se han hecho las tareas del día. Lo envía la Edge Function **`avisar-miguel`** (`supabase/functions/avisar-miguel/`), disparada por `pg_cron` desde dentro de Supabase: **no depende de que ningún ordenador esté encendido**.
 
-| Cuándo | Quién lo dispara | Contenido |
-|---|---|---|
-| **Al instante**, en cuanto alguien sube una foto | La app, justo después de guardar la tarea | Quién ha subido qué, a qué hora, y cuántas fotos tiene pendientes |
-| **Cada noche**, a las 21:00 UTC | `pg_cron` dentro de Supabase | Resumen del día: tareas hechas y sin hacer, fotos pendientes, productos por comprar, compras y bote |
+Contiene: quién tenía turno, cuántas tareas hizo de las que tocaban (con hora y si llevan foto), las fotos pendientes de revisar, los productos por comprar, las compras del día y el saldo del bote.
 
-Todo corre en Supabase, así que **no depende de que ningún ordenador esté encendido**. El aviso instantáneo se manda aparte del guardado: si el correo falla, la tarea ya quedó guardada y el resumen nocturno la recoge igual.
+**Horario y cambio de hora:** `pg_cron` va en UTC, así que las 23:00 de Holanda son las 21:00 UTC en verano y las 22:00 en invierno. El cron dispara a ambas horas y la función solo envía en la que realmente son las 23:00 allí — así el correo llega siempre a la misma hora local sin tocar nada en marzo ni en octubre.
 
-El contenido de los correos se compone **leyendo la base de datos**, nunca a partir de lo que envía el navegador, para que nadie pueda provocar un correo con datos inventados llamando al endpoint a mano.
+**Registro de envíos:** cada intento queda anotado en la tabla `casa_avisos` (fecha, si salió bien, destinatario y detalle del error si lo hubo). La primera noche el envío falló sin dejar rastro; con esto no puede volver a pasar en silencio.
+
+El contenido se compone **leyendo la base de datos**, nunca a partir de lo que llega en la petición, para que nadie pueda provocar un correo con datos inventados llamando al endpoint a mano.
+
+Para probarlo a mano sin esperar a las 23:00, se llama con `{"forzar":true}`.
 
 ### Secretos que necesita (se ponen en Supabase → Edge Functions → Secrets)
 
@@ -76,8 +77,6 @@ El contenido de los correos se compone **leyendo la base de datos**, nunca a par
 | `EMAIL_REMITENTE` | La dirección verificada en Brevo desde la que se envía |
 
 El destinatario sale de `casa_config.reviewer_email`, así que se cambia sin tocar código.
-
-⚠️ **Nota sobre el horario:** `pg_cron` va en UTC, así que las 21:00 UTC son las 23:00 en horario de verano y las 22:00 en invierno.
 
 ### Por qué no se usa Resend
 
@@ -99,7 +98,7 @@ Antes esto lo hacía una tarea programada de Claude en el portátil de Alberto (
 
 ## Historial de cambios
 
-- **2026-09-08 (correos al backend)**: Los avisos a Miguel salen ahora de una Edge Function de Supabase, con aviso instantáneo al subir una foto y resumen nocturno vía `pg_cron`. Se desactivó la tarea programada de Claude, que dependía del portátil de Alberto y había fallado en silencio la primera noche.
+- **2026-09-08 (correo al backend)**: El correo nocturno a Miguel sale ahora de una Edge Function de Supabase lanzada por `pg_cron`, siempre a las 23:00 hora de Holanda y con registro de cada intento en `casa_avisos`. Se desactivó la tarea programada de Claude, que dependía del portátil de Alberto y había fallado en silencio la primera noche.
 - **2026-09-07 (stock por cantidades)**: Los artículos ya no se marcan a mano como OK/Queda poco/Agotado. Ahora llevan una cantidad real (editable por cualquiera, con botones －/＋ o escribiéndola) y un umbral mínimo que decide el admin por artículo; el estado se calcula solo. `status` pasa a ser una columna generada en la base de datos.
 - **2026-09-07 (auditoría)**: Repaso completo con cuatro fallos corregidos — el bote se calculaba mal a partir de la compra 41, el refresco automático borraba lo que estabas escribiendo, el historial de días pasados se reescribía con la plantilla de tareas actual, y los campos de dinero rechazaban la coma decimal. Además, las escrituras releen el día antes de guardar para que dos personas a la vez no se pisen.
 - **2026-09-07 (v3)**: Migración a web real. Datos en Supabase, fotos en Storage, despliegue en Vercel desde GitHub. Adiós al requisito de tener cuenta de Claude: ahora entra cualquiera con el enlace desde el móvil. El artifact viejo queda como aviso apuntando a la URL nueva.
