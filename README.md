@@ -41,7 +41,7 @@ Cada foto queda como *pendiente de revisión* hasta que Miguel pulse **✓ Verif
 | Web (HTML/CSS/JS en un archivo, sin dependencias) | Vercel — proyecto `limpieza-casa-holanda`, desplegado desde la rama `main` de este repo |
 | Datos | Supabase — tablas `casa_*` dentro del proyecto `lista-compra-masiera` |
 | Fotos y tickets | Supabase Storage — bucket público `casa-fotos` |
-| Correo nocturno | Tarea programada de Claude en el equipo de Alberto |
+| Correos a Miguel | Supabase Edge Function `avisar-miguel` + `pg_cron`, con Brevo como proveedor de email |
 
 Cada push a `main` despliega solo en Vercel.
 
@@ -55,13 +55,39 @@ La web habla con PostgREST usando `fetch` y la clave **publicable** de Supabase 
 
 No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escribir a cualquiera con la clave publicable, que va en el código de la página. Es el modelo buscado — que los 7 entren sin fricción — pero conviene saberlo: quien tenga el enlace puede tocar los datos. Si algún día hace falta, se puede añadir un PIN de casa.
 
-## Correo diario a Miguel
+## Avisos por correo a Miguel
 
-- **Tarea:** `resumen-limpieza-miguel` (en `~/.claude/scheduled-tasks/`)
-- **Cuándo:** todas las noches sobre las 23:00
-- **Qué hace:** ejecuta `resumen-diario.mjs`, que lee el estado de Supabase, y envía a `Miguel.ferrer.toribio@gmail.com` las tareas del día, quién las hizo, las fotos pendientes de revisar, los productos por comprar, las compras del día y el saldo del bote.
+Los envía la Edge Function **`avisar-miguel`** (`supabase/functions/avisar-miguel/`), en dos momentos:
 
-⚠️ **La tarea solo se ejecuta con la app de Claude abierta.** Si a las 23:00 está cerrada, el correo sale en el siguiente arranque. Para un correo **instantáneo** en cuanto alguien sube una foto haría falta una Edge Function de Supabase con un servicio de email (Resend, plan gratuito) — pendiente de decidir.
+| Cuándo | Quién lo dispara | Contenido |
+|---|---|---|
+| **Al instante**, en cuanto alguien sube una foto | La app, justo después de guardar la tarea | Quién ha subido qué, a qué hora, y cuántas fotos tiene pendientes |
+| **Cada noche**, a las 21:00 UTC | `pg_cron` dentro de Supabase | Resumen del día: tareas hechas y sin hacer, fotos pendientes, productos por comprar, compras y bote |
+
+Todo corre en Supabase, así que **no depende de que ningún ordenador esté encendido**. El aviso instantáneo se manda aparte del guardado: si el correo falla, la tarea ya quedó guardada y el resumen nocturno la recoge igual.
+
+El contenido de los correos se compone **leyendo la base de datos**, nunca a partir de lo que envía el navegador, para que nadie pueda provocar un correo con datos inventados llamando al endpoint a mano.
+
+### Secretos que necesita (se ponen en Supabase → Edge Functions → Secrets)
+
+| Secreto | Qué es |
+|---|---|
+| `BREVO_API_KEY` | Clave de API de [Brevo](https://brevo.com) (plan gratuito: 300 correos/día) |
+| `EMAIL_REMITENTE` | La dirección verificada en Brevo desde la que se envía |
+
+El destinatario sale de `casa_config.reviewer_email`, así que se cambia sin tocar código.
+
+⚠️ **Nota sobre el horario:** `pg_cron` va en UTC, así que las 21:00 UTC son las 23:00 en horario de verano y las 22:00 en invierno.
+
+### Por qué no se usa Resend
+
+Sin un dominio propio verificado, Resend solo deja enviar a la dirección del titular de la cuenta (devuelve 403 con cualquier otra), así que no serviría para escribir a Miguel. Brevo permite verificar una sola dirección de correo como remitente, sin necesidad de dominio.
+
+### Histórico
+
+Antes esto lo hacía una tarea programada de Claude en el portátil de Alberto (`resumen-limpieza-miguel`, ahora **desactivada**). Solo corría con la app de Claude abierta y con los permisos pre-aprobados: la noche del 07/09 arrancó, murió a los 4 segundos esperando aprobación y no envió nada, sin avisar de ello. Por eso se movió al backend.
+
+`resumen-diario.mjs` se conserva como herramienta de diagnóstico local: `node resumen-diario.mjs` imprime lo que diría el correo de esta noche, sin enviar nada.
 
 ## Archivos
 
@@ -73,6 +99,7 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 
 ## Historial de cambios
 
+- **2026-09-08 (correos al backend)**: Los avisos a Miguel salen ahora de una Edge Function de Supabase, con aviso instantáneo al subir una foto y resumen nocturno vía `pg_cron`. Se desactivó la tarea programada de Claude, que dependía del portátil de Alberto y había fallado en silencio la primera noche.
 - **2026-09-07 (stock por cantidades)**: Los artículos ya no se marcan a mano como OK/Queda poco/Agotado. Ahora llevan una cantidad real (editable por cualquiera, con botones －/＋ o escribiéndola) y un umbral mínimo que decide el admin por artículo; el estado se calcula solo. `status` pasa a ser una columna generada en la base de datos.
 - **2026-09-07 (auditoría)**: Repaso completo con cuatro fallos corregidos — el bote se calculaba mal a partir de la compra 41, el refresco automático borraba lo que estabas escribiendo, el historial de días pasados se reescribía con la plantilla de tareas actual, y los campos de dinero rechazaban la coma decimal. Además, las escrituras releen el día antes de guardar para que dos personas a la vez no se pisen.
 - **2026-09-07 (v3)**: Migración a web real. Datos en Supabase, fotos en Storage, despliegue en Vercel desde GitHub. Adiós al requisito de tener cuenta de Claude: ahora entra cualquiera con el enlace desde el móvil. El artifact viejo queda como aviso apuntando a la URL nueva.

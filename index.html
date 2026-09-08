@@ -305,6 +305,21 @@ function uploadPhoto(dataUrl, prefix){
   });
 }
 
+/* Avisa a Miguel en cuanto se sube una foto. Va aparte del guardado a
+   propósito: si el correo falla, la tarea ya ha quedado guardada igualmente
+   y el resumen nocturno lo recogerá de todas formas. */
+function avisarRevisor(fecha, tareaId){
+  fetch(SUPA_URL + "/functions/v1/avisar-miguel", {
+    method: "POST",
+    headers: {
+      "apikey": SUPA_KEY,
+      "Authorization": "Bearer " + SUPA_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({modo: "instante", fecha: fecha, tarea: tareaId})
+  }).catch(function(){ /* sin conexión o correo caído: no molestamos al usuario */ });
+}
+
 function dataURLtoBlob(dataUrl){
   var parts = dataUrl.split(",");
   var mime = (parts[0].match(/:(.*?);/) || [])[1] || "image/jpeg";
@@ -1012,7 +1027,8 @@ function editDay(dateKey, apply, okMsg){
   );
 }
 function completeTask(taskId, img){
-  editDay(todayStr(), function(tasks){
+  var fecha = todayStr();
+  editDay(fecha, function(tasks){
     for(var i=0;i<tasks.length;i++){
       if(tasks[i].id===taskId){
         tasks[i].done = true;
@@ -1025,7 +1041,10 @@ function completeTask(taskId, img){
       }
     }
     return false;
-  }, "Tarea guardada");
+  }, "Tarea guardada").then(function(){
+    /* Sólo si la foto llegó a guardarse de verdad. */
+    if(img && saveStatus === "ok") avisarRevisor(fecha, taskId);
+  });
 }
 function verifyTask(dateKey, taskId){
   editDay(dateKey, function(tasks){
