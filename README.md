@@ -1,6 +1,6 @@
 # Turno de Hoy — Limpieza Casa Holanda
 
-App web para organizar los turnos de limpieza de la casa compartida de 7 personas: **Yassine, Jorge, Miguel, Noel, Ali, Raul y Alberto**.
+App web para organizar los turnos de limpieza de la casa compartida de 9 personas: **Yassine, Jorge, Miguel, Noel, Ali, Raul, Alberto, Sufian y Pablo**.
 
 ## 🔗 https://limpieza-casa-holanda.vercel.app
 
@@ -9,11 +9,13 @@ Se abre desde cualquier navegador y desde el móvil, **sin cuenta ni contraseña
 ## Qué hace
 
 ### Turnos
-- Un turno por día, en orden fijo, rotando cada semana: Yassine → Jorge → Miguel → Noel → Ali → Raul → Alberto. Empezó el 2026-09-07.
+- Un turno por día, en orden fijo: Yassine → Jorge → Miguel → Noel → Ali → Raul → Alberto → Sufian → Pablo, y vuelta a empezar.
+
+  **Sobre `start_date`:** el turno se calcula como *(días desde `start_date`) módulo (nº de personas)*, así que cambiar el tamaño de la lista también mueve el turno del día en curso. Al dar de alta a Sufian y Pablo (15/09) se re-ancló `start_date` al 14/09 para que ese día siguiera cayendo en Jorge, que ya había hecho sus tareas. Si algún día entra o sale alguien más, hay que hacer lo mismo: ajustar `start_date` para que el día en curso no cambie de dueño.
 - Cada día, a quien le toca debe **sacar la basura (poniendo bolsa nueva)** y **barrer y fregar toda la casa**, adjuntando una foto de cada tarea.
 - **Cubos verdes**: los domingos hay que sacarlos a la calle y los lunes volver a meterlos. Es una rotación semanal **aparte** de la diaria: cada semana pasa a la siguiente persona de la lista. Empieza **Alberto el domingo 13/09**, luego Yassine, Jorge, Miguel… Quien los saca el domingo es quien los entra el lunes.
 
-  Va aparte a propósito: como son 7 personas y 7 días, en la rotación diaria cada uno cae **siempre en el mismo día de la semana** (Yassine siempre lunes, Alberto siempre domingo), así que si los cubos fueran del turno del día los haría siempre el mismo. Desde Admin se puede cambiar quién los saca el próximo domingo, y la rotación continúa correlativamente desde ahí.
+  Va aparte porque cuando la casa era de 7 personas, con 7 días por semana cada uno caía **siempre en el mismo día** (Yassine siempre lunes, Alberto siempre domingo) y los cubos habrían sido eternamente del mismo. Al pasar a 9 eso ya no ocurre —el día de la semana va rotando solo—, pero los cubos siguen con su ciclo propio. Desde Admin se puede cambiar quién los saca el próximo domingo, y la rotación continúa correlativamente desde ahí.
 
 ### Fotos: solo cámara, nunca galería
 Al pulsar "Hacer foto" se abre la cámara **dentro de la app** (`getUserMedia`) con visor en directo y botón de disparo: no hay forma de elegir una imagen de la galería. Como el sitio va por HTTPS, esto funciona de verdad en el móvil. Si algún navegador no lo permitiera, cae en un `input` con `capture="environment"`, que abre la cámara del teléfono.
@@ -97,6 +99,8 @@ Antes esto lo hacía una tarea programada de Claude en el portátil de Alberto (
 | `README.md` | Esta documentación |
 
 ## Historial de cambios
+
+- **2026-09-15 (entran Sufian y Pablo)**: La casa pasa de 7 a 9. Se re-ancló `start_date` para no moverle el turno a Jorge a media jornada, y la paleta de colores de avatar pasó de 7 a 9 para que no se repitieran.
 
 - **2026-09-08 (correo al backend)**: El correo nocturno a Miguel sale ahora de una Edge Function de Supabase lanzada por `pg_cron`, siempre a las 23:00 hora de Holanda y con registro de cada intento en `casa_avisos`. Se desactivó la tarea programada de Claude, que dependía del portátil de Alberto y había fallado en silencio la primera noche.
 - **2026-09-07 (stock por cantidades)**: Los artículos ya no se marcan a mano como OK/Queda poco/Agotado. Ahora llevan una cantidad real (editable por cualquiera, con botones －/＋ o escribiéndola) y un umbral mínimo que decide el admin por artículo; el estado se calcula solo. `status` pasa a ser una columna generada en la base de datos.

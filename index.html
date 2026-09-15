@@ -315,7 +315,10 @@ function dataURLtoBlob(dataUrl){
 }
 
 /* ================= constants ================= */
-var PALETTE = ["#D6604D","#DDA63A","#4F8A3D","#2E8B84","#4472C4","#8E5FA8","#B15C8E"];
+/* Un color por persona. Debe haber al menos tantos como gente viva en la
+   casa: si se repiten, dos avatares se confunden de un vistazo en la tira
+   de la semana, que es justo para lo que sirve el color. */
+var PALETTE = ["#D6604D","#DDA63A","#4F8A3D","#2E8B84","#4472C4","#8E5FA8","#B15C8E","#A0522D","#5B7083"];
 var DOW = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
 var DOW_LONG = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 var MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
