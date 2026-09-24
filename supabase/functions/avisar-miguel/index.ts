@@ -73,12 +73,29 @@ function eur(n: number): string {
   return Number(n).toFixed(2).replace(".", ",") + " EUR";
 }
 
-async function db(path: string): Promise<any> {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-  });
-  if (!r.ok) throw new Error(`DB ${r.status}: ${await r.text()}`);
-  return r.json();
+/**
+ * Lectura con reintentos. Las noches del 11 y 12/09 el resumen no llegó a
+ * salir por un "504 Gateway Timeout" pasajero: como solo había un intento y
+ * el cron no vuelve a pasar hasta el día siguiente, esas dos noches se
+ * perdieron enteras. Un fallo de servidor se reintenta; uno de petición
+ * (4xx) no, porque no va a arreglarse solo.
+ */
+async function db(path: string, intentos = 3): Promise<any> {
+  let ultimoError = "";
+  for (let i = 0; i < intentos; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 1500 * i));
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      });
+      if (r.ok) return r.json();
+      ultimoError = `DB ${r.status}: ${await r.text()}`;
+      if (r.status < 500) break;
+    } catch (e) {
+      ultimoError = `DB sin respuesta: ${String((e as Error)?.message ?? e)}`;
+    }
+  }
+  throw new Error(ultimoError || "DB: error desconocido");
 }
 
 /** Deja constancia del intento, salga bien o mal. */
