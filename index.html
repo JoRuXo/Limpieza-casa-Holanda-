@@ -161,6 +161,9 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 
 /* ---------- history ---------- */
 .history-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow)}
+/* Día que pasó sin que nadie hiciera nada: se marca en el borde para que
+   destaque al recorrer la lista, que es para lo que sirve el historial. */
+.history-item.sin-hacer{border-color:var(--bad);background:var(--bad-soft)}
 .history-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer}
 .history-head .left{display:flex;align-items:center;gap:10px}
 .history-head .date{font-family:var(--font-mono);font-size:12px;color:var(--muted);min-width:64px}
@@ -880,12 +883,40 @@ function renderPurchaseForm(state){
     "</div></div>";
 }
 
+/* Los días en que nadie hace nada no generan registro en la base de datos,
+   porque sólo se guarda al completar una tarea. Aun así tienen que salir en
+   el historial: un día en blanco es precisamente lo que interesa ver. Se
+   rellenan los huecos desde el ancla de la rotación (antes de esa fecha el
+   turno calculado no coincidiría con el que hubo de verdad) y como mucho 30
+   días hacia atrás, para que la lista no crezca sin fin. */
+function historyDates(state){
+  var hoy = todayStr();
+  var fechas = {};
+  Object.keys(state.days).forEach(function(k){ fechas[k] = true; });
+  var desde = state.startDate && state.startDate > addDays(hoy, -29)
+    ? state.startDate
+    : addDays(hoy, -29);
+  var d = hoy, guarda = 0;
+  while(d >= desde && guarda++ < 400){
+    fechas[d] = true;
+    d = addDays(d, -1);
+  }
+  return Object.keys(fechas).sort().reverse();
+}
+
+/* Para un día sin registro no hay nada guardado que enseñar, así que se
+   listan las tareas que tocaban ese día, todas sin hacer. */
+function tasksForHistory(state, dateKey){
+  if(state.days[dateKey]) return effectiveTasks(state, dateKey);
+  return templateTasksFor(state, dateKey).map(blankTask);
+}
+
 function renderHistory(state){
   var today = todayStr();
   var reviewer = isReviewer(state, myName);
-  var keys = Object.keys(state.days).sort().reverse();
+  var keys = historyDates(state);
   var html = keys.map(function(k){
-    var tasks = effectiveTasks(state, k);
+    var tasks = tasksForHistory(state, k);
     var total = tasks.length;
     var done = tasks.filter(function(t){return t.done;}).length;
     var pend = tasks.filter(function(t){return t.done && t.img && !t.verified;}).length;
@@ -896,15 +927,33 @@ function renderHistory(state){
         (reviewer && !t.verified ? "<button class=\"btn btn-primary btn-sm\" style=\"margin-top:4px;width:84px;justify-content:center\" data-action=\"verify\" data-date=\"" + k + "\" data-task=\"" + escAttr(t.id) + "\">✓</button>" : "") +
         "</div>";
     }).join("");
-    return "<div class=\"history-item\"><div class=\"history-head\" data-action=\"toggle-history\" data-date=\"" + k + "\">" +
-      "<div class=\"left\"><span class=\"date mono\">" + (k===today ? "HOY" : fmtDateShort(k)) + "</span><span>" + esc(state.days[k].person) + "</span></div>" +
+    var esHoy = (k === today);
+    /* Hoy todavía está en curso, así que un 0 no es un incumplimiento. */
+    var clase = done === total ? "good" : (done === 0 && !esHoy ? "bad" : "warn");
+    var quien = (state.days[k] && state.days[k].person) || personForDate(state, k);
+    var vacio = !state.days[k];
+    return "<div class=\"history-item" + (vacio && !esHoy ? " sin-hacer" : "") + "\">" +
+      "<div class=\"history-head\" data-action=\"toggle-history\" data-date=\"" + k + "\">" +
+      "<div class=\"left\"><span class=\"date mono\">" + (esHoy ? "HOY" : fmtDateShort(k)) + "</span><span>" + esc(quien) + "</span></div>" +
       "<div style=\"display:flex;gap:6px;align-items:center\">" +
       (pend ? "<span class=\"pill accent\">" + pend + " sin revisar</span>" : "") +
-      "<span class=\"pill " + (done===total ? "good" : "warn") + "\">" + done + "/" + total + "</span></div></div>" +
-      (expanded ? "<div class=\"history-photos\">" + (photos || "<span class=\"empty\">Sin fotos adjuntadas</span>") + "</div>" : "") +
+      "<span class=\"pill " + clase + "\">" + done + "/" + total + "</span></div></div>" +
+      (expanded
+        ? "<div class=\"history-photos\">" + (photos ||
+            "<span class=\"empty\">" + (vacio ? "Nadie registró nada este día." : "Sin fotos adjuntadas") + "</span>") + "</div>"
+        : "") +
       "</div>";
   }).join("");
-  return "<div class=\"section-title\">Días registrados</div>" +
+
+  var sinHacer = keys.filter(function(k){
+    if(k === today) return false;
+    var t = tasksForHistory(state, k);
+    return t.filter(function(x){return x.done;}).length === 0;
+  }).length;
+
+  return "<div class=\"section-title\">Historial" +
+    (sinHacer ? " · " + sinHacer + " día" + (sinHacer>1?"s":"") + " sin hacer" : "") +
+    "</div>" +
     (html || "<div class=\"empty\">Todavía no hay días registrados.</div>");
 }
 
