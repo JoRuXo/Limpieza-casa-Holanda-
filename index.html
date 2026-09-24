@@ -115,7 +115,6 @@ h1,h2,h3{font-family:var(--font-display);font-weight:800;text-transform:uppercas
 /* ---------- alerts ---------- */
 .alert{display:flex;align-items:flex-start;gap:10px;border-radius:11px;padding:11px 14px;margin-bottom:10px;font-size:14px;cursor:pointer;border:1px solid transparent}
 .alert.buy{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
-.alert.review{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent)}
 .alert b{font-weight:700}
 
 /* ---------- hero ---------- */
@@ -397,7 +396,6 @@ function loadAll(){
     STATE = {
       people: cfg.people || [],
       admins: cfg.admins || [],
-      reviewer: cfg.reviewer || null,
       startDate: cfg.start_date,
       binsStartDate: cfg.bins_start_date || null,
       binsStartPerson: cfg.bins_start_person || null,
@@ -470,7 +468,6 @@ function colorFor(state, name){
 }
 function initialsFor(name){ return (name||"?").slice(0,1).toUpperCase(); }
 function isAdmin(state, name){ return !!name && state.admins.indexOf(name) !== -1; }
-function isReviewer(state, name){ return !!name && state.reviewer === name; }
 
 /* ---- cubos verdes: una persona por semana, correlativa ----
    La "semana de cubos" va del domingo (sacarlos) al lunes (entrarlos), así
@@ -508,7 +505,7 @@ function templateTasksFor(state, dateKey){
 }
 function blankTask(t){
   return {id:t.id, label:t.label, photo:t.photo, kind:t.kind, assignee:t.assignee,
-          done:false, by:null, at:null, img:null, verified:false, verifiedAt:null};
+          done:false, by:null, at:null, img:null};
 }
 function effectiveTasks(state, dateKey){
   var stored = state.days[dateKey] ? state.days[dateKey].tasks : [];
@@ -541,15 +538,6 @@ function canDoTask(state, task, dayPerson){
   if(isAdmin(state, myName)) return true;
   if(task.kind === "weekly") return !task.assignee || task.assignee === myName;
   return myName === dayPerson;
-}
-function pendingReview(state){
-  var out = [];
-  Object.keys(state.days).sort().reverse().forEach(function(k){
-    effectiveTasks(state, k).forEach(function(t){
-      if(t.done && t.img && !t.verified) out.push({date:k, task:t});
-    });
-  });
-  return out;
 }
 function itemsToBuy(state){
   return state.items.filter(function(i){ return i.status==="low" || i.status==="out"; });
@@ -712,10 +700,9 @@ function renderHeader(state, admin){
 }
 
 function renderTabs(state, admin){
-  var pend = isReviewer(state, myName) ? pendingReview(state).length : 0;
   var buy = itemsToBuy(state).length;
   var defs = [
-    {id:"hoy", label:"Hoy", count: (pend && tab!=="historial") ? pend : 0},
+    {id:"hoy", label:"Hoy", count:0},
     {id:"stock", label:"Stock", count: buy},
     {id:"historial", label:"Historial", count:0}
   ];
@@ -734,13 +721,6 @@ function renderAlerts(state){
     out += "<div class=\"alert buy\" data-action=\"tab\" data-tab=\"stock\">🧴 <span><b>Hay que comprar (" + buy.length + "):</b> " +
       esc(names) + (buy.length>3 ? " y " + (buy.length-3) + " más" : "") + "</span></div>";
   }
-  if(isReviewer(state, myName)){
-    var pend = pendingReview(state);
-    if(pend.length){
-      out += "<div class=\"alert review\" data-action=\"tab\" data-tab=\"historial\">📷 <span><b>" + pend.length +
-        " foto" + (pend.length>1?"s":"") + " pendiente" + (pend.length>1?"s":"") + " de tu revisión.</b> Compruébalas y márcalas como verificadas.</span></div>";
-    }
-  }
   return out;
 }
 
@@ -751,36 +731,30 @@ function renderToday(state){
   var daily = tasks.filter(function(t){ return t.kind !== "weekly"; });
   var weekly = tasks.filter(function(t){ return t.kind === "weekly"; });
   var canAct = myName && (myName === person || isAdmin(state, myName));
-  var reviewer = isReviewer(state, myName);
 
   var hero = "<div class=\"hero\"><div class=\"hero-top\">" +
     "<span class=\"avatar lg\" style=\"background:" + colorFor(state,person) + "\">" + esc(initialsFor(person)) + "</span>" +
     "<div><div class=\"date mono\">" + fmtDateLong(today) + "</div><h2>" + esc(person) + "</h2>" +
     "<div class=\"caption\">" + (canAct ? "Te toca hoy — barrer, fregar y sacar la basura" : "Le toca hoy") + "</div></div></div>" +
     "<div class=\"tasks\">" + daily.map(function(t){
-      return renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer);
+      return renderTaskRow(state, t, canDoTask(state,t,person));
     }).join("") + "</div></div>";
 
   var weeklyHtml = weekly.map(function(t){
     var who = t.assignee ? t.assignee : "sin asignar — cualquiera puede hacerlo";
     return "<div class=\"weekly\"><h3>♻️ Cubos verdes · " + esc(DOW_LONG[dowOf(today)]) + "</h3>" +
       "<div class=\"who-line\">Responsable esta semana: <b>" + esc(who) + "</b></div>" +
-      "<div class=\"tasks\">" + renderTaskRow(state, t, canDoTask(state,t,person), today, reviewer) + "</div></div>";
+      "<div class=\"tasks\">" + renderTaskRow(state, t, canDoTask(state,t,person)) + "</div></div>";
   }).join("");
 
   return hero + weeklyHtml + renderWeekStrip(state);
 }
 
-function renderTaskRow(state, t, canAct, dateKey, reviewer){
+function renderTaskRow(state, t, canAct){
   var action = "";
   if(t.done){
     if(t.img) action += "<img class=\"thumb\" src=\"" + escAttr(t.img) + "\" data-action=\"zoom\" data-img=\"" + escAttr(t.img) + "\" alt=\"\" loading=\"lazy\">";
     action += "<span class=\"task-meta\">" + esc(t.by||"") + (t.at ? " · " + fmtTime(t.at) : "") + "</span>";
-    if(t.img){
-      if(t.verified) action += "<span class=\"pill good\">✓ Verificada</span>";
-      else if(reviewer) action += "<button class=\"btn btn-primary btn-sm\" data-action=\"verify\" data-date=\"" + dateKey + "\" data-task=\"" + escAttr(t.id) + "\">✓ Verificar</button>";
-      else action += "<span class=\"pill accent\">Pendiente de revisión</span>";
-    }
   } else if(canAct){
     action = t.photo
       ? "<button class=\"btn btn-primary\" data-action=\"shoot-task\" data-task=\"" + escAttr(t.id) + "\">📷 Hacer foto</button>"
@@ -913,18 +887,15 @@ function tasksForHistory(state, dateKey){
 
 function renderHistory(state){
   var today = todayStr();
-  var reviewer = isReviewer(state, myName);
   var keys = historyDates(state);
   var html = keys.map(function(k){
     var tasks = tasksForHistory(state, k);
     var total = tasks.length;
     var done = tasks.filter(function(t){return t.done;}).length;
-    var pend = tasks.filter(function(t){return t.done && t.img && !t.verified;}).length;
     var expanded = !!expandedDays[k];
     var photos = tasks.filter(function(t){return t.img;}).map(function(t){
       return "<div><img src=\"" + escAttr(t.img) + "\" data-action=\"zoom\" data-img=\"" + escAttr(t.img) + "\" alt=\"\" loading=\"lazy\">" +
-        "<div class=\"cap\">" + esc(t.label) + "<br>" + (t.verified ? "✓ verificada" : "sin verificar") + "</div>" +
-        (reviewer && !t.verified ? "<button class=\"btn btn-primary btn-sm\" style=\"margin-top:4px;width:84px;justify-content:center\" data-action=\"verify\" data-date=\"" + k + "\" data-task=\"" + escAttr(t.id) + "\">✓</button>" : "") +
+        "<div class=\"cap\">" + esc(t.label) + "<br>" + esc(t.by || "") + "</div>" +
         "</div>";
     }).join("");
     var esHoy = (k === today);
@@ -936,7 +907,6 @@ function renderHistory(state){
       "<div class=\"history-head\" data-action=\"toggle-history\" data-date=\"" + k + "\">" +
       "<div class=\"left\"><span class=\"date mono\">" + (esHoy ? "HOY" : fmtDateShort(k)) + "</span><span>" + esc(quien) + "</span></div>" +
       "<div style=\"display:flex;gap:6px;align-items:center\">" +
-      (pend ? "<span class=\"pill accent\">" + pend + " sin revisar</span>" : "") +
       "<span class=\"pill " + clase + "\">" + done + "/" + total + "</span></div></div>" +
       (expanded
         ? "<div class=\"history-photos\">" + (photos ||
@@ -1048,9 +1018,9 @@ function renderAdmin(state){
 }
 
 /* ================= handlers ================= */
-/* Relee el día justo antes de escribirlo: dos personas actuando con pocos
-   segundos de diferencia (uno sube la foto, Miguel verifica otra tarea) ya no
-   se pisan, porque cada uno guarda sobre la versión recién leída. */
+/* Relee el día justo antes de escribirlo: dos personas completando tareas
+   del mismo día con pocos segundos de diferencia ya no se pisan, porque cada
+   una guarda sobre la versión recién leída. */
 function editDay(dateKey, apply, okMsg){
   return run(
     api("casa_days?date=eq." + dateKey + "&select=*").then(function(rows){
@@ -1072,22 +1042,11 @@ function completeTask(taskId, img){
         tasks[i].by = myName;
         tasks[i].at = new Date().toISOString();
         if(img) tasks[i].img = img;
-        tasks[i].verified = false;
-        tasks[i].verifiedAt = null;
         return true;
       }
     }
     return false;
   }, "Tarea guardada");
-}
-function verifyTask(dateKey, taskId){
-  editDay(dateKey, function(tasks){
-    var found = false;
-    tasks.forEach(function(t){
-      if(t.id===taskId){ t.verified = true; t.verifiedAt = new Date().toISOString(); found = true; }
-    });
-    return found;
-  }, "Verificada");
 }
 function setItemQuantity(id, qty){
   if(qty===null || isNaN(qty) || qty<0) qty = 0;
@@ -1168,7 +1127,6 @@ document.getElementById("app").addEventListener("click", function(e){
   else if(a==="close-lightbox"){ lightbox = null; render(); }
   else if(a==="shoot-task") shootFor(el.getAttribute("data-task"));
   else if(a==="complete-nophoto") completeTask(el.getAttribute("data-task"), null);
-  else if(a==="verify") verifyTask(el.getAttribute("data-date"), el.getAttribute("data-task"));
   else if(a==="qty-step"){
     i = null;
     for(var qi=0; qi<STATE.items.length; qi++){ if(STATE.items[qi].id===el.getAttribute("data-id")){ i = STATE.items[qi]; break; } }

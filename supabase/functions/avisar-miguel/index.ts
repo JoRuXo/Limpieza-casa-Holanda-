@@ -155,7 +155,6 @@ function tareasDelDia(cfg: any, fecha: string, guardadas: any[]) {
       por: g.by ?? null,
       at: g.at ?? null,
       foto: !!g.img,
-      verificada: !!g.verified,
     };
   });
 }
@@ -183,12 +182,23 @@ async function componerResumen(hoy: string) {
   const tareas = tareasDelDia(cfg, hoy, dia?.tasks ?? []);
   const hechas = tareas.filter((t) => t.hecha).length;
 
-  const pendientes: string[] = [];
-  for (const d of dayRows) {
-    for (const t of d.tasks ?? []) {
-      if (t.done && t.img && !t.verified) {
-        pendientes.push(`  - ${fechaCorta(d.date)} "${t.label}" (${t.by ?? "sin datos"})`);
-      }
+  /* Días anteriores en los que no se hizo nada, para que el incumplimiento
+     no se quede solo en el día de hoy. */
+  const sinHacer: string[] = [];
+  for (let i = 1; i <= 7; i++) {
+    const f = new Date(Date.parse(hoy + "T12:00:00Z") - i * 86400000)
+      .toISOString().slice(0, 10);
+    if (f < cfg.start_date) break;
+    const d = dayRows.find((x: any) => x.date === f);
+    const hechasEseDia = (d?.tasks ?? []).filter((t: any) => t.done).length;
+    if (hechasEseDia === 0) {
+      const idx = Math.round(
+        (Date.parse(f + "T00:00:00Z") - Date.parse(cfg.start_date + "T00:00:00Z")) / 86400000,
+      );
+      const quien = gente.length
+        ? gente[((idx % gente.length) + gente.length) % gente.length]
+        : "sin datos";
+      sinHacer.push(`  - ${fechaCorta(f)} ${quien}: no hizo nada`);
     }
   }
 
@@ -216,13 +226,12 @@ async function componerResumen(hoy: string) {
     ...tareas.map((t) => {
       const nombre = `${t.label}${t.tipo === "semanal" ? " (tarea semanal)" : ""}`;
       if (!t.hecha) return `  [ ] SIN HACER - ${nombre}`;
-      const foto = t.foto ? (t.verificada ? ", foto ya verificada" : ", con foto por revisar") : ", sin foto";
-      return `  [x] HECHA - ${nombre} - ${t.por ?? "sin datos"} a las ${horaLocal(t.at)}${foto}`;
+      return `  [x] HECHA - ${nombre} - ${t.por ?? "sin datos"} a las ${horaLocal(t.at)}` +
+        `${t.foto ? ", con foto" : ", sin foto"}`;
     }),
-    "",
-    "FOTOS PENDIENTES DE TU REVISION",
-    ...(pendientes.length ? pendientes : ["  Ninguna, estan todas revisadas."]),
   ];
+
+  if (sinHacer.length) lineas.push("", "DIAS ANTERIORES SIN HACER (ultima semana)", ...sinHacer);
 
   if (porComprar.length) lineas.push("", "PRODUCTOS POR COMPRAR", ...porComprar);
   if (comprasHoy.length) lineas.push("", "COMPRAS DE HOY", ...comprasHoy);

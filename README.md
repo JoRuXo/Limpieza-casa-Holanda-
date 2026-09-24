@@ -20,8 +20,12 @@ Se abre desde cualquier navegador y desde el móvil, **sin cuenta ni contraseña
 ### Fotos: solo cámara, nunca galería
 Al pulsar "Hacer foto" se abre la cámara **dentro de la app** (`getUserMedia`) con visor en directo y botón de disparo: no hay forma de elegir una imagen de la galería. Como el sitio va por HTTPS, esto funciona de verdad en el móvil. Si algún navegador no lo permitiera, cae en un `input` con `capture="environment"`, que abre la cámara del teléfono.
 
-### Verificación de Miguel
-Cada foto queda como *pendiente de revisión* hasta que Miguel pulse **✓ Verificar**. Ve un aviso en la app con las pendientes y recibe un correo cada noche.
+### El historial enseña también lo que no se hizo
+La pestaña Historial recorre el calendario, no solo lo guardado: los días que pasaron sin que nadie tocara nada salen **en rojo**, con el nombre de quien tenía turno, y el título lleva la cuenta. Un día en blanco es precisamente lo que interesa ver.
+
+Como sólo se guarda una fila al completar una tarea, esos días no existen en la base de datos: se deducen al dibujar la pantalla. Por eso funciona hacia atrás y no ensucia los datos. Dos límites: el relleno arranca en el ancla de la rotación (antes de esa fecha el turno calculado no coincidiría con el real) y llega 30 días atrás. El día en curso nunca se marca en rojo.
+
+**No hay verificación de fotos.** La hubo, y se quitó el 24/09: obligaba a Miguel a marcar una por una y nadie daba ese paso (16 acumuladas), mientras que quién cumple y quién no ya se ve de un vistazo. Las fotos siguen ahí como prueba, se abren pulsando encima.
 
 ### Stock de material de limpieza
 - Artículos por zonas: **Cocina, Baño abajo, Baño arriba, Ducha** (se pueden añadir más).
@@ -61,7 +65,7 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 
 Un único correo, **cada noche a las 23:00 hora de Holanda**, a **Miguel y Alberto**, para comprobar si se han hecho las tareas del día. Los destinatarios salen de `casa_config.aviso_emails` (una lista), así que añadir o quitar a alguien es cambiar esa fila, sin tocar código ni volver a desplegar. Lo envía la Edge Function **`avisar-miguel`** (`supabase/functions/avisar-miguel/`), disparada por `pg_cron` desde dentro de Supabase: **no depende de que ningún ordenador esté encendido**.
 
-Contiene: quién tenía turno, cuántas tareas hizo de las que tocaban (con hora y si llevan foto), las fotos pendientes de revisar, los productos por comprar, las compras del día y el saldo del bote.
+Contiene: quién tenía turno, cuántas tareas hizo de las que tocaban (con hora y si llevan foto), **los días de la última semana en que no se hizo nada**, los productos por comprar, las compras del día y el saldo del bote.
 
 **Horario y cambio de hora:** `pg_cron` va en UTC, así que las 23:00 de Holanda son las 21:00 UTC en verano y las 22:00 en invierno. El cron dispara a ambas horas y la función solo envía en la que realmente son las 23:00 allí — así el correo llega siempre a la misma hora local sin tocar nada en marzo ni en octubre.
 
@@ -99,6 +103,8 @@ Antes esto lo hacía una tarea programada de Claude en el portátil de Alberto (
 | `README.md` | Esta documentación |
 
 ## Historial de cambios
+
+- **2026-09-24 (historial completo, fuera verificación)**: El historial muestra también los días que nadie hizo, marcados en rojo, y el correo nocturno lista los de la última semana. Se retiró la verificación de fotos por Miguel. El correo reintenta la lectura de la base de datos tras el fallo transitorio que se comió dos noches.
 
 - **2026-09-15 (entran Sufian y Pablo)**: La casa pasa de 7 a 9. Se re-ancló `start_date` para no moverle el turno a Jorge a media jornada, y la paleta de colores de avatar pasó de 7 a 9 para que no se repitieran.
 
