@@ -1,16 +1,16 @@
 /**
- * Correo nocturno a Miguel — app "Turno de Hoy" (Limpieza Casa Holanda).
+ * Correo nocturno — app "Casa Holanda".
  *
- * Le llega a las 23:00 hora de Holanda un resumen del día para que compruebe
- * si se han hecho las tareas o no.
+ * Cada noche a las 23:00 hora de Holanda sale un resumen de cómo va la
+ * semana por zonas, para que se vea quién cumple y quién no.
  *
  * Lo dispara pg_cron desde dentro de Supabase, así que no depende de que
  * ningún ordenador esté encendido.
  *
- * Sobre el horario: pg_cron va en UTC, y las 23:00 de Holanda son las 21:00
- * UTC en verano y las 22:00 en invierno. Por eso el cron lanza a las dos
- * horas y esta función solo envía si en Holanda son realmente las 23.
- * Con `{"forzar":true}` se salta esa comprobación (para probar a mano).
+ * Horario: pg_cron va en UTC y las 23:00 de Holanda son las 21:00 UTC en
+ * verano y las 22:00 en invierno. El cron lanza a las dos horas y esta
+ * función solo envía en la que de verdad son las 23 allí. Con
+ * `{"forzar":true}` se salta esa comprobación, para probar a mano.
  *
  * El contenido se compone leyendo la base de datos, nunca a partir de lo que
  * llega en la petición: así nadie puede provocar un correo con datos
@@ -31,6 +31,7 @@ const TZ = "Europe/Amsterdam";
 const HORA_ENVIO = 23;
 
 const DOW = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+const MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -38,47 +39,46 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-/** Fecha de hoy en Holanda, como YYYY-MM-DD (sv-SE da ese formato). */
 function hoyLocal(): string {
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit",
   }).format(new Date());
 }
-
-/** Hora actual en Holanda, 0-23. */
 function horaAhoraLocal(): number {
-  return Number(
-    new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", hour12: false })
-      .format(new Date()),
-  );
+  return Number(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", hour12: false })
+    .format(new Date()));
 }
-
 function horaLocal(iso: string): string {
   if (!iso) return "";
   return new Intl.DateTimeFormat("es-ES", {
     timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false,
   }).format(new Date(iso));
 }
-
-function fechaCorta(fecha: string): string {
-  const [, m, d] = fecha.split("-");
-  return `${d}/${m}`;
+function mas(fecha: string, n: number): string {
+  const d = new Date(fecha + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
-
 function diaSemana(fecha: string): number {
   return new Date(fecha + "T12:00:00Z").getUTCDay();
 }
-
+/** La semana va de domingo a sábado, igual que en la app. */
+function semanaDe(fecha: string): string {
+  return mas(fecha, -diaSemana(fecha));
+}
+function corta(fecha: string): string {
+  const d = new Date(fecha + "T12:00:00Z");
+  return d.getUTCDate() + " " + MES[d.getUTCMonth()];
+}
 function eur(n: number): string {
   return Number(n).toFixed(2).replace(".", ",") + " EUR";
 }
 
 /**
- * Lectura con reintentos. Las noches del 11 y 12/09 el resumen no llegó a
- * salir por un "504 Gateway Timeout" pasajero: como solo había un intento y
- * el cron no vuelve a pasar hasta el día siguiente, esas dos noches se
- * perdieron enteras. Un fallo de servidor se reintenta; uno de petición
- * (4xx) no, porque no va a arreglarse solo.
+ * Lectura con reintentos. Un "504 Gateway Timeout" pasajero llegó a comerse
+ * dos noches enteras cuando sólo había un intento y el cron no vuelve a
+ * pasar hasta el día siguiente. Un fallo de servidor se reintenta; uno de
+ * petición (4xx) no, porque no va a arreglarse solo.
  */
 async function db(path: string, intentos = 3): Promise<any> {
   let ultimoError = "";
@@ -98,16 +98,13 @@ async function db(path: string, intentos = 3): Promise<any> {
   throw new Error(ultimoError || "DB: error desconocido");
 }
 
-/** Deja constancia del intento, salga bien o mal. */
 async function registrar(fecha: string, ok: boolean, destino: string | null, detalle: string) {
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/casa_avisos`, {
       method: "POST",
       headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
+        apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json", Prefer: "return=minimal",
       },
       body: JSON.stringify([{ fecha, ok, destino, detalle: detalle.slice(0, 500) }]),
     });
@@ -122,12 +119,10 @@ async function enviarCorreo(destinos: string[], asunto: string, cuerpo: string) 
   const r = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      "api-key": BREVO_API_KEY,
-      "content-type": "application/json",
-      accept: "application/json",
+      "api-key": BREVO_API_KEY, "content-type": "application/json", accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { email: REMITENTE, name: "Turno de Hoy - Casa Holanda" },
+      sender: { email: REMITENTE, name: "Casa Holanda" },
       to: destinos.map((email) => ({ email })),
       subject: asunto,
       textContent: cuerpo,
@@ -138,69 +133,87 @@ async function enviarCorreo(destinos: string[], asunto: string, cuerpo: string) 
   return texto;
 }
 
-/** Tareas que tocaban ese día: las diarias mas la semanal que corresponda. */
-function tareasDelDia(cfg: any, fecha: string, guardadas: any[]) {
-  const dow = diaSemana(fecha);
-  const plantilla = [
-    ...(cfg.task_template ?? []).map((t: any) => ({ id: t.id, label: t.label, tipo: "diaria" })),
-    ...(cfg.weekly_tasks ?? [])
-      .filter((w: any) => w.dow === dow)
-      .map((w: any) => ({ id: w.id, label: w.label, tipo: "semanal" })),
-  ];
-  return plantilla.map((p) => {
-    const g = guardadas.find((x: any) => x.id === p.id) ?? {};
-    return {
-      ...p,
-      hecha: !!g.done,
-      por: g.by ?? null,
-      at: g.at ?? null,
-      foto: !!g.img,
-    };
-  });
-}
-
 async function componerResumen(hoy: string) {
-  const [cfgRows, dayRows, items, purchases, summaryRows] = await Promise.all([
+  const sem = semanaDe(hoy);
+  const [cfgRows, zonas, tareas, hechas, semanas, items, summaryRows] = await Promise.all([
     db("casa_config?id=eq.1&select=*"),
-    db("casa_days?select=*&order=date.desc&limit=60"),
+    db("casa_zonas?select=*&order=orden.asc"),
+    db("casa_tareas?select=*&order=orden.asc"),
+    db(`casa_completadas?select=*&periodo=gte.${sem}`),
+    db(`casa_semanas?select=*&semana=eq.${sem}`),
     db("casa_items?select=*&order=sort_order.asc"),
-    db("casa_purchases?select=*&order=at.desc&limit=40"),
     db("casa_summary?select=*"),
   ]);
   const cfg = cfgRows[0];
   if (!cfg) throw new Error("no hay fila de configuracion en casa_config");
 
   const gente: string[] = cfg.people ?? [];
-  const diff = Math.round(
-    (Date.parse(hoy + "T00:00:00Z") - Date.parse(cfg.start_date + "T00:00:00Z")) / 86400000,
-  );
-  const leTocaba = gente.length
-    ? gente[((diff % gente.length) + gente.length) % gente.length]
-    : "sin datos";
+  const hechasMap = new Map<string, any>();
+  for (const h of hechas ?? []) hechasMap.set(`${h.tarea_id}|${h.periodo}`, h);
 
-  const dia = dayRows.find((d: any) => d.date === hoy);
-  const tareas = tareasDelDia(cfg, hoy, dia?.tasks ?? []);
-  const hechas = tareas.filter((t) => t.hecha).length;
-
-  /* Días anteriores en los que no se hizo nada, para que el incumplimiento
-     no se quede solo en el día de hoy. */
-  const sinHacer: string[] = [];
-  for (let i = 1; i <= 7; i++) {
-    const f = new Date(Date.parse(hoy + "T12:00:00Z") - i * 86400000)
-      .toISOString().slice(0, 10);
-    if (f < cfg.start_date) break;
-    const d = dayRows.find((x: any) => x.date === f);
-    const hechasEseDia = (d?.tasks ?? []).filter((t: any) => t.done).length;
-    if (hechasEseDia === 0) {
-      const idx = Math.round(
-        (Date.parse(f + "T00:00:00Z") - Date.parse(cfg.start_date + "T00:00:00Z")) / 86400000,
-      );
-      const quien = gente.length
-        ? gente[((idx % gente.length) + gente.length) % gente.length]
-        : "sin datos";
-      sinHacer.push(`  - ${fechaCorta(f)} ${quien}: no hizo nada`);
-    }
+  // Reparto de la semana: el guardado si existe, calculado si todavía no.
+  let reparto: Record<string, string[]> = semanas?.[0]?.asignacion ?? {};
+  if (!semanas?.length && gente.length && cfg.rotacion_desde) {
+    const plazas: string[] = [];
+    for (const z of zonas) for (let i = 0; i < z.plazas; i++) plazas.push(z.id);
+    const w = Math.round(
+      (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
+    );
+    reparto = {};
+    for (const z of zonas) reparto[z.id] = [];
+    plazas.forEach((zid, i) => {
+      const p = gente[(((i + w) % gente.length) + gente.length) % gente.length];
+      if (reparto[zid]) reparto[zid].push(p);
+    });
   }
+
+  const lineas: string[] = [
+    `Semana del ${corta(sem)} al ${corta(mas(sem, 6))}. Hoy es ${DOW[diaSemana(hoy)]}.`,
+    "",
+  ];
+
+  let totalGlobal = 0, hechoGlobal = 0;
+  const bloques: string[] = [];
+
+  for (const z of zonas) {
+    const ts = (tareas ?? []).filter((t: any) => t.zona_id === z.id);
+    const equipo = (reparto[z.id] ?? []).join(", ") || "sin asignar";
+    let total = 0, hecho = 0;
+    const detalle: string[] = [];
+
+    for (const t of ts) {
+      if (t.frecuencia === "diaria") {
+        // Una diaria cuenta un día por cada día de la semana ya transcurrido.
+        const diasPasados = diaSemana(hoy) + 1;
+        total += diasPasados;
+        let n = 0;
+        for (let i = 0; i < diasPasados; i++) {
+          if (hechasMap.has(`${t.id}|${mas(sem, i)}`)) n++;
+        }
+        hecho += n;
+        detalle.push(`    ${n === diasPasados ? "[x]" : "[ ]"} ${t.label} (diaria) - ${n} de ${diasPasados} dias`);
+      } else {
+        total += 1;
+        const h = hechasMap.get(`${t.id}|${sem}`);
+        if (h) hecho++;
+        detalle.push(
+          h
+            ? `    [x] ${t.label} - ${h.por} a las ${horaLocal(h.at)}`
+            : `    [ ] ${t.label} - SIN HACER`,
+        );
+      }
+    }
+
+    totalGlobal += total;
+    hechoGlobal += hecho;
+    const pct = total ? Math.round((hecho / total) * 100) : 0;
+    bloques.push(`  ${z.nombre.toUpperCase()} - ${equipo} - ${pct}%`);
+    bloques.push(...detalle);
+    bloques.push("");
+  }
+
+  const pctGlobal = totalGlobal ? Math.round((hechoGlobal / totalGlobal) * 100) : 0;
+  lineas.push(`LA CASA VA AL ${pctGlobal}%`, "", ...bloques);
 
   const porComprar = (items ?? [])
     .filter((i: any) => i.status === "low" || i.status === "out")
@@ -208,42 +221,16 @@ async function componerResumen(hoy: string) {
       `  - ${i.name} (${i.zone}): ${i.status === "out" ? "AGOTADO" : "queda poco"}` +
       ` - quedan ${Number(i.quantity)}, avisa a partir de ${Number(i.low_threshold)}`
     );
-
-  const comprasHoy = (purchases ?? [])
-    .filter((p: any) => (p.at ?? "").slice(0, 10) === hoy)
-    .map((p: any) =>
-      `  - ${eur(Number(p.amount))} - ${p.by_name} - ${p.note ?? "sin concepto"}` +
-      `${p.ticket_url ? " (con ticket)" : " (SIN TICKET)"}`
-    );
+  if (porComprar.length) lineas.push("PRODUCTOS POR COMPRAR", ...porComprar, "");
 
   const bote = summaryRows?.[0] ? Number(summaryRows[0].bote) : 0;
+  lineas.push(`Bote comun: ${eur(bote)}`, "", `Abrir la app: ${APP_URL}`);
 
-  const lineas = [
-    `Hoy ${DOW[diaSemana(hoy)]} ${fechaCorta(hoy)} le tocaba a ${leTocaba}.`,
-    `Ha hecho ${hechas} de ${tareas.length} tareas.`,
-    "",
-    "TAREAS DE HOY",
-    ...tareas.map((t) => {
-      const nombre = `${t.label}${t.tipo === "semanal" ? " (tarea semanal)" : ""}`;
-      if (!t.hecha) return `  [ ] SIN HACER - ${nombre}`;
-      return `  [x] HECHA - ${nombre} - ${t.por ?? "sin datos"} a las ${horaLocal(t.at)}` +
-        `${t.foto ? ", con foto" : ", sin foto"}`;
-    }),
-  ];
-
-  if (sinHacer.length) lineas.push("", "DIAS ANTERIORES SIN HACER (ultima semana)", ...sinHacer);
-
-  if (porComprar.length) lineas.push("", "PRODUCTOS POR COMPRAR", ...porComprar);
-  if (comprasHoy.length) lineas.push("", "COMPRAS DE HOY", ...comprasHoy);
-
-  lineas.push("", `Bote comun: ${eur(bote)}`, "", `Abrir la app: ${APP_URL}`);
-
-  // Destinatarios: la lista de casa_config. Se admite más de uno.
   const destinos: string[] = (cfg.aviso_emails ?? [])
     .filter((e: unknown) => typeof e === "string" && (e as string).includes("@"));
 
   return {
-    asunto: `Limpieza Casa Holanda - ${DOW[diaSemana(hoy)]} ${fechaCorta(hoy)}: ${leTocaba} (${hechas}/${tareas.length})`,
+    asunto: `Casa Holanda - ${DOW[diaSemana(hoy)]} ${corta(hoy)}: la casa al ${pctGlobal}%`,
     cuerpo: lineas.join("\n"),
     destinos,
   };
@@ -254,8 +241,7 @@ Deno.serve(async (req: Request) => {
 
   const responder = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
-      status,
-      headers: { ...CORS, "Content-Type": "application/json" },
+      status, headers: { ...CORS, "Content-Type": "application/json" },
     });
 
   const hoy = hoyLocal();
@@ -264,8 +250,6 @@ Deno.serve(async (req: Request) => {
     const payload = await req.json().catch(() => ({} as any));
     const forzar = payload?.forzar === true;
 
-    // El cron dispara a las 21:00 y 22:00 UTC; solo una de las dos coincide
-    // con las 23:00 de Holanda segun sea verano o invierno.
     if (!forzar && horaAhoraLocal() !== HORA_ENVIO) {
       return responder({ ok: true, enviado: false, motivo: "no son las 23:00 en Holanda todavia" });
     }
@@ -273,12 +257,11 @@ Deno.serve(async (req: Request) => {
     const aviso = await componerResumen(hoy);
     if (!aviso.destinos.length) {
       await registrar(hoy, false, null, "casa_config.aviso_emails esta vacio");
-      return responder({ ok: false, enviado: false, motivo: "falta aviso_emails en casa_config" }, 500);
+      return responder({ ok: false, enviado: false, motivo: "falta aviso_emails" }, 500);
     }
 
-    const destinatarios = aviso.destinos.join(", ");
     await enviarCorreo(aviso.destinos, aviso.asunto, aviso.cuerpo);
-    await registrar(hoy, true, destinatarios, aviso.asunto);
+    await registrar(hoy, true, aviso.destinos.join(", "), aviso.asunto);
     return responder({ ok: true, enviado: true, destinos: aviso.destinos, asunto: aviso.asunto });
   } catch (e) {
     const msg = String((e as Error)?.message ?? e);
