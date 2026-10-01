@@ -370,19 +370,34 @@ function run(p, msg){
 }
 
 /* ================= rotación ================= */
+/* Las secciones con rotación propia (los cubos) no consumen plaza en el
+   reparto de zonas: por eso 7 plazas siguen cuadrando con 7 personas. */
+function zonasDeTurno(){ return S.zonas.filter(function(z){ return !z.rota_aparte; }); }
+function zonasAparte(){ return S.zonas.filter(function(z){ return z.rota_aparte; }); }
 function plazas(){
   var out = [];
-  S.zonas.forEach(function(z){ for(var i=0;i<z.plazas;i++) out.push(z.id); });
+  zonasDeTurno().forEach(function(z){ for(var i=0;i<z.plazas;i++) out.push(z.id); });
   return out;
 }
 function calcula(sem){
   var p = plazas(), n = S.gente.length, map = {};
   S.zonas.forEach(function(z){ map[z.id] = []; });
-  if(!n || !S.rotacionDesde) return map;
-  var w = Math.round(entre(S.rotacionDesde, sem) / 7);
-  p.forEach(function(zid, i){
-    var persona = S.gente[((((i + w) % n) + n) % n)];
-    if(map[zid]) map[zid].push(persona);
+  if(!n) return map;
+  if(S.rotacionDesde){
+    var w = Math.round(entre(S.rotacionDesde, sem) / 7);
+    p.forEach(function(zid, i){
+      map[zid].push(S.gente[((((i + w) % n) + n) % n)]);
+    });
+  }
+  zonasAparte().forEach(function(z){
+    if(!z.rota_desde || !z.rota_persona) return;
+    if(sem < z.rota_desde) return;              /* antes de empezar, sin asignar */
+    var semanas = Math.round(entre(z.rota_desde, sem) / 7);
+    var base = S.gente.indexOf(z.rota_persona);
+    if(base < 0) base = 0;
+    for(var k=0; k<Math.max(1, z.plazas); k++){
+      map[z.id].push(S.gente[((((base + semanas + k) % n) + n) % n)]);
+    }
   });
   return map;
 }
@@ -399,10 +414,10 @@ function fijarSemana(){
     body:[{semana: sem, asignacion: a}]
   }).catch(function(){});
 }
-function miZona(sem){
-  var a = asignacion(sem), encontrada = null;
-  S.zonas.forEach(function(z){ if((a[z.id]||[]).indexOf(yo) > -1) encontrada = z; });
-  return encontrada;
+/* Se puede estar en una zona y además llevar los cubos esa semana. */
+function misZonas(sem){
+  var a = asignacion(sem);
+  return S.zonas.filter(function(z){ return (a[z.id]||[]).indexOf(yo) > -1; });
 }
 
 /* ================= tareas ================= */
@@ -543,8 +558,9 @@ function zonaHTML(z, sem, mia, dia){
 
 function vCasa(){
   var dia = hoy(), sem = semanaDe(dia);
-  var mia = miZona(sem);
-  var otras = S.zonas.filter(function(z){ return !mia || z.id !== mia.id; });
+  var mias = misZonas(sem);
+  var ids = mias.map(function(z){ return z.id; });
+  var otras = S.zonas.filter(function(z){ return ids.indexOf(z.id) < 0; });
   var falta = comprar();
   var aviso = falta.length
     ? '<div class="note buy" data-a="ir" data-v="stock"><div><b>Hay que comprar ('+falta.length+')</b><br>' +
@@ -552,8 +568,9 @@ function vCasa(){
       (falta.length>3 ? ' · +'+(falta.length-3) : '') + '</div></div>'
     : '';
   return aviso +
-    (mia
-      ? '<div class="eyebrow">Tu zona esta semana</div>' + zonaHTML(mia, sem, true, dia) +
+    (mias.length
+      ? '<div class="eyebrow">' + (mias.length > 1 ? "Lo tuyo esta semana" : "Tu zona esta semana") + '</div>' +
+        mias.map(function(z){ return zonaHTML(z, sem, true, dia); }).join('') +
         '<div class="eyebrow">El resto de la casa</div>'
       : '<div class="eyebrow">Zonas de esta semana</div>') +
     otras.map(function(z){ return zonaHTML(z, sem, false, dia); }).join('');
@@ -682,19 +699,32 @@ function vAdmin(){
     plazas().length + ' plazas y ' + S.gente.length + ' personas' +
     (plazas().length !== S.gente.length ? ' <b style="color:var(--bad)">— no cuadran</b>' : ' — cuadra exacto') + '.</p>';
 
+  var proxDomingo = mas(semanaDe(hoy()), 7);
   var zonas = S.zonas.map(function(z){
+    var ctrl = z.rota_aparte
+      /* Sección con rotación propia: no tiene plazas, tiene un turno que
+         avanza por la lista. Se re-ancla en el próximo domingo. */
+      ? '<div class="row"><div class="grow"><span class="lab">Le toca el domingo '+corta(proxDomingo)+'</span>' +
+          '<select class="fld fld-sm" data-f="z-turno" data-id="'+at(z.id)+'">' +
+          S.gente.map(function(n){
+            return '<option value="'+at(n)+'"'+((asignacion(proxDomingo)[z.id]||[])[0]===n?" selected":"")+'>'+esc(n)+'</option>';
+          }).join('') + '</select></div>' +
+          '<div style="width:92px"><span class="lab">Color</span>' +
+          '<input class="fld fld-sm" type="color" style="padding:2px;height:34px" data-f="z-color" data-id="'+at(z.id)+'" value="'+at(z.color)+'"></div></div>' +
+        '<p style="font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.4">Rota aparte: no ocupa plaza en el reparto de zonas y pasa al siguiente de la lista cada domingo.</p>'
+      : '<div class="row"><div style="width:92px"><span class="lab">Plazas</span>' +
+          '<input class="fld fld-sm" inputmode="numeric" data-f="z-plazas" data-id="'+at(z.id)+'" value="'+z.plazas+'"></div>' +
+          '<div style="width:92px"><span class="lab">Color</span>' +
+          '<input class="fld fld-sm" type="color" style="padding:2px;height:34px" data-f="z-color" data-id="'+at(z.id)+'" value="'+at(z.color)+'"></div>' +
+          '<button class="mini btn-danger" data-a="z-quita" data-id="'+at(z.id)+'" title="Eliminar zona" style="margin-top:16px">×</button></div>';
     return '<div class="sub" style="--zc:'+at(z.color)+'">' +
-      '<div class="sub-h"><span class="zone-dot"></span>'+esc(z.nombre)+'</div>' +
+      '<div class="sub-h"><span class="zone-dot"></span>'+esc(z.nombre)+
+        (z.rota_aparte ? '<span class="tag plain">rota aparte</span>' : '') + '</div>' +
       '<div class="row"><div class="grow"><span class="lab">Nombre</span>' +
         '<input class="fld fld-sm" data-f="z-nombre" data-id="'+at(z.id)+'" value="'+at(z.nombre)+'"></div></div>' +
       '<div class="row"><div class="grow"><span class="lab">Qué incluye</span>' +
         '<input class="fld fld-sm" data-f="z-desc" data-id="'+at(z.id)+'" value="'+at(z.descripcion||"")+'"></div></div>' +
-      '<div class="row"><div style="width:92px"><span class="lab">Plazas</span>' +
-        '<input class="fld fld-sm" inputmode="numeric" data-f="z-plazas" data-id="'+at(z.id)+'" value="'+z.plazas+'"></div>' +
-        '<div style="width:92px"><span class="lab">Color</span>' +
-        '<input class="fld fld-sm" type="color" style="padding:2px;height:34px" data-f="z-color" data-id="'+at(z.id)+'" value="'+at(z.color)+'"></div>' +
-        '<button class="mini btn-danger" data-a="z-quita" data-id="'+at(z.id)+'" title="Eliminar zona" style="margin-top:16px">×</button></div>' +
-    '</div>';
+      ctrl + '</div>';
   }).join('') +
   '<div class="row" style="margin-top:4px"><input class="fld grow" id="z-nueva" placeholder="Nueva zona…">' +
   '<button class="btn btn-pri" data-a="z-add">Añadir</button></div>';
@@ -1060,6 +1090,13 @@ document.getElementById("app").addEventListener("change", function(e){
   }
   if(!fl) return;
 
+  if(fl === "z-turno"){
+    /* Re-ancla el turno en el próximo domingo: a partir de ahí sigue pasando
+       al siguiente de la lista cada semana. */
+    run(api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body:{rota_persona: el.value, rota_desde: mas(semanaDe(hoy()), 7)}}), "Turno actualizado");
+    return;
+  }
   if(fl === "z-nombre" || fl === "z-desc" || fl === "z-plazas" || fl === "z-color"){
     var campo = {"z-nombre":"nombre","z-desc":"descripcion","z-plazas":"plazas","z-color":"color"}[fl];
     var val = fl === "z-plazas" ? Math.max(0, parseInt(el.value,10) || 0) : el.value;

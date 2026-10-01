@@ -152,19 +152,39 @@ async function componerResumen(hoy: string) {
   for (const h of hechas ?? []) hechasMap.set(`${h.tarea_id}|${h.periodo}`, h);
 
   // Reparto de la semana: el guardado si existe, calculado si todavía no.
+  // Las secciones marcadas rota_aparte (los cubos) no ocupan plaza en el
+  // reparto de zonas y llevan su propio turno, igual que en la app.
   let reparto: Record<string, string[]> = semanas?.[0]?.asignacion ?? {};
-  if (!semanas?.length && gente.length && cfg.rotacion_desde) {
-    const plazas: string[] = [];
-    for (const z of zonas) for (let i = 0; i < z.plazas; i++) plazas.push(z.id);
-    const w = Math.round(
-      (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
-    );
+  if (!semanas?.length && gente.length) {
+    const n = gente.length;
     reparto = {};
     for (const z of zonas) reparto[z.id] = [];
-    plazas.forEach((zid, i) => {
-      const p = gente[(((i + w) % gente.length) + gente.length) % gente.length];
-      if (reparto[zid]) reparto[zid].push(p);
-    });
+
+    if (cfg.rotacion_desde) {
+      const plazas: string[] = [];
+      for (const z of zonas) {
+        if (z.rota_aparte) continue;
+        for (let i = 0; i < z.plazas; i++) plazas.push(z.id);
+      }
+      const w = Math.round(
+        (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
+      );
+      plazas.forEach((zid, i) => {
+        reparto[zid].push(gente[(((i + w) % n) + n) % n]);
+      });
+    }
+
+    for (const z of zonas) {
+      if (!z.rota_aparte || !z.rota_desde || !z.rota_persona || sem < z.rota_desde) continue;
+      const semanasPasadas = Math.round(
+        (Date.parse(sem + "T00:00:00Z") - Date.parse(z.rota_desde + "T00:00:00Z")) / 604800000,
+      );
+      let base = gente.indexOf(z.rota_persona);
+      if (base < 0) base = 0;
+      for (let k = 0; k < Math.max(1, z.plazas); k++) {
+        reparto[z.id].push(gente[(((base + semanasPasadas + k) % n) + n) % n]);
+      }
+    }
   }
 
   const lineas: string[] = [
