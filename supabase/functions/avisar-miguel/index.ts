@@ -10,7 +10,8 @@
  * Horario: pg_cron va en UTC y las 23:00 de Holanda son las 21:00 UTC en
  * verano y las 22:00 en invierno. El cron lanza a las dos horas y esta
  * función solo envía en la que de verdad son las 23 allí. Con
- * `{"forzar":true}` se salta esa comprobación, para probar a mano.
+ * `{"forzar":true}` se salta esa comprobación, para probar a mano, y con
+ * `{"seco":true}` devuelve el correo que saldría sin enviarlo.
  *
  * El contenido se compone leyendo la base de datos, nunca a partir de lo que
  * llega en la petición: así nadie puede provocar un correo con datos
@@ -31,6 +32,7 @@ const TZ = "Europe/Amsterdam";
 const HORA_ENVIO = 23;
 
 const DOW = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+const DOW_C = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
 const MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
 const CORS = {
@@ -169,8 +171,16 @@ async function componerResumen(hoy: string) {
       const w = Math.round(
         (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
       );
+      // Mismo paso que la app: cada ronda de n semanas cambia el multiplicador
+      // para que cambien las parejas sin romper el reparto.
+      const mcd = (a: number, b: number): number => { while (b) { const t = a % b; a = b; b = t; } return a; };
+      const posibles: number[] = [];
+      for (let a = 1; a <= Math.floor(n / 2); a++) if (mcd(a, n) === 1) posibles.push(a);
+      if (!posibles.length) posibles.push(1);
+      const ronda = Math.floor(w / n);
+      const paso = posibles[((ronda % posibles.length) + posibles.length) % posibles.length];
       plazas.forEach((zid, i) => {
-        reparto[zid].push(gente[(((i + w) % n) + n) % n]);
+        reparto[zid].push(gente[(((paso * i + w) % n) + n) % n]);
       });
     }
 
@@ -187,8 +197,18 @@ async function componerResumen(hoy: string) {
     }
   }
 
+  // Todas las tareas son diarias y se piden los dias de limpieza de la casa,
+  // salvo las que tienen sus propios dias fijados (los cubos verdes).
+  const diasLimpieza: number[] = (cfg.dias_limpieza?.length ? cfg.dias_limpieza : [0, 1, 2, 3, 4, 5, 6]);
+  const toca = (t: any, dia: string): boolean =>
+    (t.dias && t.dias.length) ? t.dias.includes(diaSemana(dia)) : diasLimpieza.includes(diaSemana(dia));
+  const diasPasados: string[] = [];
+  for (let i = 0; i <= diaSemana(hoy); i++) diasPasados.push(mas(sem, i));
+
   const lineas: string[] = [
     `Semana del ${corta(sem)} al ${corta(mas(sem, 6))}. Hoy es ${DOW[diaSemana(hoy)]}.`,
+    `Se limpia ${diasLimpieza.length} dias por semana: ` +
+      diasLimpieza.slice().sort((a: number, b: number) => a - b).map((d: number) => DOW[d]).join(", ") + ".",
     "",
   ];
 
@@ -202,38 +222,53 @@ async function componerResumen(hoy: string) {
     const detalle: string[] = [];
 
     for (const t of ts) {
-      if (t.frecuencia === "diaria") {
-        // Una diaria cuenta un día por cada día de la semana ya transcurrido.
-        const diasPasados = diaSemana(hoy) + 1;
-        total += diasPasados;
-        let n = 0;
-        for (let i = 0; i < diasPasados; i++) {
-          if (hechasMap.has(`${t.id}|${mas(sem, i)}`)) n++;
-        }
-        hecho += n;
-        detalle.push(`    ${n === diasPasados ? "[x]" : "[ ]"} ${t.label} (diaria) - ${n} de ${diasPasados} dias`);
-      } else {
-        total += 1;
-        const h = hechasMap.get(`${t.id}|${sem}`);
-        if (h) hecho++;
-        detalle.push(
-          h
-            ? `    [x] ${t.label} - ${h.por} a las ${horaLocal(h.at)}`
-            : `    [ ] ${t.label} - SIN HACER`,
-        );
-      }
+      const tocaban = diasPasados.filter((d) => toca(t, d));
+      if (!tocaban.length) continue;          // esta semana no tocaba todavia
+      const faltan = tocaban.filter((d) => !hechasMap.has(`${t.id}|${d}`));
+      const n = tocaban.length - faltan.length;
+      total += tocaban.length;
+      hecho += n;
+      const ult = hechasMap.get(`${t.id}|${tocaban[tocaban.length - 1]}`);
+      detalle.push(
+        `    ${faltan.length ? "[ ]" : "[x]"} ${t.label} - ${n} de ${tocaban.length}` +
+        (faltan.length
+          ? ` - falta ${faltan.map((d) => DOW_C[diaSemana(d)]).join(", ")}`
+          : (ult ? ` - ultima: ${ult.por} a las ${horaLocal(ult.at)}` : "")),
+      );
     }
 
     totalGlobal += total;
     hechoGlobal += hecho;
     const pct = total ? Math.round((hecho / total) * 100) : 0;
-    bloques.push(`  ${z.nombre.toUpperCase()} - ${equipo} - ${pct}%`);
+    bloques.push(
+      `  ${z.nombre.toUpperCase()} - ${equipo} - ` +
+      (total ? `${pct}%` : "sin tareas esta semana"),
+    );
     bloques.push(...detalle);
     bloques.push("");
   }
 
   const pctGlobal = totalGlobal ? Math.round((hechoGlobal / totalGlobal) * 100) : 0;
-  lineas.push(`LA CASA VA AL ${pctGlobal}%`, "", ...bloques);
+
+  // Dias de esta semana en que tocaba limpiar y no se hizo absolutamente nada.
+  const vacios: string[] = [];
+  for (const dia of diasPasados) {
+    let tocaba = 0, n = 0;
+    for (const t of tareas ?? []) {
+      if (!toca(t, dia)) continue;
+      tocaba++;
+      if (hechasMap.has(`${t.id}|${dia}`)) n++;
+    }
+    if (tocaba && !n) vacios.push(`${DOW[diaSemana(dia)]} ${corta(dia)}`);
+  }
+
+  lineas.push(`LA CASA VA AL ${pctGlobal}%`);
+  if (vacios.length) {
+    lineas.push(
+      `DIAS SIN HACER NADA ESTA SEMANA (${vacios.length}): ${vacios.join(" | ")}`,
+    );
+  }
+  lineas.push("", ...bloques);
 
   const porComprar = (items ?? [])
     .filter((i: any) => i.status === "low" || i.status === "out")
@@ -269,6 +304,15 @@ Deno.serve(async (req: Request) => {
   try {
     const payload = await req.json().catch(() => ({} as any));
     const forzar = payload?.forzar === true;
+    const seco = payload?.seco === true;
+
+    // Prueba en seco: compone el resumen y lo devuelve sin enviar ni registrar
+    // nada. Sirve para comprobar que el correo de esta noche va a salir bien
+    // sin molestar a nadie con un correo de prueba.
+    if (seco) {
+      const previo = await componerResumen(hoy);
+      return responder({ ok: true, enviado: false, seco: true, ...previo });
+    }
 
     if (!forzar && horaAhoraLocal() !== HORA_ENVIO) {
       return responder({ ok: true, enviado: false, motivo: "no son las 23:00 en Holanda todavia" });
