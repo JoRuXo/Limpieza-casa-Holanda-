@@ -1187,7 +1187,7 @@ function onClick(e){
     if(!lb) return;
     inp.value = "";
     run(api("casa_tareas", {method:"POST", prefer:"return=minimal",
-      body:[{zona_id:zid, label:lb, frecuencia:"diaria", foto:true, orden:tareasDe(zid).length+1}]}), "Tarea añadida");
+      body:[{zona_id:zid, label:lb, foto:true, orden:tareasDe(zid).length+1}]}), "Tarea añadida");
   }
   else if(a === "t-quita"){
     if(!window.confirm("¿Eliminar esta tarea?")) return;
