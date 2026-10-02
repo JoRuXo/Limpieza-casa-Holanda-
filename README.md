@@ -1,121 +1,94 @@
-# Turno de Hoy — Limpieza Casa Holanda
+# Casa Holanda
 
-App web para organizar los turnos de limpieza de la casa compartida de 9 personas: **Yassine, Jorge, Miguel, Noel, Ali, Raul, Alberto, Sufian y Pablo**.
+App de limpieza de una casa compartida de 7 personas: **Yassine, Jorge, Noel, Raul, Alberto, Sufian y Pablo**.
 
 ## 🔗 https://limpieza-casa-holanda.vercel.app
 
-Se abre desde cualquier navegador y desde el móvil, **sin cuenta ni contraseña**. Quien tenga el enlace, entra. En el móvil conviene usar "Añadir a pantalla de inicio" para tenerla como una app más.
+Se abre desde cualquier navegador y móvil, **sin cuenta ni contraseña**. Quien tenga el enlace, entra. En el móvil conviene usar "Añadir a pantalla de inicio".
 
-## Qué hace
+## Cómo funciona
 
-### Turnos
-- Un turno por día, en orden fijo: Yassine → Jorge → Miguel → Noel → Ali → Raul → Alberto → Sufian → Pablo, y vuelta a empezar.
+### Zonas y equipos
 
-  **Sobre `start_date`:** el turno se calcula como *(días desde `start_date`) módulo (nº de personas)*, así que cambiar el tamaño de la lista también mueve el turno del día en curso. Al dar de alta a Sufian y Pablo (15/09) se re-ancló `start_date` al 14/09 para que ese día siguiera cayendo en Jorge, que ya había hecho sus tareas. Si algún día entra o sale alguien más, hay que hacer lo mismo: ajustar `start_date` para que el día en curso no cambie de dueño.
-- Cada día, a quien le toca debe **sacar la basura (poniendo bolsa nueva)** y **barrer y fregar toda la casa**, adjuntando una foto de cada tarea.
-- **Cubos verdes**: los domingos hay que sacarlos a la calle y los lunes volver a meterlos. Es una rotación semanal **aparte** de la diaria: cada semana pasa a la siguiente persona de la lista. Empieza **Alberto el domingo 13/09**, luego Yassine, Jorge, Miguel… Quien los saca el domingo es quien los entra el lunes.
+La casa se reparte en **4 zonas**, con un equipo por zona:
 
-  Va aparte porque cuando la casa era de 7 personas, con 7 días por semana cada uno caía **siempre en el mismo día** (Yassine siempre lunes, Alberto siempre domingo) y los cubos habrían sido eternamente del mismo. Al pasar a 9 eso ya no ocurre —el día de la semana va rotando solo—, pero los cubos siguen con su ciclo propio. Desde Admin se puede cambiar quién los saca el próximo domingo, y la rotación continúa correlativamente desde ahí.
+| Zona | Plazas | Qué incluye |
+|---|---|---|
+| Cocina | 1 | Cocina |
+| Jardín / Garaje | 2 | Jardín y garaje |
+| Planta baja | 2 | Comedor, salón, escalera, baño 1 y cuarto de la lavadora |
+| Arriba | 2 | Ducha, baño y pasillo de arriba |
 
-### Fotos: solo cámara, nunca galería
-Al pulsar "Hacer foto" se abre la cámara **dentro de la app** (`getUserMedia`) con visor en directo y botón de disparo: no hay forma de elegir una imagen de la galería. Como el sitio va por HTTPS, esto funciona de verdad en el móvil. Si algún navegador no lo permitiera, cae en un `input` con `capture="environment"`, que abre la cámara del teléfono.
+Son **7 plazas para 7 personas**: encaje exacto.
 
-### El historial enseña también lo que no se hizo
-La pestaña Historial recorre el calendario, no solo lo guardado: los días que pasaron sin que nadie tocara nada salen **en rojo**, con el nombre de quien tenía turno, y el título lleva la cuenta. Un día en blanco es precisamente lo que interesa ver.
+### La rotación
 
-Como sólo se guarda una fila al completar una tarea, esos días no existen en la base de datos: se deducen al dibujar la pantalla. Por eso funciona hacia atrás y no ensucia los datos. Dos límites: el relleno arranca en el ancla de la rotación (antes de esa fecha el turno calculado no coincidiría con el real) y llega 30 días atrás. El día en curso nunca se marca en rojo.
+Las 7 plazas van en fila fija y las personas en una lista ordenada. **Cada domingo todos avanzan una plaza.** El ciclo completo son 7 semanas, al cabo de las cuales cada uno ha pasado por todas las zonas.
 
-**No hay verificación de fotos.** La hubo, y se quitó el 24/09: obligaba a Miguel a marcar una por una y nadie daba ese paso (16 acumuladas), mientras que quién cumple y quién no ya se ve de un vistazo. Las fotos siguen ahí como prueba, se abren pulsando encima.
+En las zonas de 2 plazas siempre **se queda uno y entra otro**, así que nunca cambia el equipo entero de golpe y siempre hay quien ya conoce la zona.
 
-### Stock de material de limpieza
-- Artículos por zonas: **Cocina, Baño abajo, Baño arriba, Ducha** (se pueden añadir más).
-- Cada artículo lleva una **cantidad real** (botones －/＋ o escribirla directamente) y un **umbral mínimo** que decide el admin (pestaña Admin → "mín."). El estado —OK / Queda poco / Agotado— ya no se marca a mano: se calcula solo comparando cantidad con umbral, así nadie tiene que acordarse de "desmarcarlo" luego.
-- En cuanto un artículo cae a su umbral (o a 0), salta el aviso de stock bajo y entra en la lista de la compra.
-- Cada artículo puede llevar un precio de referencia.
+La rotación va por fecha, no por tareas: terminar antes no adelanta el relevo.
 
-### Bote común y tickets
-- Al registrar una compra hay que hacer **foto del ticket** (sin ticket no se guarda), indicar importe, concepto y qué artículos se han repuesto (vuelven a OK automáticamente).
-- Bote común = aportaciones − compras. Las aportaciones las registran los admins.
+### Cubos verdes
 
-### Administradores
-**Miguel** (jefe de la casa) y **Alberto** (desarrollador) tienen pestaña Admin: editar tareas diarias y semanales, asignar el responsable de los cubos, reordenar la rotación, gestionar artículos/zonas/precios y registrar aportaciones al bote.
+Van **aparte**, con su propio turno de una persona que también avanza cada domingo. **No ocupan plaza** en el reparto de zonas — por eso siguen siendo 7 plazas para 7 personas. Empieza Yassine el domingo 4 de octubre.
+
+Se sacan el domingo y se entran el lunes.
+
+### Por qué la semana va de domingo a sábado
+
+Precisamente por los cubos: se sacan el domingo y se entran el lunes. Con semanas de lunes a domingo esas dos tareas caerían a cada lado de un relevo y las haría un equipo distinto cada una.
+
+### Tareas
+
+Cada zona tiene su lista. Cada tarea es **diaria** (se repite cada día) o **semanal** (una vez por semana), y puede fijarse a un día concreto. La mayoría piden **foto**, que queda guardada con el nombre de quien la hizo y la hora.
+
+### Stock
+
+Artículos por zona, con **cantidad** y **umbral de aviso** por artículo. Cuando algo baja de su mínimo, salta el aviso y entra en la lista de la compra. Las compras se registran con **foto del ticket obligatoria** y descuentan del bote común.
+
+### Correo nocturno
+
+Cada noche a las **23:00 hora de Holanda** sale un resumen a Miguel y a Alberto: cómo va cada zona, quién ha hecho qué y qué falta por comprar. Lo dispara `pg_cron` dentro de Supabase, así que **no depende de que ningún ordenador esté encendido**.
+
+### Panel de admin
+
+Solo **Alberto**. Permite editar todo sin tocar código: personas y su orden en la rotación, zonas con sus plazas y colores, cada tarea (texto, frecuencia, día fijo, si lleva foto), artículos con precio y mínimo, aportaciones al bote, el turno de los cubos y los destinatarios del correo.
 
 ## Arquitectura
 
 | Pieza | Dónde |
 |---|---|
-| Web (HTML/CSS/JS en un archivo, sin dependencias) | Vercel — proyecto `limpieza-casa-holanda`, desplegado desde la rama `main` de este repo |
-| Datos | Supabase — tablas `casa_*` dentro del proyecto `lista-compra-masiera` |
-| Fotos y tickets | Supabase Storage — bucket público `casa-fotos` |
-| Correos a Miguel | Supabase Edge Function `avisar-miguel` + `pg_cron`, con Brevo como proveedor de email |
+| Web (un solo HTML, sin dependencias) | Vercel, desplegado desde la rama `main` de este repo |
+| Datos | Supabase, tablas `casa_*` dentro del proyecto `lista-compra-masiera` |
+| Fotos y tickets | Supabase Storage, bucket público `casa-fotos` |
+| Correo | Edge Function `avisar-miguel` + `pg_cron`, con Brevo de proveedor |
 
-Cada push a `main` despliega solo en Vercel.
+Cada push a `main` despliega solo.
 
 ### Tablas
 
-`casa_config` (fila única con la gente, admins, revisor, fecha de inicio de los turnos, ancla de la rotación de cubos —`bins_start_date` y `bins_start_person`—, plantillas de tareas y zonas), `casa_summary` (vista con los totales del bote), `casa_items` (`quantity` y `low_threshold` por artículo; `status` es una columna calculada, no se escribe directamente), `casa_days` (una fila por día con sus tareas en JSON), `casa_items`, `casa_purchases`, `casa_contributions`.
-
-La web habla con PostgREST usando `fetch` y la clave **publicable** de Supabase (la que va en el navegador, no es un secreto). Refresca cada 30 s y al volver a la pestaña, así todos ven lo mismo.
+- `casa_config` — fila única: gente, admins, ancla de rotación, destinatarios del correo
+- `casa_zonas` — zonas con plazas y color. `rota_aparte` marca las que no consumen plaza y llevan turno propio (`rota_desde`, `rota_persona`)
+- `casa_tareas` — tareas por zona, con frecuencia y día opcional
+- `casa_completadas` — una fila por tarea completada. `periodo` es el día para las diarias y el domingo que abre la semana para las semanales
+- `casa_semanas` — foto fija del reparto de cada semana, para que el historial no se reescriba si alguien entra o sale
+- `casa_items`, `casa_purchases`, `casa_contributions`, `casa_summary` — stock y bote
+- `casa_avisos` — registro de cada intento de envío del correo
+- `casa_days` — historial del modelo antiguo (una persona al día), conservado sin tocar
 
 ### Sobre el acceso
 
-No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escribir a cualquiera con la clave publicable, que va en el código de la página. Es el modelo buscado — que los 7 entren sin fricción — pero conviene saberlo: quien tenga el enlace puede tocar los datos. Si algún día hace falta, se puede añadir un PIN de casa.
+No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escribir a cualquiera con la clave publicable, que va en el código de la página. Es el modelo buscado, pero conviene saberlo.
 
-## Avisos por correo a Miguel
+### Secretos
 
-Un único correo, **cada noche a las 23:00 hora de Holanda**, a **Miguel y Alberto**, para comprobar si se han hecho las tareas del día. Los destinatarios salen de `casa_config.aviso_emails` (una lista), así que añadir o quitar a alguien es cambiar esa fila, sin tocar código ni volver a desplegar. Lo envía la Edge Function **`avisar-miguel`** (`supabase/functions/avisar-miguel/`), disparada por `pg_cron` desde dentro de Supabase: **no depende de que ningún ordenador esté encendido**.
-
-Contiene: quién tenía turno, cuántas tareas hizo de las que tocaban (con hora y si llevan foto), **los días de la última semana en que no se hizo nada**, los productos por comprar, las compras del día y el saldo del bote.
-
-**Horario y cambio de hora:** `pg_cron` va en UTC, así que las 23:00 de Holanda son las 21:00 UTC en verano y las 22:00 en invierno. El cron dispara a ambas horas y la función solo envía en la que realmente son las 23:00 allí — así el correo llega siempre a la misma hora local sin tocar nada en marzo ni en octubre.
-
-**Registro de envíos:** cada intento queda anotado en la tabla `casa_avisos` (fecha, si salió bien, destinatario y detalle del error si lo hubo). La primera noche el envío falló sin dejar rastro; con esto no puede volver a pasar en silencio.
-
-El contenido se compone **leyendo la base de datos**, nunca a partir de lo que llega en la petición, para que nadie pueda provocar un correo con datos inventados llamando al endpoint a mano.
-
-Para probarlo a mano sin esperar a las 23:00, se llama con `{"forzar":true}`.
-
-### Secretos que necesita (se ponen en Supabase → Edge Functions → Secrets)
-
-| Secreto | Qué es |
-|---|---|
-| `BREVO_API_KEY` | Clave de API de [Brevo](https://brevo.com) (plan gratuito: 300 correos/día) |
-| `EMAIL_REMITENTE` | La dirección verificada en Brevo desde la que se envía |
-
-Ambos están ya configurados y probados: el envío de prueba del 08/09 llegó correctamente.
-
-### Por qué no se usa Resend
-
-Sin un dominio propio verificado, Resend solo deja enviar a la dirección del titular de la cuenta (devuelve 403 con cualquier otra), así que no serviría para escribir a Miguel. Brevo permite verificar una sola dirección de correo como remitente, sin necesidad de dominio.
-
-### Histórico
-
-Antes esto lo hacía una tarea programada de Claude en el portátil de Alberto (`resumen-limpieza-miguel`, ahora **desactivada**). Solo corría con la app de Claude abierta y con los permisos pre-aprobados: la noche del 07/09 arrancó, murió a los 4 segundos esperando aprobación y no envió nada, sin avisar de ello. Por eso se movió al backend.
-
-`resumen-diario.mjs` se conserva como herramienta de diagnóstico local: `node resumen-diario.mjs` imprime lo que diría el correo de esta noche, sin enviar nada.
-
-## Archivos
-
-| Archivo | Para qué |
-|---|---|
-| `index.html` | La app entera (HTML + CSS + JS, sin dependencias) |
-| `resumen-diario.mjs` | Lee el estado de Supabase y saca el JSON del resumen; lo usa la tarea del correo |
-| `README.md` | Esta documentación |
+En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
 
-- **2026-09-24 (historial completo, fuera verificación)**: El historial muestra también los días que nadie hizo, marcados en rojo, y el correo nocturno lista los de la última semana. Se retiró la verificación de fotos por Miguel. El correo reintenta la lectura de la base de datos tras el fallo transitorio que se comió dos noches.
-
-- **2026-09-15 (entran Sufian y Pablo)**: La casa pasa de 7 a 9. Se re-ancló `start_date` para no moverle el turno a Jorge a media jornada, y la paleta de colores de avatar pasó de 7 a 9 para que no se repitieran.
-
-- **2026-09-08 (correo al backend)**: El correo nocturno a Miguel sale ahora de una Edge Function de Supabase lanzada por `pg_cron`, siempre a las 23:00 hora de Holanda y con registro de cada intento en `casa_avisos`. Se desactivó la tarea programada de Claude, que dependía del portátil de Alberto y había fallado en silencio la primera noche.
-- **2026-09-07 (stock por cantidades)**: Los artículos ya no se marcan a mano como OK/Queda poco/Agotado. Ahora llevan una cantidad real (editable por cualquiera, con botones －/＋ o escribiéndola) y un umbral mínimo que decide el admin por artículo; el estado se calcula solo. `status` pasa a ser una columna generada en la base de datos.
-- **2026-09-07 (auditoría)**: Repaso completo con cuatro fallos corregidos — el bote se calculaba mal a partir de la compra 41, el refresco automático borraba lo que estabas escribiendo, el historial de días pasados se reescribía con la plantilla de tareas actual, y los campos de dinero rechazaban la coma decimal. Además, las escrituras releen el día antes de guardar para que dos personas a la vez no se pisen.
-- **2026-09-07 (v3)**: Migración a web real. Datos en Supabase, fotos en Storage, despliegue en Vercel desde GitHub. Adiós al requisito de tener cuenta de Claude: ahora entra cualquiera con el enlace desde el móvil. El artifact viejo queda como aviso apuntando a la URL nueva.
-- **2026-09-07 (v2)**: Fotos solo desde cámara. Tareas reducidas a basura + barrer/fregar. Tarea semanal de cubos verdes. Verificación de fotos por Miguel. Sección de stock por zonas con avisos. Registro de compras con ticket y bote común. Pestañas Hoy / Stock / Historial / Admin. Correo diario a Miguel.
-- **2026-09-07 (v1)**: Primera versión como Claude Artifact — rotación diaria, 3 tareas, panel de admin.
-
-## Pendiente
-
-- Montar el correo instantáneo a Miguel con Resend (Edge Function de Supabase).
-- Más secciones y tareas que se irán añadiendo.
+- **2026-10-01/02 (rediseño por zonas)**: Fuera Miguel y Ali. La casa pasa de "una persona al día para toda la casa" a equipos semanales por zona. Cubos verdes con rotación propia. App rediseñada entera: una tipografía, navegación inferior, color por zona. Stock e historial conservados y reorganizados por zonas y semanas. Panel de admin completo.
+- **2026-09-24**: El historial muestra los días que nadie hizo. Se retiró la verificación de fotos. Reintentos en el correo.
+- **2026-09-15**: Entran Sufian y Pablo.
+- **2026-09-08**: El correo nocturno pasa al backend (Supabase + Brevo), dejando de depender del portátil de Alberto.
+- **2026-09-07**: Primera versión (Claude Artifact), luego migrada a web real en Vercel + Supabase.
