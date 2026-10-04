@@ -1091,9 +1091,12 @@ function vAdmin(){
           '<input class="fld fld-sm" type="color" style="padding:2px;height:34px" data-f="z-color" data-id="'+at(z.id)+'" value="'+at(z.color)+'"></div></div>' +
         '<p style="font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.4">' +
           'Turno propio: no ocupa plaza en el reparto de zonas y pasa al siguiente de la lista ' +
-          ((z.rota_cada||7) === 1
-            ? 'cada día, corriendo además un puesto por semana para que a nadie le toque siempre el mismo día.'
-            : 'cada ' + (z.rota_cada||7) + ' días.') + '</p>'
+          ((z.rota_cada||7) === 1 ? 'cada día' : 'cada ' + (z.rota_cada||7) + ' días') +
+          ((z.rota_salto||0)
+            ? ', corriendo además ' +
+              ((z.rota_salto||0) === 1 ? 'un puesto' : (z.rota_salto||0) + ' puestos') +
+              ' por semana para que el turno no caiga siempre sobre la misma zona.'
+            : '.') + '</p>'
       : '<div class="row"><div style="width:92px"><span class="lab">Plazas</span>' +
           '<input class="fld fld-sm" inputmode="numeric" data-f="z-plazas" data-id="'+at(z.id)+'" value="'+z.plazas+'"></div>' +
           '<div style="width:92px"><span class="lab">Color</span>' +
