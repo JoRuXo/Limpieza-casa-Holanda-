@@ -172,6 +172,15 @@ img{max-width:100%;display:block}
        padding:9px 0;width:40px;text-align:center;border-radius:9px;cursor:pointer;
        border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
 .dchip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.dchips.mini{gap:4px}
+.dchip.sm{width:36px;padding:6px 0;font-size:10px;border-radius:7px}
+/* Días heredados de la casa: se ven marcados pero sin color propio. */
+.dchip.sm.hereda{border-style:dashed;background:transparent}
+.hint{font-size:11.5px;color:var(--muted);margin:6px 0 0;line-height:1.4}
+.minis{display:flex;gap:5px;margin-left:auto;flex-shrink:0}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border-radius:999px;
+      padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid transparent}
+.pill.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 
 /* ---------- admin ---------- */
 .acc{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:9px;overflow:hidden}
@@ -324,6 +333,7 @@ function dataURLtoBlob(dataUrl){
 /* ================= constantes ================= */
 var DOW = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 var DOW_C = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
+var ORDEN_DOW = [1,2,3,4,5,6,0];          /* la semana empieza en lunes */
 var MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 var PAL = ["#C2602F","#B07A24","#4C7A34","#3D6B9E","#7A5296","#2E8B8B","#A64D79","#8A6D3B","#5B7083"];
 var KEY = "casaHolanda_yo";
@@ -1051,14 +1061,21 @@ function vAdmin(){
   var sem = semanaDe(hoy()), a = asignacionDia(hoy());
 
   var rot = S.gente.map(function(n,i){
+    var esAdm = S.admins.indexOf(n) > -1;
     return '<div class="row"><span class="av" style="background:'+color(n)+'">'+esc(n.charAt(0))+'</span>' +
       '<span class="grow" style="font-weight:600">'+esc(n)+'</span>' +
+      '<button class="pill'+(esAdm ? " on" : "")+'" data-a="g-admin" data-n="'+at(n)+'" ' +
+        'title="Puede entrar en Admin">admin</button>' +
       '<button class="mini" data-a="g-sube" data-i="'+i+'" title="Subir">▲</button>' +
       '<button class="mini" data-a="g-baja" data-i="'+i+'" title="Bajar">▼</button>' +
       '<button class="mini" data-a="g-quita" data-i="'+i+'" title="Quitar">×</button></div>';
   }).join('') +
   '<div class="row" style="margin-top:12px"><input class="fld grow" id="g-nuevo" placeholder="Añadir persona…">' +
   '<button class="btn btn-pri" data-a="g-add">Añadir</button></div>' +
+  '<div class="row" style="margin-top:14px"><div class="grow"><span class="lab">La rotación de zonas arranca el</span>' +
+    '<input class="fld fld-sm" type="date" data-f="cfg-ancla" value="'+at(S.rotacionDesde||"")+'"></div></div>' +
+  '<p class="hint">Cambiar esta fecha vuelve a repartir todas las zonas desde ese lunes. ' +
+    'El historial ya guardado no se mueve.</p>' +
   '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">' +
     'El orden decide la rotación: cada lunes todos avanzan una plaza. Hay ' +
     plazas().length + ' plazas y ' + S.gente.length + ' personas' +
@@ -1071,7 +1088,7 @@ function vAdmin(){
     'Las secciones con turno propio (el turno diario, los cubos) no gastan plaza ' +
     'y corren por esta misma lista a su ritmo.</p>';
 
-  var zonas = S.zonas.map(function(z){
+  var zonas = S.zonas.map(function(z, zi){
     var relevo = proximoRelevo(z);
     var ctrl = z.rota_aparte
       /* Sección con turno propio: no tiene plazas, tiene una persona que va
@@ -1082,11 +1099,13 @@ function vAdmin(){
           S.gente.map(function(n){
             return '<option value="'+at(n)+'"'+(turnoDe(z, relevo)[0]===n?" selected":"")+'>'+esc(n)+'</option>';
           }).join('') + '</select></div>' +
-          '<div style="width:112px"><span class="lab">Cambia</span>' +
+          '<div style="width:106px"><span class="lab">Cambia</span>' +
           '<select class="fld fld-sm" data-f="z-cada" data-id="'+at(z.id)+'">' +
             '<option value="1"'+((z.rota_cada||7)===1?" selected":"")+'>cada día</option>' +
             '<option value="7"'+((z.rota_cada||7)===7?" selected":"")+'>cada semana</option>' +
           '</select></div>' +
+          '<div style="width:78px"><span class="lab">Salto</span>' +
+          '<input class="fld fld-sm" inputmode="numeric" data-f="z-salto" data-id="'+at(z.id)+'" value="'+(z.rota_salto||0)+'"></div>' +
           '<div style="width:92px"><span class="lab">Color</span>' +
           '<input class="fld fld-sm" type="color" style="padding:2px;height:34px" data-f="z-color" data-id="'+at(z.id)+'" value="'+at(z.color)+'"></div></div>' +
         '<p style="font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.4">' +
@@ -1104,7 +1123,12 @@ function vAdmin(){
           '<button class="mini btn-danger" data-a="z-quita" data-id="'+at(z.id)+'" title="Eliminar zona" style="margin-top:16px">×</button></div>';
     return '<div class="sub" style="--zc:'+at(z.color)+'">' +
       '<div class="sub-h"><span class="zone-dot"></span>'+esc(z.nombre)+
-        (z.rota_aparte ? '<span class="tag plain">rota aparte</span>' : '') + '</div>' +
+        '<span class="minis">' +
+          '<button class="pill'+(z.rota_aparte ? " on" : "")+'" data-a="z-aparte" data-id="'+at(z.id)+'" ' +
+            'title="No ocupa plaza; lleva una persona que rota por su cuenta">turno propio</button>' +
+          '<button class="mini" data-a="z-sube" data-i="'+zi+'" title="Subir">▲</button>' +
+          '<button class="mini" data-a="z-baja" data-i="'+zi+'" title="Bajar">▼</button>' +
+        '</span></div>' +
       '<div class="row"><div class="grow"><span class="lab">Nombre</span>' +
         '<input class="fld fld-sm" data-f="z-nombre" data-id="'+at(z.id)+'" value="'+at(z.nombre)+'"></div></div>' +
       '<div class="row"><div class="grow"><span class="lab">Qué incluye</span>' +
@@ -1119,26 +1143,30 @@ function vAdmin(){
     return '<div class="sub" style="--zc:'+at(z.color)+'">' +
       '<div class="sub-h"><span class="zone-dot"></span>'+esc(z.nombre)+
         '<span style="font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400">'+ts.length+'</span></div>' +
-      ts.map(function(t){
+      ts.map(function(t, ti){
+        var propios = !!(t.dias && t.dias.length);
+        var activos = propios ? t.dias : diasLimpieza();
         return '<div class="card-task">' +
           '<input class="fld fld-sm" data-f="t-label" data-id="'+at(t.id)+'" value="'+at(t.label)+'" style="margin-bottom:7px">' +
+          '<div class="dchips mini" style="margin-bottom:8px">' +
+            ORDEN_DOW.map(function(d){
+              return '<button class="dchip sm'+(activos.indexOf(d) > -1 ? " on" : "") +
+                (propios ? "" : " hereda")+'" data-a="t-dia" data-id="'+at(t.id)+'" data-d="'+d+'">' +
+                DOW_C[d] + '</button>';
+            }).join('') +
+          '</div>' +
           '<div class="row" style="margin:0">' +
-            '<select class="fld fld-sm" style="width:auto;flex:1" data-f="t-dias" data-id="'+at(t.id)+'">' +
-              '<option value=""'+(!(t.dias && t.dias.length) ? " selected" : "")+'>Cada día de limpieza</option>' +
-              '<option value="finde"'+(esDeFinde(t) ? " selected" : "")+'>Fin de semana (un tic)</option>' +
-              DOW.map(function(d,i){
-                var solo = t.dias && t.dias.length === 1 && t.dias[0] === i;
-                return '<option value="'+i+'"'+(solo ? " selected" : "")+'>Solo '+d+'</option>';
-              }).join('') +
-              ((t.dias && t.dias.length > 1 && !esDeFinde(t))
-                ? '<option value="="  selected>'+esc(t.dias.map(function(n){ return DOW_C[n]; }).join(" "))+'</option>'
-                : '') +
-            '</select>' +
-            '<span style="display:flex;align-items:center;gap:6px;margin-left:auto">' +
-              '<label class="chip" style="cursor:pointer"><input type="checkbox" data-a="t-foto" data-id="'+at(t.id)+'"'+(t.foto?" checked":"")+'> foto</label>' +
+            '<button class="pill'+(t.semanal ? " on" : "")+'" data-a="t-sem" data-id="'+at(t.id)+'" ' +
+              'title="Un solo tic por semana, aunque se pida varios días">1 vez/semana</button>' +
+            '<button class="pill'+(t.foto ? " on" : "")+'" data-a="t-foto" data-id="'+at(t.id)+'">foto</button>' +
+            '<span class="minis">' +
+              '<button class="mini" data-a="t-sube" data-z="'+at(z.id)+'" data-i="'+ti+'" title="Subir">▲</button>' +
+              '<button class="mini" data-a="t-baja" data-z="'+at(z.id)+'" data-i="'+ti+'" title="Bajar">▼</button>' +
               '<button class="mini btn-danger" data-a="t-quita" data-id="'+at(t.id)+'">×</button>' +
             '</span>' +
-          '</div></div>';
+          '</div>' +
+          (propios ? '' : '<p class="hint">Sigue los días de limpieza de la casa. Toca un día para fijarlos aquí.</p>') +
+        '</div>';
       }).join('') +
       '<div class="row"><input class="fld fld-sm grow" data-f="t-nueva" data-z="'+at(z.id)+'" placeholder="Añadir tarea a '+at(z.nombre)+'…">' +
       '<button class="btn btn-sm btn-pri" data-a="t-add" data-z="'+at(z.id)+'">Añadir</button></div>' +
@@ -1157,6 +1185,14 @@ function vAdmin(){
       its.map(function(i){
         return '<div class="card-task">' +
           '<input class="fld fld-sm" data-f="i-nombre" data-id="'+at(i.id)+'" value="'+at(i.nombre)+'" style="margin-bottom:7px">' +
+          '<div class="row" style="margin:0 0 7px"><div class="grow"><span class="lab">Zona</span>' +
+            '<select class="fld fld-sm" data-f="i-zona" data-id="'+at(i.id)+'">' +
+            S.zonas.map(function(x){
+              return '<option value="'+at(x.nombre)+'"'+(x.nombre===i.zona?" selected":"")+'>'+esc(x.nombre)+'</option>';
+            }).join('') +
+            (S.zonas.some(function(x){ return x.nombre === i.zona; }) ? ''
+              : '<option value="'+at(i.zona||"")+'" selected>'+esc(i.zona||"Sin zona")+'</option>') +
+            '</select></div></div>' +
           '<div class="row" style="margin:0">' +
             '<div style="width:90px"><span class="lab">Precio</span><input class="fld fld-sm" inputmode="decimal" data-f="i-precio" data-id="'+at(i.id)+'" value="'+(i.precio===null?"":qty(i.precio))+'"></div>' +
             '<div style="width:80px"><span class="lab">Mínimo</span><input class="fld fld-sm" inputmode="decimal" data-f="i-min" data-id="'+at(i.id)+'" value="'+qty(i.min)+'"></div>' +
@@ -1220,6 +1256,22 @@ function vAdmin(){
 }
 
 /* ================= acciones ================= */
+/* Sube o baja un elemento de una lista y vuelve a numerar el orden entero.
+   Se manda de una vez: una fila movida arrastra a las de al lado. */
+function reordena(tabla, lista, i, dir){
+  var j = i + dir;
+  if(!lista || j < 0 || j >= lista.length) return Promise.resolve();
+  var l = lista.slice(), tmp = l[i]; l[i] = l[j]; l[j] = tmp;
+  return api(tabla + "?on_conflict=id", {
+    method:"POST", prefer:"resolution=merge-duplicates,return=minimal",
+    body: l.map(function(fila, k){
+      var copia = {};
+      for(var campo in fila) if(Object.prototype.hasOwnProperty.call(fila, campo)) copia[campo] = fila[campo];
+      copia.orden = k + 1;
+      return copia;
+    })
+  });
+}
 function toast(m, mal){
   var el = document.getElementById("toast");
   el.textContent = m; el.className = mal ? "bad" : ""; el.hidden = false;
@@ -1432,6 +1484,53 @@ function onClick(e){
     ds.sort(function(x, y){ return x - y; });
     run(cfg({dias_limpieza: ds}), ds.length ? "Días de limpieza actualizados" : "Ya no hay días de limpieza");
   }
+  else if(a === "g-admin"){
+    var na = el.getAttribute("data-n");
+    var ad = S.admins.slice(), ka = ad.indexOf(na);
+    if(ka > -1){
+      if(ad.length === 1){ toast("Tiene que quedar al menos un admin.", true); return; }
+      ad.splice(ka, 1);
+    } else ad.push(na);
+    run(cfg({admins: ad}), "Admins actualizados");
+  }
+  else if(a === "z-aparte"){
+    var za = S.zonas.filter(function(x){ return x.id === id; })[0];
+    if(!za) return;
+    run(api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body: za.rota_aparte
+        ? {rota_aparte:false, rota_salto:0}
+        : {rota_aparte:true, rota_cada:7, rota_salto:0,
+           rota_desde: za.rota_desde || mas(semanaDe(hoy()), 7),
+           rota_persona: za.rota_persona || S.gente[0] || null}}),
+      za.rota_aparte ? "Vuelve al reparto de zonas" : "Pasa a turno propio");
+  }
+  else if(a === "z-sube" || a === "z-baja"){
+    i = parseInt(el.getAttribute("data-i"), 10);
+    run(reordena("casa_zonas", S.zonas, i, a === "z-sube" ? -1 : 1));
+  }
+  else if(a === "t-sube" || a === "t-baja"){
+    i = parseInt(el.getAttribute("data-i"), 10);
+    run(reordena("casa_tareas", tareasDe(el.getAttribute("data-z")), i, a === "t-sube" ? -1 : 1));
+  }
+  else if(a === "t-dia"){
+    var td = S.tareas.filter(function(x){ return x.id === id; })[0];
+    if(!td) return;
+    var dd2 = parseInt(el.getAttribute("data-d"), 10);
+    var ds2 = (td.dias && td.dias.length ? td.dias : diasLimpieza()).slice();
+    var kd = ds2.indexOf(dd2);
+    if(kd > -1) ds2.splice(kd, 1); else ds2.push(dd2);
+    ds2.sort(function(x, y){ return ((x+6)%7) - ((y+6)%7); });
+    run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body:{dias: ds2.length ? ds2 : null}}));
+  }
+  else if(a === "t-sem" || a === "t-foto"){
+    var tf = S.tareas.filter(function(x){ return x.id === id; })[0];
+    if(!tf) return;
+    var campo = a === "t-sem" ? "semanal" : "foto";
+    var cuerpo2 = {}; cuerpo2[campo] = !tf[campo];
+    run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body: cuerpo2}));
+  }
   else if(a === "z-add"){
     var zn = document.getElementById("z-nueva").value.trim();
     if(!zn) return;
@@ -1497,10 +1596,6 @@ document.getElementById("app").addEventListener("change", function(e){
   if(!S) return;
 
   if(a === "c-item"){ compra.items[id] = el.checked; return; }
-  if(a === "t-foto"){
-    run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:{foto: el.checked}}));
-    return;
-  }
   if(!fl) return;
 
   if(fl === "z-turno"){
@@ -1540,13 +1635,20 @@ document.getElementById("app").addEventListener("change", function(e){
   else if(fl === "t-label"){
     run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:{label: el.value}}));
   }
-  else if(fl === "t-dias"){
-    if(el.value === "=") return;              /* la etiqueta de varios días no cambia nada */
-    var cuerpo = el.value === ""      ? {dias: null, semanal: false}
-               : el.value === "finde" ? {dias: [6, 0], semanal: true}
-               :                        {dias: [parseInt(el.value, 10)], semanal: false};
-    run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-      body: cuerpo}));
+  else if(fl === "i-zona"){
+    run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body:{zone: el.value}}), "Artículo movido");
+  }
+  else if(fl === "cfg-ancla"){
+    if(!el.value) return;
+    /* Se guarda siempre el lunes de esa semana: la rotación cuenta semanas
+       enteras desde el ancla. */
+    run(cfg({rotacion_desde: semanaDe(el.value)}), "Rotación re-anclada");
+  }
+  else if(fl === "z-salto"){
+    var sl = parseInt(el.value, 10);
+    run(api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body:{rota_salto: (isNaN(sl) || sl < 0) ? 0 : sl}}));
   }
   else if(fl === "i-nombre"){
     run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:{name: el.value}}));
