@@ -1067,7 +1067,7 @@ function completa(tareaId, url){
   if(!t) return;
   run(api("casa_completadas?on_conflict=tarea_id,periodo", {
     method:"POST", prefer:"resolution=merge-duplicates,return=minimal",
-    body:[{tarea_id:t.id, periodo:hoy(), por:yo, at:new Date().toISOString(), foto_url:url || null}]
+    body:[{tarea_id:t.id, periodo:periodoDe(t, hoy()), por:yo, at:new Date().toISOString(), foto_url:url || null}]
   }), "Hecho");
 }
 function cantidad(id, q){
