@@ -471,6 +471,8 @@ function pasoDe(sem){
   var ps = pasos(S.gente.length || 1), r = rondaDe(sem);
   return ps[((r % ps.length) + ps.length) % ps.length];
 }
+/* Antes del ancla no hay ronda que contar: la cuenta saldría en negativo. */
+function rotaEmpezada(sem){ return !!S.rotacionDesde && sem >= S.rotacionDesde; }
 /* El reparto de zonas, que dura toda la semana. */
 function calcula(sem){
   var p = plazas(), n = S.gente.length, map = {};
@@ -983,8 +985,11 @@ function vHistorial(){
     '<div class="stat"><div class="k">Días sin hacer nada</div>' +
       '<div class="v"'+(vacios ? ' style="color:var(--bad)"' : '')+'>'+vacios +
       '<small> / '+activos+'</small></div></div>' +
-    '<div class="stat"><div class="k">Ronda</div><div class="v">'+(rondaDe(sem)+1) +
-      '<small> de '+ps.length+' · paso '+pasoDe(sem)+'</small></div></div>' +
+    '<div class="stat"><div class="k">Ronda</div><div class="v">' +
+      (rotaEmpezada(sem)
+        ? (rondaDe(sem)+1) + '<small> de '+ps.length+' · paso '+pasoDe(sem)+'</small>'
+        : '—<small> empieza el ' + DOW[dow(S.rotacionDesde)] + ' ' + corta(S.rotacionDesde) + '</small>') +
+      '</div></div>' +
     '</div>';
 
   var semanas = fila.map(function(w, idx){
@@ -1080,8 +1085,12 @@ function vAdmin(){
     'El orden decide la rotación: cada lunes todos avanzan una plaza. Hay ' +
     plazas().length + ' plazas y ' + S.gente.length + ' personas' +
     (plazas().length !== S.gente.length ? ' <b style="color:var(--bad)">— no cuadran</b>' : ' — cuadra exacto') + '.<br><br>' +
-    'Vas por la <b>ronda ' + (rondaDe(sem)+1) + ' de ' + pasos(S.gente.length||1).length +
-    '</b>, con paso ' + pasoDe(sem) + '. Cada ronda dura ' + (S.gente.length||1) +
+    (rotaEmpezada(sem)
+      ? 'Vas por la <b>ronda ' + (rondaDe(sem)+1) + ' de ' + pasos(S.gente.length||1).length +
+        '</b>, con paso ' + pasoDe(sem) + '. '
+      : 'La rotación <b>empieza el ' + DOW[dow(S.rotacionDesde)] + ' ' +
+        corta(S.rotacionDesde) + '</b>. ') +
+    'Cada ronda dura ' + (S.gente.length||1) +
     ' semanas y en ella todos pasan por todas las zonas; al empezar la siguiente ' +
     'cambia el paso y con él las parejas, así que nadie repite compañero hasta ' +
     'haber trabajado con toda la casa.<br><br>' +
