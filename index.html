@@ -163,6 +163,8 @@ img{max-width:100%;display:block}
 .dy .segs{flex:1;display:flex;gap:3px}
 .dy .n{font-family:var(--mono);font-size:11.5px;color:var(--muted);
        font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+.dy .qn{font-size:11.5px;color:var(--muted);min-width:56px;flex-shrink:0;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dy.nada{background:var(--bad-soft)}
 .dy.nada .d,.dy.nada .n{color:var(--bad);font-weight:600}
 .dchips{display:flex;gap:6px;flex-wrap:wrap}
@@ -314,9 +316,11 @@ function hoy(){ return f(new Date()); }
 function mas(fecha, n){ var d = new Date(fecha+"T00:00:00"); d.setDate(d.getDate()+n); return f(d); }
 function entre(a,b){ return Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000); }
 function dow(fecha){ return new Date(fecha+"T00:00:00").getDay(); }
-/* La semana va de domingo a sábado: así "sacar los cubos" (domingo) y
-   "entrarlos" (lunes) caen en la misma semana y los hace el mismo equipo. */
-function semanaDe(fecha){ return mas(fecha, -dow(fecha)); }
+/* La semana va de lunes a domingo, para que el fin de semana entero caiga
+   dentro de la semana del mismo equipo: la limpieza a fondo se puede hacer el
+   sábado o el domingo sin que por medio haya un relevo. Los cubos verdes no
+   dependen de esto: llevan su propio turno, contado por días. */
+function semanaDe(fecha){ return mas(fecha, -((dow(fecha) + 6) % 7)); }
 function corta(fecha){ var d = new Date(fecha+"T00:00:00"); return d.getDate()+" "+MES[d.getMonth()]; }
 function rango(sem){ return corta(sem)+" – "+corta(mas(sem,6)); }
 function hora(iso){
@@ -416,34 +420,66 @@ function pasoDe(sem){
   var ps = pasos(S.gente.length || 1), r = rondaDe(sem);
   return ps[((r % ps.length) + ps.length) % ps.length];
 }
+/* El reparto de zonas, que dura toda la semana. */
 function calcula(sem){
   var p = plazas(), n = S.gente.length, map = {};
-  S.zonas.forEach(function(z){ map[z.id] = []; });
-  if(!n) return map;
-  if(S.rotacionDesde){
-    var w = semanasDesdeAncla(sem), paso = pasoDe(sem);
-    p.forEach(function(zid, i){
-      map[zid].push(S.gente[((((paso * i + w) % n) + n) % n)]);
-    });
-  }
-  zonasAparte().forEach(function(z){
-    if(!z.rota_desde || !z.rota_persona) return;
-    if(sem < z.rota_desde) return;              /* antes de empezar, sin asignar */
-    var semanas = Math.round(entre(z.rota_desde, sem) / 7);
-    var base = S.gente.indexOf(z.rota_persona);
-    if(base < 0) base = 0;
-    for(var k=0; k<Math.max(1, z.plazas); k++){
-      map[z.id].push(S.gente[((((base + semanas + k) % n) + n) % n)]);
-    }
+  zonasDeTurno().forEach(function(z){ map[z.id] = []; });
+  if(!n || !S.rotacionDesde || sem < S.rotacionDesde) return map;
+  var w = semanasDesdeAncla(sem), paso = pasoDe(sem);
+  p.forEach(function(zid, i){
+    map[zid].push(S.gente[((((paso * i + w) % n) + n) % n)]);
   });
   return map;
 }
+/* Las secciones con rotación propia se cuentan por días, no por semanas: el
+   turno diario cambia cada día y el de los cubos cada domingo, que ya no es
+   donde empieza la semana de las zonas. */
+function turnoDe(z, dia){
+  var n = S.gente.length;
+  if(!n || !z.rota_desde || !z.rota_persona || dia < z.rota_desde) return [];
+  var dias = entre(z.rota_desde, dia);
+  var cada = Math.max(1, z.rota_cada || 7);
+  /* Si el relevo es más frecuente que semanal, el turno corre además un puesto
+     cada semana: si no, a cada uno le tocaría siempre el mismo día. */
+  var idx = Math.floor(dias / cada) + (cada < 7 ? Math.floor(dias / 7) : 0);
+  var base = S.gente.indexOf(z.rota_persona);
+  if(base < 0) base = 0;
+  var out = [];
+  for(var k=0; k<Math.max(1, z.plazas); k++){
+    out.push(S.gente[((((base + idx + k) % n) + n) % n)]);
+  }
+  return out;
+}
+/* Las personas distintas que pasan por una sección aparte a lo largo de una
+   semana: una sola para los cubos, la casa entera para el turno diario. */
+function turnoSemana(z, sem){
+  var out = [];
+  for(var i=0;i<7;i++){
+    turnoDe(z, mas(sem, i)).forEach(function(q){ if(out.indexOf(q) < 0) out.push(q); });
+  }
+  return out;
+}
 function asignacion(sem){ return S.semanas[sem] || calcula(sem); }
-/* Fija el reparto de la semana en curso para que el historial no cambie si
-   alguien entra o sale de la casa más adelante. */
+/* Reparto completo de un día: las zonas por su semana, las secciones aparte
+   por su propio turno. */
+function asignacionDia(dia){
+  var a = asignacion(semanaDe(dia)), map = {};
+  S.zonas.forEach(function(z){
+    map[z.id] = z.rota_aparte ? turnoDe(z, dia) : (a[z.id] || []);
+  });
+  return map;
+}
+/* La sección que rota a diario, si la hay: su turno se enseña en el historial
+   día a día, porque cambia de dueño cada jornada. */
+function zonaDiaria(){
+  return S.zonas.filter(function(z){ return z.rota_aparte && (z.rota_cada || 7) < 7; })[0] || null;
+}
+/* Fija el reparto de zonas de la semana en curso para que el historial no
+   cambie si alguien entra o sale de la casa más adelante. Las secciones
+   aparte no se congelan: se recalculan por día. */
 function fijarSemana(){
   var sem = semanaDe(hoy());
-  if(S.semanas[sem] || !S.gente.length) return Promise.resolve();
+  if(S.semanas[sem] || !S.gente.length || !S.rotacionDesde || sem < S.rotacionDesde) return Promise.resolve();
   var a = calcula(sem);
   S.semanas[sem] = a;
   return api("casa_semanas?on_conflict=semana", {
@@ -451,17 +487,17 @@ function fijarSemana(){
     body:[{semana: sem, asignacion: a}]
   }).catch(function(){});
 }
-/* Se puede estar en una zona y además llevar los cubos esa semana. */
-function misZonas(sem){
-  var a = asignacion(sem);
+/* Se puede tener zona, turno diario y cubos el mismo día. */
+function misZonas(dia){
+  var a = asignacionDia(dia);
   return S.zonas.filter(function(z){ return (a[z.id]||[]).indexOf(yo) > -1; });
 }
 
 /* ================= tareas ================= */
-/* Todas las tareas son diarias: se piden en cada día de limpieza, así la zona
-   se limpia varias veces por semana y no hay que esperar al relevo del
-   domingo. Una tarea puede salirse de ese calendario y fijarse a días
-   concretos: los cubos verdes van a domingo y lunes. */
+/* Una tarea se pide en unos días (`dias`, o los días de limpieza de la casa si
+   no tiene los suyos) y cuenta por día o por semana (`semanal`). La limpieza a
+   fondo se pide sábado y domingo pero es semanal: un solo tic, lo haga el
+   equipo el día que lo haga. */
 function tareasDe(zid){ return S.tareas.filter(function(t){ return t.zona_id === zid; }); }
 function diasLimpieza(){ return S.diasLimpieza || []; }
 function esDiaDeLimpieza(dia){ return diasLimpieza().indexOf(dow(dia)) > -1; }
@@ -471,6 +507,9 @@ function toca(t, dia){
     : esDiaDeLimpieza(dia);
 }
 function tareasDeDia(zid, dia){
+  /* Una zona sin nadie asignado ese día no pide nada: no puede estar "sin
+     hacer" lo que no era de nadie. Pasa antes de que arranque una rotación. */
+  if(!(asignacionDia(dia)[zid] || []).length) return [];
   return tareasDe(zid).filter(function(t){ return toca(t, dia); });
 }
 function hayTareas(dia){
@@ -480,22 +519,33 @@ function proximoDiaConTareas(dia){
   for(var i=1;i<=7;i++){ var d = mas(dia, i); if(hayTareas(d)) return d; }
   return null;
 }
-function hecha(t, dia){ return S.hechas[t.id + "|" + dia] || null; }
+/* El periodo es la clave con la que se guarda que una tarea está hecha: el día
+   para las diarias, el lunes que abre la semana para las semanales. */
+function periodoDe(t, dia){ return t.semanal ? semanaDe(dia) : dia; }
+function hecha(t, dia){ return S.hechas[t.id + "|" + periodoDe(t, dia)] || null; }
 /* Progreso de un día: solo las tareas que tocaban ese día. */
 function progreso(zid, dia){
   var ts = tareasDeDia(zid, dia), d = 0;
   ts.forEach(function(t){ if(hecha(t, dia)) d++; });
   return {d:d, t:ts.length, p: ts.length ? Math.round(d/ts.length*100) : 0};
 }
-/* Progreso de una semana: suma de sus días. Los días que aún no han llegado no
-   cuentan, si no la semana en curso saldría siempre a medias. */
-function progresoSemana(zid, sem){
-  var total = 0, d = 0, tope = hoy();
+/* Progreso de una semana: suma de sus días, sin contar dos veces una tarea
+   semanal que se pide en varios días. Por defecto los días que aún no han
+   llegado no cuentan, si no la semana en curso saldría siempre a medias;
+   `entera` recorre la semana completa, que es lo que interesa en la ficha de
+   una zona para ver cuánto le falta al fin de semana. */
+function progresoSemana(zid, sem, entera){
+  var total = 0, d = 0, tope = hoy(), vistos = {};
   for(var i=0;i<7;i++){
     var dia = mas(sem, i);
-    if(dia > tope) break;
-    var p = progreso(zid, dia);
-    total += p.t; d += p.d;
+    if(!entera && dia > tope) break;
+    tareasDeDia(zid, dia).forEach(function(t){
+      var k = t.id + "|" + periodoDe(t, dia);
+      if(vistos[k]) return;
+      vistos[k] = 1;
+      total++;
+      if(S.hechas[k]) d++;
+    });
   }
   return {d:d, t:total, p: total ? Math.round(d/total*100) : 0};
 }
@@ -506,10 +556,21 @@ function progresoDia(dia){
   S.zonas.forEach(function(z){ var p = progreso(z.id, dia); total += p.t; d += p.d; });
   return {d:d, t:total, p: total ? Math.round(d/total*100) : 0};
 }
-function puedoHacer(zid, sem){
+function puedoHacer(zid, dia){
   if(!yo) return false;
   if(esAdmin()) return true;
-  return (asignacion(sem)[zid] || []).indexOf(yo) > -1;
+  return (asignacionDia(dia)[zid] || []).indexOf(yo) > -1;
+}
+/* Una tarea de fin de semana: se pide sábado y domingo y cuenta una sola vez. */
+function esDeFinde(t){
+  return !!t.semanal && !!t.dias && t.dias.length === 2 &&
+         t.dias.indexOf(6) > -1 && t.dias.indexOf(0) > -1;
+}
+/* El próximo día en que una sección con turno propio cambia de manos. */
+function proximoRelevo(z){
+  var cada = Math.max(1, z.rota_cada || 7), d = hoy();
+  if(!z.rota_desde || z.rota_desde > d) return z.rota_desde || mas(d, 1);
+  return mas(z.rota_desde, (Math.floor(entre(z.rota_desde, d) / cada) + 1) * cada);
 }
 function esAdmin(){ return !!yo && S.admins.indexOf(yo) > -1; }
 function color(n){
@@ -577,10 +638,15 @@ function pintaNav(){
 /* ---------- casa ---------- */
 function tareaHTML(t, puede, dia){
   var h = hecha(t, dia), acc;
-  /* Solo se etiqueta la tarea que se sale del calendario de la casa. */
-  var etiqueta = (t.dias && t.dias.length && t.dias.length < 7)
-    ? t.dias.map(function(n){ return DOW_C[n]; }).join(" ")
-    : "";
+  /* Solo se etiqueta la tarea que se sale del calendario de la casa. Una
+     semanal que se pide en varios días es la limpieza a fondo del finde: se
+     marca una vez, el sábado o el domingo. */
+  var etiqueta = "";
+  if(t.dias && t.dias.length && t.dias.length < 7){
+    etiqueta = (t.semanal && t.dias.length > 1)
+      ? "FINDE"
+      : t.dias.map(function(n){ return DOW_C[n]; }).join(" ");
+  }
   if(h){
     acc = (h.foto_url ? '<img class="thumb" src="'+at(h.foto_url)+'" data-a="foto" data-src="'+at(h.foto_url)+'" alt="" loading="lazy">' : '');
   } else if(puede){
@@ -597,9 +663,14 @@ function tareaHTML(t, puede, dia){
     (h ? '<div class="t-meta">'+esc(h.por)+' · '+hora(h.at)+'</div>' : '') + '</div>' + acc + '</div>';
 }
 
-function zonaHTML(z, sem, mia, dia){
+function zonaHTML(z, dia, mia){
+  var sem = semanaDe(dia);
+  /* Si hoy no se pide nada en la zona, la ficha enseña cómo va su semana: para
+     las zonas de fondo, lo que les queda para el fin de semana. */
   var p = progreso(z.id, dia);
-  var eq = asignacion(sem)[z.id] || [];
+  var finde = false;
+  if(!p.t && tareasDe(z.id).length){ p = progresoSemana(z.id, sem, true); finde = true; }
+  var eq = asignacionDia(dia)[z.id] || [];
   var gente = eq.length
     ? eq.map(function(n){
         return '<span class="chip'+(n===yo?" you":"")+'"><span class="av s" style="background:'+color(n)+'">'+esc(n.charAt(0))+'</span>'+esc(n===yo?"Tú":n)+'</span>';
@@ -609,9 +680,9 @@ function zonaHTML(z, sem, mia, dia){
   var ts = tareasDeDia(z.id, dia);
   var cuerpo = abierta
     ? '<div class="tasks">' + (ts.length
-        ? ts.map(function(t){ return tareaHTML(t, puedoHacer(z.id, sem), dia); }).join('')
+        ? ts.map(function(t){ return tareaHTML(t, puedoHacer(z.id, dia), dia); }).join('')
         : '<div class="empty">' + (tareasDe(z.id).length
-            ? 'Hoy no toca nada en esta zona.'
+            ? 'Hoy no toca nada aquí. La limpieza a fondo es el fin de semana.'
             : 'Esta zona no tiene tareas todavía.') + '</div>') + '</div>'
     : '';
   return '<div class="zone'+(mia?" mine":"")+'" style="--zc:'+at(z.color)+'">' +
@@ -620,14 +691,15 @@ function zonaHTML(z, sem, mia, dia){
       '<div class="zone-id"><div class="zone-name"><span class="zone-dot"></span>'+esc(z.nombre)+'</div>' +
         (z.descripcion ? '<div class="zone-rooms">'+esc(z.descripcion)+'</div>' : '') +
         '<div class="zone-people">'+gente+'</div></div>' +
-      '<div class="prog"><div class="n"><b>'+p.d+'</b>/'+p.t+'</div>' +
+      '<div class="prog"><div class="n">' +
+        (p.t ? '<b>'+p.d+'</b>/'+p.t + (finde ? '<small> finde</small>' : '') : '—') + '</div>' +
         '<div class="bar'+(p.p===100?" done":"")+'"><i style="width:'+p.p+'%"></i></div></div>' +
     '</div>' + cuerpo + '</div>';
 }
 
 function vCasa(){
   var dia = hoy(), sem = semanaDe(dia);
-  var mias = misZonas(sem);
+  var mias = misZonas(dia);
   var ids = mias.map(function(z){ return z.id; });
   var otras = S.zonas.filter(function(z){ return ids.indexOf(z.id) < 0; });
   var falta = comprar();
@@ -641,13 +713,17 @@ function vCasa(){
     '<div class="note"><div><b>Hoy no toca limpieza.</b><br>' +
     (sig ? 'El siguiente día es el ' + DOW[dow(sig)] + ' ' + corta(sig) + '.'
          : 'No hay ningún día de limpieza configurado.') + '</div></div>';
-  return aviso + descanso +
+  var sinRota = S.rotacionDesde && sem < S.rotacionDesde
+    ? '<div class="note"><div><b>La rotación empieza el ' + DOW[dow(S.rotacionDesde)] + ' ' +
+      corta(S.rotacionDesde) + '.</b><br>Hasta entonces las zonas no tienen equipo.</div></div>'
+    : '';
+  return aviso + sinRota + descanso +
     (mias.length
-      ? '<div class="eyebrow">' + (mias.length > 1 ? "Lo tuyo esta semana" : "Tu zona esta semana") + '</div>' +
-        mias.map(function(z){ return zonaHTML(z, sem, true, dia); }).join('') +
+      ? '<div class="eyebrow">' + (mias.length > 1 ? "Lo que te toca hoy" : "Lo tuyo hoy") + '</div>' +
+        mias.map(function(z){ return zonaHTML(z, dia, true); }).join('') +
         '<div class="eyebrow">El resto de la casa</div>'
-      : '<div class="eyebrow">Zonas de esta semana</div>') +
-    otras.map(function(z){ return zonaHTML(z, sem, false, dia); }).join('');
+      : '<div class="eyebrow">La casa hoy</div>') +
+    otras.map(function(z){ return zonaHTML(z, dia, false); }).join('');
 }
 
 /* ---------- stock ---------- */
@@ -743,12 +819,15 @@ function vHistorial(){
   var semanas = fila.map(function(w, idx){
     if(S.rotacionDesde && mas(w, 6) < S.rotacionDesde) return "";
     var zs = S.zonas.map(function(z){
-      return {z:z, p:progresoSemana(z.id, w), eq:(asignacion(w)[z.id] || [])};
+      var eq = z.rota_aparte ? turnoSemana(z, w) : (asignacion(w)[z.id] || []);
+      if(eq.length > 3) eq = [eq.length + " personas"];
+      return {z:z, p:progresoSemana(z.id, w), eq:eq};
     });
     var tot = zs.reduce(function(a,x){ return a + x.p.t; }, 0);
     var don = zs.reduce(function(a,x){ return a + x.p.d; }, 0);
     var media = tot ? Math.round(don/tot*100) : 0;
 
+    var zd = zonaDiaria();
     var dias = [];
     for(var k=0;k<7;k++){
       var dd = mas(w, k);
@@ -757,6 +836,7 @@ function vHistorial(){
       dias.push({
         d: dd,
         p: progresoDia(dd),
+        quien: zd ? (turnoDe(zd, dd)[0] || "") : "",
         zs: S.zonas.map(function(z){ return {z:z, p:progreso(z.id, dd)}; })
       });
     }
@@ -782,6 +862,7 @@ function vHistorial(){
           var nada = x.p.t && !x.p.d;
           return '<div class="dy'+(nada ? " nada" : "")+'">' +
             '<span class="d">'+DOW_C[dow(x.d)]+' '+Number(x.d.slice(8,10))+'</span>' +
+            '<span class="qn">'+esc(x.quien)+'</span>' +
             '<span class="segs">' + x.zs.map(function(y){
               return '<span class="seg" style="--zc:'+at(y.z.color)+'"><i style="width:'+y.p.p+'%"></i></span>';
             }).join('') + '</span>' +
@@ -806,8 +887,7 @@ function acc(id, titulo, contador, cuerpo){
 }
 
 function vAdmin(){
-  var sem = semanaDe(hoy());
-  var a = asignacion(sem);
+  var sem = semanaDe(hoy()), a = asignacionDia(hoy());
 
   var rot = S.gente.map(function(n,i){
     return '<div class="row"><span class="av" style="background:'+color(n)+'">'+esc(n.charAt(0))+'</span>' +
@@ -819,28 +899,40 @@ function vAdmin(){
   '<div class="row" style="margin-top:12px"><input class="fld grow" id="g-nuevo" placeholder="Añadir persona…">' +
   '<button class="btn btn-pri" data-a="g-add">Añadir</button></div>' +
   '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">' +
-    'El orden decide la rotación: cada domingo todos avanzan una plaza. Hay ' +
+    'El orden decide la rotación: cada lunes todos avanzan una plaza. Hay ' +
     plazas().length + ' plazas y ' + S.gente.length + ' personas' +
     (plazas().length !== S.gente.length ? ' <b style="color:var(--bad)">— no cuadran</b>' : ' — cuadra exacto') + '.<br><br>' +
     'Vas por la <b>ronda ' + (rondaDe(sem)+1) + ' de ' + pasos(S.gente.length||1).length +
     '</b>, con paso ' + pasoDe(sem) + '. Cada ronda dura ' + (S.gente.length||1) +
     ' semanas y en ella todos pasan por todas las zonas; al empezar la siguiente ' +
     'cambia el paso y con él las parejas, así que nadie repite compañero hasta ' +
-    'haber trabajado con toda la casa.</p>';
+    'haber trabajado con toda la casa.<br><br>' +
+    'Las secciones con turno propio (el turno diario, los cubos) no gastan plaza ' +
+    'y corren por esta misma lista a su ritmo.</p>';
 
-  var proxDomingo = mas(semanaDe(hoy()), 7);
   var zonas = S.zonas.map(function(z){
+    var relevo = proximoRelevo(z);
     var ctrl = z.rota_aparte
-      /* Sección con rotación propia: no tiene plazas, tiene un turno que
-         avanza por la lista. Se re-ancla en el próximo domingo. */
-      ? '<div class="row"><div class="grow"><span class="lab">Le toca el domingo '+corta(proxDomingo)+'</span>' +
+      /* Sección con turno propio: no tiene plazas, tiene una persona que va
+         corriendo por la lista a su ritmo. Se re-ancla en el próximo relevo. */
+      ? '<div class="row"><div class="grow"><span class="lab">Le toca a partir del ' +
+            DOW[dow(relevo)] + ' ' + corta(relevo) + '</span>' +
           '<select class="fld fld-sm" data-f="z-turno" data-id="'+at(z.id)+'">' +
           S.gente.map(function(n){
-            return '<option value="'+at(n)+'"'+((asignacion(proxDomingo)[z.id]||[])[0]===n?" selected":"")+'>'+esc(n)+'</option>';
+            return '<option value="'+at(n)+'"'+(turnoDe(z, relevo)[0]===n?" selected":"")+'>'+esc(n)+'</option>';
           }).join('') + '</select></div>' +
+          '<div style="width:112px"><span class="lab">Cambia</span>' +
+          '<select class="fld fld-sm" data-f="z-cada" data-id="'+at(z.id)+'">' +
+            '<option value="1"'+((z.rota_cada||7)===1?" selected":"")+'>cada día</option>' +
+            '<option value="7"'+((z.rota_cada||7)===7?" selected":"")+'>cada semana</option>' +
+          '</select></div>' +
           '<div style="width:92px"><span class="lab">Color</span>' +
           '<input class="fld fld-sm" type="color" style="padding:2px;height:34px" data-f="z-color" data-id="'+at(z.id)+'" value="'+at(z.color)+'"></div></div>' +
-        '<p style="font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.4">Rota aparte: no ocupa plaza en el reparto de zonas y pasa al siguiente de la lista cada domingo.</p>'
+        '<p style="font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.4">' +
+          'Turno propio: no ocupa plaza en el reparto de zonas y pasa al siguiente de la lista ' +
+          ((z.rota_cada||7) === 1
+            ? 'cada día, corriendo además un puesto por semana para que a nadie le toque siempre el mismo día.'
+            : 'cada ' + (z.rota_cada||7) + ' días.') + '</p>'
       : '<div class="row"><div style="width:92px"><span class="lab">Plazas</span>' +
           '<input class="fld fld-sm" inputmode="numeric" data-f="z-plazas" data-id="'+at(z.id)+'" value="'+z.plazas+'"></div>' +
           '<div style="width:92px"><span class="lab">Color</span>' +
@@ -868,12 +960,13 @@ function vAdmin(){
           '<input class="fld fld-sm" data-f="t-label" data-id="'+at(t.id)+'" value="'+at(t.label)+'" style="margin-bottom:7px">' +
           '<div class="row" style="margin:0">' +
             '<select class="fld fld-sm" style="width:auto;flex:1" data-f="t-dias" data-id="'+at(t.id)+'">' +
-              '<option value=""'+(!(t.dias && t.dias.length) ? " selected" : "")+'>Días de limpieza</option>' +
+              '<option value=""'+(!(t.dias && t.dias.length) ? " selected" : "")+'>Cada día de limpieza</option>' +
+              '<option value="finde"'+(esDeFinde(t) ? " selected" : "")+'>Fin de semana (un tic)</option>' +
               DOW.map(function(d,i){
                 var solo = t.dias && t.dias.length === 1 && t.dias[0] === i;
                 return '<option value="'+i+'"'+(solo ? " selected" : "")+'>Solo '+d+'</option>';
               }).join('') +
-              ((t.dias && t.dias.length > 1)
+              ((t.dias && t.dias.length > 1 && !esDeFinde(t))
                 ? '<option value="="  selected>'+esc(t.dias.map(function(n){ return DOW_C[n]; }).join(" "))+'</option>'
                 : '') +
             '</select>' +
@@ -917,11 +1010,12 @@ function vAdmin(){
       return '<button class="dchip'+(diasLimpieza().indexOf(i) > -1 ? " on" : "")+'" data-a="dl" data-d="'+i+'">'+d+'</button>';
     }).join('') + '</div>' +
     '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">' +
-    'Las tareas se piden solo estos días, en todas las zonas a la vez. Ahora son <b>' +
+    'Calendario por defecto: las tareas que no tienen días propios se piden estos días. ' +
+    'Es el del turno diario, que ahora son <b>' +
     ordenados.length + (ordenados.length === 1 ? ' día' : ' días') + ' a la semana</b>' +
     (ordenados.length ? ': ' + esc(ordenados.map(function(i){ return DOW[i]; }).join(", ")) : '') + '. ' +
     (ordenados.length ? '' : '<b style="color:var(--bad)">Sin días marcados no se pide nada.</b> ') +
-    'Una tarea suelta puede fijarse a su propio día desde Tareas: los cubos verdes van a domingo y lunes.</p>';
+    'La limpieza a fondo de las zonas no depende de esto: va marcada como fin de semana desde Tareas.</p>';
 
   var bote = '<div class="row"><div class="stat grow"><div class="k">Bote</div><div class="v">'+eur(S.bote)+'</div></div>' +
     '<div class="stat grow"><div class="k">Gastado este mes</div><div class="v">'+eur(S.gastoMes)+'</div></div></div>' +
@@ -1241,10 +1335,23 @@ document.getElementById("app").addEventListener("change", function(e){
   if(!fl) return;
 
   if(fl === "z-turno"){
-    /* Re-ancla el turno en el próximo domingo: a partir de ahí sigue pasando
-       al siguiente de la lista cada semana. */
+    /* Re-ancla el turno en su próximo relevo: a partir de ahí sigue corriendo
+       por la lista a su ritmo. */
+    var zt = S.zonas.filter(function(x){ return x.id === id; })[0];
+    if(!zt) return;
     run(api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-      body:{rota_persona: el.value, rota_desde: mas(semanaDe(hoy()), 7)}}), "Turno actualizado");
+      body:{rota_persona: el.value, rota_desde: proximoRelevo(zt)}}), "Turno actualizado");
+    return;
+  }
+  if(fl === "z-cada"){
+    /* Al cambiar el ritmo se re-ancla en mañana con quien lo tiene hoy, para
+       que el cambio no reordene el pasado. */
+    var zc = S.zonas.filter(function(x){ return x.id === id; })[0];
+    if(!zc) return;
+    run(api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body:{rota_cada: Math.max(1, parseInt(el.value, 10) || 7),
+            rota_persona: turnoDe(zc, hoy())[0] || zc.rota_persona,
+            rota_desde: hoy()}}), "Ritmo del turno actualizado");
     return;
   }
   if(fl === "z-nombre" || fl === "z-desc" || fl === "z-plazas" || fl === "z-color"){
@@ -1266,8 +1373,11 @@ document.getElementById("app").addEventListener("change", function(e){
   }
   else if(fl === "t-dias"){
     if(el.value === "=") return;              /* la etiqueta de varios días no cambia nada */
+    var cuerpo = el.value === ""      ? {dias: null, semanal: false}
+               : el.value === "finde" ? {dias: [6, 0], semanal: true}
+               :                        {dias: [parseInt(el.value, 10)], semanal: false};
     run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-      body:{dias: el.value === "" ? null : [parseInt(el.value, 10)]}}));
+      body: cuerpo}));
   }
   else if(fl === "i-nombre"){
     run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:{name: el.value}}));

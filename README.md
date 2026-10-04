@@ -8,9 +8,17 @@ Se abre desde cualquier navegador y móvil, **sin cuenta ni contraseña**. Quien
 
 ## Cómo funciona
 
+La limpieza va por dos caminos a la vez: **el día a día** lo lleva una persona, y **la limpieza a fondo** la hacen equipos por zonas el fin de semana.
+
+### El turno diario
+
+Cada día una persona se encarga de **barrer y fregar toda la casa y sacar la basura**. El turno pasa al siguiente de la lista cada día, y además **corre un puesto cada semana**: si no, con 7 personas y 7 días a cada uno le tocaría siempre el mismo día para siempre. Así en 7 semanas cada uno ha hecho los siete días de la semana.
+
+No ocupa plaza en el reparto de zonas, así que se puede tener turno diario y zona a la vez.
+
 ### Zonas y equipos
 
-La casa se reparte en **4 zonas**, con un equipo por zona:
+Para la limpieza a fondo, la casa se reparte en **4 zonas**, con un equipo por zona:
 
 | Zona | Plazas | Qué incluye |
 |---|---|---|
@@ -21,9 +29,11 @@ La casa se reparte en **4 zonas**, con un equipo por zona:
 
 Son **7 plazas para 7 personas**: encaje exacto.
 
-### La rotación
+La limpieza a fondo se hace **el fin de semana**. Cada tarea se pide el sábado y el domingo pero se marca **una sola vez**: el equipo la hace el día que le venga mejor.
 
-Las 7 plazas van en fila fija y las personas en una lista ordenada. **Cada domingo todos avanzan una plaza**, así que en 7 semanas cada uno ha pasado por todas las zonas. Eso es una **ronda**.
+### La rotación de zonas
+
+Las 7 plazas van en fila fija y las personas en una lista ordenada. **Cada lunes todos avanzan una plaza**, así que en 7 semanas cada uno ha pasado por todas las zonas. Eso es una **ronda**.
 
 La fórmula es `persona de la plaza i = gente[(paso × i + semana) mod 7]`. El **paso** es lo que hace que roten también los equipos: con paso 1 las parejas son vecinos de la lista, con paso 2 quedan a dos puestos, con paso 3 a tres. Al terminar una ronda se pasa al siguiente paso.
 
@@ -43,21 +53,27 @@ La rotación va por fecha, no por tareas: terminar antes no adelanta el relevo.
 
 ### Cubos verdes
 
-Van **aparte**, con su propio turno de una persona que también avanza cada domingo. **No ocupan plaza** en el reparto de zonas — por eso siguen siendo 7 plazas para 7 personas. Empieza Yassine el domingo 4 de octubre.
+Van **aparte**, con su propio turno de una persona que avanza cada domingo. **No ocupan plaza** en el reparto de zonas. Empieza Yassine el domingo 4 de octubre.
 
-Se sacan el domingo y se entran el lunes.
+Se sacan el domingo y se entran el lunes. Su turno se cuenta **por días desde su propio domingo**, no por la semana de las zonas, así que quien los saca el domingo es siempre quien los entra el lunes aunque por medio haya un relevo de zonas.
 
-### Por qué la semana va de domingo a sábado
+### Por qué la semana va de lunes a domingo
 
-Precisamente por los cubos: se sacan el domingo y se entran el lunes. Con semanas de lunes a domingo esas dos tareas caerían a cada lado de un relevo y las haría un equipo distinto cada una.
+Para que **el fin de semana entero caiga dentro de la semana del mismo equipo**. Con semanas de domingo a sábado, el sábado y el domingo pertenecen a equipos distintos y la limpieza a fondo no se podría repartir entre los dos días.
 
-### Días de limpieza y tareas
+### Días y tareas
 
-Hay un ajuste de casa: **qué días de la semana se limpia**. Las tareas se piden solo esos días, en todas las zonas a la vez. Se cambia en Admin → Días de limpieza.
+Una tarea se pide en unos días y cuenta por día o por semana:
 
-Todas las tareas son **diarias**: se piden en cada día de limpieza. Así una zona se limpia varias veces por semana y no hay que esperar al relevo del domingo para que vuelva a tocar. Una tarea suelta puede salirse de ese calendario y fijarse a su propio día: los cubos verdes van a domingo y lunes.
+| Tarea | Días | Cuenta |
+|---|---|---|
+| Turno diario | los días de limpieza de la casa | una vez por día |
+| Limpieza a fondo | sábado y domingo | una vez por semana |
+| Cubos verdes | domingo (sacar), lunes (entrar) | una vez por día |
 
-La mayoría piden **foto**, que queda guardada con el nombre de quien la hizo y la hora.
+**Qué días se limpia** es un ajuste de casa (Admin → Días de limpieza): es el calendario del turno diario, de lunes a domingo por defecto. La limpieza a fondo no depende de él, va fijada al fin de semana.
+
+La mayoría de tareas piden **foto**, que queda guardada con el nombre de quien la hizo y la hora.
 
 Si hoy no toca limpieza, la pantalla principal lo dice y señala el siguiente día que toca.
 
@@ -97,9 +113,9 @@ Cada push a `main` despliega solo.
 ### Tablas
 
 - `casa_config` — fila única: gente, admins, ancla de rotación, `dias_limpieza`, destinatarios del correo
-- `casa_zonas` — zonas con plazas y color. `rota_aparte` marca las que no consumen plaza y llevan turno propio (`rota_desde`, `rota_persona`)
-- `casa_tareas` — tareas por zona. `dias` son los días en que se pide; `NULL` significa "los días de limpieza de la casa"
-- `casa_completadas` — una fila por tarea completada. `periodo` es siempre el día
+- `casa_zonas` — zonas con plazas y color. `rota_aparte` marca las que no consumen plaza y llevan turno propio (`rota_desde`, `rota_persona`, `rota_cada` días entre relevos: 1 el turno diario, 7 los cubos)
+- `casa_tareas` — tareas por zona. `dias` son los días en que se pide (`NULL` = los días de limpieza de la casa) y `semanal` dice si cuenta una vez por semana en vez de una por día
+- `casa_completadas` — una fila por tarea completada. `periodo` es el día, o el lunes que abre la semana para las semanales
 - `casa_semanas` — foto fija del reparto de cada semana, para que el historial no se reescriba si alguien entra o sale
 - `casa_items`, `casa_purchases`, `casa_contributions`, `casa_summary` — stock y bote
 - `casa_avisos` — registro de cada intento de envío del correo
@@ -114,6 +130,8 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-04 (turno diario + fondo de fin de semana)**: Vuelve el **turno diario**: una persona al día barre, friega y saca la basura de toda la casa, con el turno corriendo un puesto cada día y uno más cada semana para que a nadie le toque siempre el mismo día. Las zonas se quedan con la **limpieza a fondo del fin de semana**, un tic por tarea que vale marcar el sábado o el domingo. La semana pasa a ir de **lunes a domingo** para que el finde no se parta entre dos equipos, y los turnos propios (diario, cubos) se cuentan por días para no depender de ello. El historial dice quién tenía cada día y el correo nocturno lo desglosa día a día con nombre.
 
 - **2026-10-02 (rotaciones y calendario)**: Todas las tareas pasan a diarias y la casa elige **qué días de la semana se limpia**, así una zona no espera al relevo para volver a limpiarse. La rotación gana un **paso variable** para que cambien también los equipos, no solo las zonas: en 3 rondas cada uno trabaja con los seis. El historial baja a nivel de día y marca los **días en que no se hizo nada**. El correo nocturno los lista, y acepta `{"seco":true}` para probarlo sin enviar.
 - **2026-10-01/02 (rediseño por zonas)**: Fuera Miguel y Ali. La casa pasa de "una persona al día para toda la casa" a equipos semanales por zona. Cubos verdes con rotación propia. App rediseñada entera: una tipografía, navegación inferior, color por zona. Stock e historial conservados y reorganizados por zonas y semanas. Panel de admin completo.

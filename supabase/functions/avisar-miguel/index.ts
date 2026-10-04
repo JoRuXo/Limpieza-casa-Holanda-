@@ -64,9 +64,10 @@ function mas(fecha: string, n: number): string {
 function diaSemana(fecha: string): number {
   return new Date(fecha + "T12:00:00Z").getUTCDay();
 }
-/** La semana va de domingo a sábado, igual que en la app. */
+/** La semana va de lunes a domingo, igual que en la app: así el fin de semana
+ *  entero cae dentro de la semana del mismo equipo. */
 function semanaDe(fecha: string): string {
-  return mas(fecha, -diaSemana(fecha));
+  return mas(fecha, -((diaSemana(fecha) + 6) % 7));
 }
 function corta(fecha: string): string {
   const d = new Date(fecha + "T12:00:00Z");
@@ -153,62 +154,74 @@ async function componerResumen(hoy: string) {
   const hechasMap = new Map<string, any>();
   for (const h of hechas ?? []) hechasMap.set(`${h.tarea_id}|${h.periodo}`, h);
 
-  // Reparto de la semana: el guardado si existe, calculado si todavía no.
-  // Las secciones marcadas rota_aparte (los cubos) no ocupan plaza en el
-  // reparto de zonas y llevan su propio turno, igual que en la app.
+  // Reparto de zonas de la semana: el guardado si existe, calculado si todavía
+  // no. Las secciones con turno propio (el turno diario, los cubos) no ocupan
+  // plaza y se calculan aparte, por día.
+  const n = gente.length;
   let reparto: Record<string, string[]> = semanas?.[0]?.asignacion ?? {};
-  if (!semanas?.length && gente.length) {
-    const n = gente.length;
+  if (!semanas?.length && n && cfg.rotacion_desde && sem >= cfg.rotacion_desde) {
     reparto = {};
-    for (const z of zonas) reparto[z.id] = [];
-
-    if (cfg.rotacion_desde) {
-      const plazas: string[] = [];
-      for (const z of zonas) {
-        if (z.rota_aparte) continue;
-        for (let i = 0; i < z.plazas; i++) plazas.push(z.id);
-      }
-      const w = Math.round(
-        (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
-      );
-      // Mismo paso que la app: cada ronda de n semanas cambia el multiplicador
-      // para que cambien las parejas sin romper el reparto.
-      const mcd = (a: number, b: number): number => { while (b) { const t = a % b; a = b; b = t; } return a; };
-      const posibles: number[] = [];
-      for (let a = 1; a <= Math.floor(n / 2); a++) if (mcd(a, n) === 1) posibles.push(a);
-      if (!posibles.length) posibles.push(1);
-      const ronda = Math.floor(w / n);
-      const paso = posibles[((ronda % posibles.length) + posibles.length) % posibles.length];
-      plazas.forEach((zid, i) => {
-        reparto[zid].push(gente[(((paso * i + w) % n) + n) % n]);
-      });
-    }
-
+    const plazas: string[] = [];
     for (const z of zonas) {
-      if (!z.rota_aparte || !z.rota_desde || !z.rota_persona || sem < z.rota_desde) continue;
-      const semanasPasadas = Math.round(
-        (Date.parse(sem + "T00:00:00Z") - Date.parse(z.rota_desde + "T00:00:00Z")) / 604800000,
-      );
-      let base = gente.indexOf(z.rota_persona);
-      if (base < 0) base = 0;
-      for (let k = 0; k < Math.max(1, z.plazas); k++) {
-        reparto[z.id].push(gente[(((base + semanasPasadas + k) % n) + n) % n]);
-      }
+      if (z.rota_aparte) continue;
+      reparto[z.id] = [];
+      for (let i = 0; i < z.plazas; i++) plazas.push(z.id);
     }
+    const w = Math.round(
+      (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
+    );
+    // Mismo paso que la app: cada ronda de n semanas cambia el multiplicador
+    // para que cambien las parejas sin romper el reparto.
+    const mcd = (a: number, b: number): number => { while (b) { const t = a % b; a = b; b = t; } return a; };
+    const posibles: number[] = [];
+    for (let a = 1; a <= Math.floor(n / 2); a++) if (mcd(a, n) === 1) posibles.push(a);
+    if (!posibles.length) posibles.push(1);
+    const ronda = Math.floor(w / n);
+    const paso = posibles[((ronda % posibles.length) + posibles.length) % posibles.length];
+    plazas.forEach((zid, i) => {
+      reparto[zid].push(gente[(((paso * i + w) % n) + n) % n]);
+    });
   }
 
-  // Todas las tareas son diarias y se piden los dias de limpieza de la casa,
-  // salvo las que tienen sus propios dias fijados (los cubos verdes).
+  // El turno de una sección propia depende del día, no de la semana.
+  const turnoDe = (z: any, dia: string): string[] => {
+    if (!n || !z.rota_desde || !z.rota_persona || dia < z.rota_desde) return [];
+    const dias = Math.round(
+      (Date.parse(dia + "T00:00:00Z") - Date.parse(z.rota_desde + "T00:00:00Z")) / 86400000,
+    );
+    const cada = Math.max(1, z.rota_cada ?? 7);
+    const idx = Math.floor(dias / cada) + (cada < 7 ? Math.floor(dias / 7) : 0);
+    let base = gente.indexOf(z.rota_persona);
+    if (base < 0) base = 0;
+    const out: string[] = [];
+    for (let k = 0; k < Math.max(1, z.plazas); k++) {
+      out.push(gente[(((base + idx + k) % n) + n) % n]);
+    }
+    return out;
+  };
+  const zonaDiaria = zonas.find((z: any) => z.rota_aparte && (z.rota_cada ?? 7) < 7) ?? null;
+
+  // Una tarea se pide en sus dias propios, o en los dias de limpieza de la casa
+  // si no los tiene. El turno diario usa los de la casa; la limpieza a fondo va
+  // fijada a sabado y domingo, y los cubos a domingo y lunes.
   const diasLimpieza: number[] = (cfg.dias_limpieza?.length ? cfg.dias_limpieza : [0, 1, 2, 3, 4, 5, 6]);
   const toca = (t: any, dia: string): boolean =>
     (t.dias && t.dias.length) ? t.dias.includes(diaSemana(dia)) : diasLimpieza.includes(diaSemana(dia));
+  // El periodo es la clave con la que se guarda que una tarea esta hecha: el
+  // dia para las diarias, el lunes que abre la semana para las semanales. La
+  // limpieza a fondo se pide sabado y domingo pero cuenta una sola vez.
+  const periodo = (t: any, dia: string): string => (t.semanal ? semanaDe(dia) : dia);
+  // Una zona sin nadie asignado ese dia no pide nada: no puede estar sin hacer
+  // lo que no era de nadie. Pasa antes de que arranque una rotacion.
+  const asignado = (z: any, dia: string): boolean =>
+    (z.rota_aparte ? turnoDe(z, dia).length : (reparto[z.id] ?? []).length) > 0;
   const diasPasados: string[] = [];
-  for (let i = 0; i <= diaSemana(hoy); i++) diasPasados.push(mas(sem, i));
+  for (let d = sem; d <= hoy; d = mas(d, 1)) diasPasados.push(d);
 
   const lineas: string[] = [
     `Semana del ${corta(sem)} al ${corta(mas(sem, 6))}. Hoy es ${DOW[diaSemana(hoy)]}.`,
-    `Se limpia ${diasLimpieza.length} dias por semana: ` +
-      diasLimpieza.slice().sort((a: number, b: number) => a - b).map((d: number) => DOW[d]).join(", ") + ".",
+    `Turno diario ${diasLimpieza.length} dias por semana. ` +
+      `Limpieza a fondo de las zonas, el fin de semana.`,
     "",
   ];
 
@@ -217,24 +230,65 @@ async function componerResumen(hoy: string) {
 
   for (const z of zonas) {
     const ts = (tareas ?? []).filter((t: any) => t.zona_id === z.id);
-    const equipo = (reparto[z.id] ?? []).join(", ") || "sin asignar";
+    const equipo = z.rota_aparte
+      ? (turnoDe(z, hoy).join(", ") || "sin asignar")
+      : ((reparto[z.id] ?? []).join(", ") || "sin asignar");
     let total = 0, hecho = 0;
     const detalle: string[] = [];
 
+    // El turno diario cambia de dueno cada dia, asi que se cuenta dia a dia
+    // y con nombre: es lo unico que dice quien cumplio y quien no.
+    if (zonaDiaria && z.id === zonaDiaria.id) {
+      for (const dia of diasPasados) {
+        if (!asignado(z, dia)) continue;
+        const delDia = ts.filter((t: any) => toca(t, dia));
+        if (!delDia.length) continue;
+        const puestas = delDia.filter((t: any) => hechasMap.has(`${t.id}|${periodo(t, dia)}`)).length;
+        total += delDia.length;
+        hecho += puestas;
+        const quien = turnoDe(z, dia)[0] ?? "sin asignar";
+        detalle.push(
+          `    ${puestas === delDia.length ? "[x]" : "[ ]"} ${DOW_C[diaSemana(dia)]} ${corta(dia)} - ` +
+          `${quien} - ${puestas} de ${delDia.length}`,
+        );
+      }
+      totalGlobal += total;
+      hechoGlobal += hecho;
+      const pctD = total ? Math.round((hecho / total) * 100) : 0;
+      bloques.push(`  ${z.nombre.toUpperCase()} - ${total ? `${pctD}%` : "sin tareas esta semana"}`);
+      bloques.push(...detalle);
+      bloques.push("");
+      continue;
+    }
+
     for (const t of ts) {
-      const tocaban = diasPasados.filter((d) => toca(t, d));
+      const tocaban = diasPasados.filter((d) => toca(t, d) && asignado(z, d));
       if (!tocaban.length) continue;          // esta semana no tocaba todavia
-      const faltan = tocaban.filter((d) => !hechasMap.has(`${t.id}|${d}`));
-      const n = tocaban.length - faltan.length;
-      total += tocaban.length;
-      hecho += n;
-      const ult = hechasMap.get(`${t.id}|${tocaban[tocaban.length - 1]}`);
-      detalle.push(
-        `    ${faltan.length ? "[ ]" : "[x]"} ${t.label} - ${n} de ${tocaban.length}` +
-        (faltan.length
-          ? ` - falta ${faltan.map((d) => DOW_C[diaSemana(d)]).join(", ")}`
-          : (ult ? ` - ultima: ${ult.por} a las ${horaLocal(ult.at)}` : "")),
-      );
+      // Una semanal pedida en varios dias es un solo periodo: un solo tic.
+      const claves: string[] = [];
+      for (const d of tocaban) {
+        const k = periodo(t, d);
+        if (!claves.includes(k)) claves.push(k);
+      }
+      const faltan = claves.filter((k) => !hechasMap.has(`${t.id}|${k}`));
+      const puestas = claves.length - faltan.length;
+      total += claves.length;
+      hecho += puestas;
+      const ult = hechasMap.get(`${t.id}|${claves[claves.length - 1]}`);
+      if (t.semanal) {
+        detalle.push(
+          faltan.length
+            ? `    [ ] ${t.label} - SIN HACER este fin de semana`
+            : `    [x] ${t.label} - ${ult?.por ?? "?"} a las ${horaLocal(ult?.at ?? "")}`,
+        );
+      } else {
+        detalle.push(
+          `    ${faltan.length ? "[ ]" : "[x]"} ${t.label} - ${puestas} de ${claves.length}` +
+          (faltan.length
+            ? ` - falta ${faltan.map((d) => DOW_C[diaSemana(d)]).join(", ")}`
+            : (ult ? ` - ultima: ${ult.por} a las ${horaLocal(ult.at)}` : "")),
+        );
+      }
     }
 
     totalGlobal += total;
@@ -253,13 +307,16 @@ async function componerResumen(hoy: string) {
   // Dias de esta semana en que tocaba limpiar y no se hizo absolutamente nada.
   const vacios: string[] = [];
   for (const dia of diasPasados) {
-    let tocaba = 0, n = 0;
-    for (const t of tareas ?? []) {
-      if (!toca(t, dia)) continue;
-      tocaba++;
-      if (hechasMap.has(`${t.id}|${dia}`)) n++;
+    let tocaba = 0, puestas = 0;
+    for (const z of zonas) {
+      if (!asignado(z, dia)) continue;
+      for (const t of (tareas ?? []).filter((x: any) => x.zona_id === z.id)) {
+        if (!toca(t, dia)) continue;
+        tocaba++;
+        if (hechasMap.has(`${t.id}|${periodo(t, dia)}`)) puestas++;
+      }
     }
-    if (tocaba && !n) vacios.push(`${DOW[diaSemana(dia)]} ${corta(dia)}`);
+    if (tocaba && !puestas) vacios.push(`${DOW[diaSemana(dia)]} ${corta(dia)}`);
   }
 
   lineas.push(`LA CASA VA AL ${pctGlobal}%`);
