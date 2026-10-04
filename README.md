@@ -12,7 +12,21 @@ La limpieza va por dos caminos a la vez: **el día a día** lo lleva una persona
 
 ### El turno diario
 
-Cada día una persona se encarga de **barrer y fregar toda la casa y sacar la basura**. El turno pasa al siguiente de la lista cada día, y además **corre un puesto cada semana**: si no, con 7 personas y 7 días a cada uno le tocaría siempre el mismo día para siempre. Así en 7 semanas cada uno ha hecho los siete días de la semana.
+Cada día una persona se encarga de la casa entera:
+
+| Tarea | Días |
+|---|---|
+| Barrer y fregar toda la casa | lunes a viernes |
+| Sacar la basura y poner bolsa nueva | todos los días |
+
+**El sábado y el domingo no se barre ni se friega en el turno diario**, solo se saca la basura. Esos días cada equipo friega su propia zona en la limpieza a fondo, y así nadie tiene que hacer las dos cosas el mismo día.
+
+El turno pasa al siguiente de la lista cada día y además **corre dos puestos cada semana** (`rota_salto`). Lo de los dos puestos no es un capricho:
+
+- Con **un** puesto por semana, el turno diario avanza al mismo ritmo que la rotación de zonas y los dos desplazamientos se anulan. El resultado es que **el turno del sábado y el del domingo caen siempre sobre la misma zona durante las 7 semanas de una ronda**: en la ronda 1 eran los dos de Arriba, cada semana, encima de su propia limpieza a fondo.
+- Con **dos**, el turno del fin de semana va rotando entre las cuatro zonas. En 28 semanas: Arriba 16, Jardín 16, Planta baja 16, Cocina 8 — que con una sola plaza es la misma carga por persona.
+
+Sigue cumpliéndose que cada semana pasan los siete sin repetir y que en 7 semanas cada uno ha hecho los siete días.
 
 No ocupa plaza en el reparto de zonas, así que se puede tener turno diario y zona a la vez.
 
@@ -30,6 +44,8 @@ Para la limpieza a fondo, la casa se reparte en **4 zonas**, con un equipo por z
 Son **7 plazas para 7 personas**: encaje exacto.
 
 La limpieza a fondo se hace **el fin de semana**. Cada tarea se pide el sábado y el domingo pero se marca **una sola vez**: el equipo la hace el día que le venga mejor.
+
+Todas las zonas incluyen **limpiar las ventanas**. La cocina lleva además horno, microondas, cajones, el filtro de la vitro y el cristal.
 
 ### La rotación de zonas
 
@@ -61,13 +77,26 @@ Se sacan el domingo y se entran el lunes. Su turno se cuenta **por días desde s
 
 Para que **el fin de semana entero caiga dentro de la semana del mismo equipo**. Con semanas de domingo a sábado, el sábado y el domingo pertenecen a equipos distintos y la limpieza a fondo no se podría repartir entre los dos días.
 
+### La pantalla
+
+La barra de abajo separa las dos cosas:
+
+| Pestaña | Qué hay |
+|---|---|
+| **Hoy** | El turno diario y, los días que tocan, los cubos verdes |
+| **A fondo** | Las 4 zonas y su limpieza de fin de semana |
+| Stock · Historial · Admin | Como antes |
+
+Cada pestaña abre con una cabecera que explica de qué va la sección y se puede plegar. Entre semana las zonas de fondo salen **apagadas**, con borde discontinuo y un contador de cuánto falta para que se abran; el sábado y el domingo se encienden y la cabecera pasa a ámbar. Arriba del todo, una línea dice lo que te toca a ti hoy.
+
 ### Días y tareas
 
 Una tarea se pide en unos días y cuenta por día o por semana:
 
 | Tarea | Días | Cuenta |
 |---|---|---|
-| Turno diario | los días de limpieza de la casa | una vez por día |
+| Barrer y fregar | lunes a viernes | una vez por día |
+| Sacar la basura | los días de limpieza de la casa | una vez por día |
 | Limpieza a fondo | sábado y domingo | una vez por semana |
 | Cubos verdes | domingo (sacar), lunes (entrar) | una vez por día |
 
@@ -113,7 +142,7 @@ Cada push a `main` despliega solo.
 ### Tablas
 
 - `casa_config` — fila única: gente, admins, ancla de rotación, `dias_limpieza`, destinatarios del correo
-- `casa_zonas` — zonas con plazas y color. `rota_aparte` marca las que no consumen plaza y llevan turno propio (`rota_desde`, `rota_persona`, `rota_cada` días entre relevos: 1 el turno diario, 7 los cubos)
+- `casa_zonas` — zonas con plazas y color. `rota_aparte` marca las que no consumen plaza y llevan turno propio (`rota_desde`, `rota_persona`, `rota_cada` días entre relevos y `rota_salto` puestos extra por semana: el turno diario va con 1 y 2, los cubos con 7 y 0)
 - `casa_tareas` — tareas por zona. `dias` son los días en que se pide (`NULL` = los días de limpieza de la casa) y `semanal` dice si cuenta una vez por semana en vez de una por día
 - `casa_completadas` — una fila por tarea completada. `periodo` es el día, o el lunes que abre la semana para las semanales
 - `casa_semanas` — foto fija del reparto de cada semana, para que el historial no se reescriba si alguien entra o sale
@@ -130,6 +159,8 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-04 (dos secciones, y el choque de los fines de semana)**: La portada se parte en dos pestañas, **Hoy** y **A fondo**, cada una con su cabecera plegable; entre semana las zonas de fondo salen apagadas. El turno diario deja de barrer y fregar los fines de semana —solo saca la basura— para que nadie tenga que fregar la casa y además limpiar su zona a fondo el mismo día. Y el turno diario pasa a correr **dos** puestos por semana en vez de uno: con uno se anulaba contra la rotación de zonas y el turno del finde caía siempre sobre la misma zona durante toda una ronda. Lista nueva de cocina y **ventanas en todas las zonas**.
 
 - **2026-10-04 (turno diario + fondo de fin de semana)**: Vuelve el **turno diario**: una persona al día barre, friega y saca la basura de toda la casa, con el turno corriendo un puesto cada día y uno más cada semana para que a nadie le toque siempre el mismo día. Las zonas se quedan con la **limpieza a fondo del fin de semana**, un tic por tarea que vale marcar el sábado o el domingo. La semana pasa a ir de **lunes a domingo** para que el finde no se parta entre dos equipos, y los turnos propios (diario, cubos) se cuentan por días para no depender de ello. El historial dice quién tenía cada día y el correo nocturno lo desglosa día a día con nombre.
 

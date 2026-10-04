@@ -230,6 +230,46 @@ img{max-width:100%;display:block}
 .boot{max-width:480px;margin:0 auto;padding:70px 20px;text-align:center;color:var(--muted);
       font-family:var(--mono);font-size:13px;line-height:1.6}
 .empty{color:var(--muted);font-size:13px;padding:16px 2px;text-align:center}
+
+/* Bloques de sección: el turno diario y la limpieza a fondo se ven distintos
+   de un vistazo, y cada uno se puede plegar. */
+.blk{margin:0 0 4px}
+.blk-h{display:flex;align-items:center;gap:11px;padding:2px 2px 11px;cursor:pointer}
+.blk-ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.blk-ic svg{width:19px;height:19px}
+.blk-t{flex:1;min-width:0}
+.blk-n{font-weight:700;font-size:15.5px;letter-spacing:-.015em}
+.blk-s{font-size:12px;color:var(--muted);margin-top:1px;line-height:1.35}
+.blk-tag{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;
+         padding:4px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;font-weight:500}
+.blk-ch{color:var(--muted);font-size:13px;flex-shrink:0}
+.blk-hoy .blk-ic{background:var(--accent-soft);color:var(--accent)}
+.blk-hoy .blk-tag{background:var(--accent);color:#fff}
+.blk-fondo .blk-ic{background:var(--surface-2);color:var(--muted)}
+.blk-fondo .blk-tag{background:var(--surface-2);color:var(--muted)}
+.blk-fondo.activo .blk-ic{background:var(--warn-soft);color:var(--warn-ink)}
+.blk-fondo.activo .blk-tag{background:var(--warn);color:#fff}
+
+/* Una zona dormida: su fin de semana todavía no ha llegado. Se ve que está
+   ahí y de quién es, pero que hoy no se le pide nada. */
+.zone.dormida{background:transparent;border-style:dashed;box-shadow:none}
+.zone.dormida .zone-top{padding-top:12px;padding-bottom:12px}
+.zone.dormida .zone-name{font-size:15px}
+.zone.dormida .zone-bar{opacity:.45}
+.zone.dormida .prog .n{color:var(--muted);font-size:11px;font-family:var(--mono);
+                       text-transform:uppercase;letter-spacing:.06em}
+.zone.dormida .bar{display:none}
+.cuenta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:0 0 12px}
+
+/* Qué te toca a ti hoy, antes que nada. */
+.mio{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
+     border-radius:var(--r);padding:13px 15px;margin-bottom:20px;box-shadow:var(--shadow)}
+.mio .av{width:38px;height:38px;font-size:15px;flex-shrink:0}
+.mio-t{flex:1;min-width:0}
+.mio-k{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;
+       color:var(--muted);margin-bottom:3px}
+.mio-v{font-size:14.5px;font-weight:600;line-height:1.3}
+.mio-v em{font-style:normal;color:var(--muted);font-weight:500}
 </style>
 </head>
 <body>
@@ -292,7 +332,8 @@ var SEMANAS_HIST = 8;
 var CAM_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.2"/></svg>';
 var TICK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M4 12.5 9.5 18 20 6.5"/></svg>';
 var NAV_ICON = {
-  casa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
+  hoy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>',
+  fondo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 14.5 3 21M6 11l7-7 4 4-7 7z"/><path d="M14 4.5 16.5 2 22 7.5 19.5 10"/><path d="M4 17.5 6.5 20"/></svg>',
   stock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>',
   historial:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
   admin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8A1.6 1.6 0 0 0 4 14a2 2 0 1 1 0-4 1.6 1.6 0 0 0 1-2.8 2 2 0 1 1 2.8-2.8A1.6 1.6 0 0 0 10 4.6a2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8A1.6 1.6 0 0 0 20 10a2 2 0 1 1 0 4z"/></svg>'
@@ -302,7 +343,7 @@ var NAV_ICON = {
 var S = null;
 var yo = null;
 try { yo = localStorage.getItem(KEY); } catch(e){}
-var vista = "casa";
+var vista = "hoy";
 var abierto = {};
 var lightbox = null;
 var guardando = "ok";
@@ -439,9 +480,11 @@ function turnoDe(z, dia){
   if(!n || !z.rota_desde || !z.rota_persona || dia < z.rota_desde) return [];
   var dias = entre(z.rota_desde, dia);
   var cada = Math.max(1, z.rota_cada || 7);
-  /* Si el relevo es más frecuente que semanal, el turno corre además un puesto
-     cada semana: si no, a cada uno le tocaría siempre el mismo día. */
-  var idx = Math.floor(dias / cada) + (cada < 7 ? Math.floor(dias / 7) : 0);
+  /* `rota_salto` son los puestos extra que corre el turno cada semana. El turno
+     diario necesita 2: con 1 se anula contra el avance semanal de las zonas y
+     el turno del fin de semana caería siempre sobre la misma zona durante toda
+     una ronda. Con 2 se reparte entre las cuatro. */
+  var idx = Math.floor(dias / cada) + (z.rota_salto || 0) * Math.floor(dias / 7);
   var base = S.gente.indexOf(z.rota_persona);
   if(base < 0) base = 0;
   var out = [];
@@ -512,11 +555,13 @@ function tareasDeDia(zid, dia){
   if(!(asignacionDia(dia)[zid] || []).length) return [];
   return tareasDe(zid).filter(function(t){ return toca(t, dia); });
 }
-function hayTareas(dia){
-  return S.zonas.some(function(z){ return tareasDeDia(z.id, dia).length > 0; });
-}
-function proximoDiaConTareas(dia){
-  for(var i=1;i<=7;i++){ var d = mas(dia, i); if(hayTareas(d)) return d; }
+/* El siguiente día con turno propio: el bloque de hoy mira solo lo suyo, no
+   el fin de semana de las zonas. */
+function proximoDiaAparte(dia){
+  for(var i=1;i<=7;i++){
+    var d = mas(dia, i);
+    if(zonasAparte().some(function(z){ return tareasDeDia(z.id, d).length > 0; })) return d;
+  }
   return null;
 }
 /* El periodo es la clave con la que se guarda que una tarea está hecha: el día
@@ -561,6 +606,35 @@ function puedoHacer(zid, dia){
   if(esAdmin()) return true;
   return (asignacionDia(dia)[zid] || []).indexOf(yo) > -1;
 }
+/* Los días en que se pide algo de las zonas de equipo: el fin de semana. */
+function diasFondo(){
+  var s = {};
+  zonasDeTurno().forEach(function(z){
+    tareasDe(z.id).forEach(function(t){
+      (t.dias && t.dias.length ? t.dias : diasLimpieza()).forEach(function(d){ s[d] = 1; });
+    });
+  });
+  return Object.keys(s).map(Number).sort(function(a, b){ return ((a+6)%7) - ((b+6)%7); });
+}
+function diasFondoTexto(){
+  var ds = diasFondo();
+  if(!ds.length) return "sin días";
+  if(ds.length > 3) return ds.length + " días";
+  return ds.map(function(d){ return DOW_C[d].toLowerCase(); }).join(" y ");
+}
+function fondoAbierto(dia){
+  return zonasDeTurno().some(function(z){ return tareasDeDia(z.id, dia).length > 0; });
+}
+function proximoFondo(dia){
+  for(var i=1;i<=7;i++){ var d = mas(dia, i); if(fondoAbierto(d)) return d; }
+  return null;
+}
+/* El último día de esta semana en que todavía se puede hacer el fondo. */
+function ultimoFondo(dia){
+  var sem = semanaDe(dia);
+  for(var i=6;i>=0;i--){ var d = mas(sem, i); if(fondoAbierto(d)) return d; }
+  return null;
+}
 /* Una tarea de fin de semana: se pide sábado y domingo y cuenta una sola vez. */
 function esDeFinde(t){
   return !!t.semanal && !!t.dias && t.dias.length === 2 &&
@@ -571,6 +645,10 @@ function proximoRelevo(z){
   var cada = Math.max(1, z.rota_cada || 7), d = hoy();
   if(!z.rota_desde || z.rota_desde > d) return z.rota_desde || mas(d, 1);
   return mas(z.rota_desde, (Math.floor(entre(z.rota_desde, d) / cada) + 1) * cada);
+}
+function avatar(n, cls){
+  return '<span class="av'+(cls ? " "+cls : "")+'" style="background:'+color(n)+'">' +
+    esc(String(n||"?").charAt(0)) + '</span>';
 }
 function esAdmin(){ return !!yo && S.admins.indexOf(yo) > -1; }
 function color(n){
@@ -590,7 +668,8 @@ function pinta(){
   if(!yo){ el.innerHTML = selector(); document.getElementById("nav").hidden = true; return; }
   document.getElementById("nav").hidden = false;
   pintaNav();
-  var cuerpo = vista === "casa" ? vCasa()
+  var cuerpo = vista === "hoy" ? vHoy()
+    : vista === "fondo" ? vFondo()
     : vista === "stock" ? vStock()
     : vista === "historial" ? vHistorial()
     : vAdmin();
@@ -624,13 +703,21 @@ function cabecera(){
 }
 
 function pintaNav(){
-  var defs = [{id:"casa",lb:"Casa"},{id:"stock",lb:"Stock"},{id:"historial",lb:"Historial"}];
+  var defs = [{id:"hoy",lb:"Hoy"},{id:"fondo",lb:"A fondo"},
+              {id:"stock",lb:"Stock"},{id:"historial",lb:"Historial"}];
   if(esAdmin()) defs.push({id:"admin",lb:"Admin"});
   var falta = comprar().length;
+  /* El punto rojo avisa de lo que pide atención: material por comprar, y la
+     limpieza a fondo mientras esté abierta y le falte algo a alguna zona. */
+  var fondoPide = fondoAbierto(hoy()) && zonasDeTurno().some(function(z){
+    var pr = progreso(z.id, hoy());
+    return pr.t > pr.d;
+  });
   document.getElementById("navIn").innerHTML = defs.map(function(d){
+    var punto = (d.id === "stock" && falta) || (d.id === "fondo" && fondoPide);
     return '<button data-a="ir" data-v="'+d.id+'" class="'+(vista===d.id?"on":"")+'">' +
       '<span style="position:relative;display:block">'+NAV_ICON[d.id] +
-      (d.id==="stock" && falta ? '<span class="dot"></span>' : '') + '</span>' +
+      (punto ? '<span class="dot"></span>' : '') + '</span>' +
       '<span class="lb">'+d.lb+'</span></button>';
   }).join('');
 }
@@ -638,14 +725,14 @@ function pintaNav(){
 /* ---------- casa ---------- */
 function tareaHTML(t, puede, dia){
   var h = hecha(t, dia), acc;
-  /* Solo se etiqueta la tarea que se sale del calendario de la casa. Una
-     semanal que se pide en varios días es la limpieza a fondo del finde: se
-     marca una vez, el sábado o el domingo. */
+  /* Solo se etiqueta la tarea que se sale del calendario de su sección. La
+     limpieza a fondo no lleva etiqueta: ya está dentro del bloque del finde. */
   var etiqueta = "";
-  if(t.dias && t.dias.length && t.dias.length < 7){
-    etiqueta = (t.semanal && t.dias.length > 1)
-      ? "FINDE"
-      : t.dias.map(function(n){ return DOW_C[n]; }).join(" ");
+  if(t.dias && t.dias.length && t.dias.length < 7 && !esDeFinde(t)){
+    var ds = t.dias.slice().sort(function(a, b){ return ((a+6)%7) - ((b+6)%7); });
+    etiqueta = (ds.length === 5 && ds.join() === "1,2,3,4,5")
+      ? "LUN A VIE"
+      : ds.map(function(n){ return DOW_C[n]; }).join(" ");
   }
   if(h){
     acc = (h.foto_url ? '<img class="thumb" src="'+at(h.foto_url)+'" data-a="foto" data-src="'+at(h.foto_url)+'" alt="" loading="lazy">' : '');
@@ -663,67 +750,141 @@ function tareaHTML(t, puede, dia){
     (h ? '<div class="t-meta">'+esc(h.por)+' · '+hora(h.at)+'</div>' : '') + '</div>' + acc + '</div>';
 }
 
-function zonaHTML(z, dia, mia){
+function zonaHTML(z, dia, mia, dormida){
   var sem = semanaDe(dia);
-  /* Si hoy no se pide nada en la zona, la ficha enseña cómo va su semana: para
-     las zonas de fondo, lo que les queda para el fin de semana. */
   var p = progreso(z.id, dia);
-  var finde = false;
-  if(!p.t && tareasDe(z.id).length){ p = progresoSemana(z.id, sem, true); finde = true; }
+  /* Dormida: hoy no se le pide nada. La ficha sigue diciendo de quién es y, si
+     es tuya, lo deja claro; el progreso se guarda para cuando se abra. */
+  if(dormida === undefined) dormida = !p.t && tareasDe(z.id).length > 0;
   var eq = asignacionDia(dia)[z.id] || [];
   var gente = eq.length
     ? eq.map(function(n){
         return '<span class="chip'+(n===yo?" you":"")+'"><span class="av s" style="background:'+color(n)+'">'+esc(n.charAt(0))+'</span>'+esc(n===yo?"Tú":n)+'</span>';
       }).join('')
     : '<span class="chip vacia">Sin asignar</span>';
-  var abierta = mia || abierto["z"+z.id];
   var ts = tareasDeDia(z.id, dia);
+  var abierta = !dormida && (mia || abierto["z"+z.id]);
   var cuerpo = abierta
     ? '<div class="tasks">' + (ts.length
         ? ts.map(function(t){ return tareaHTML(t, puedoHacer(z.id, dia), dia); }).join('')
-        : '<div class="empty">' + (tareasDe(z.id).length
-            ? 'Hoy no toca nada aquí. La limpieza a fondo es el fin de semana.'
-            : 'Esta zona no tiene tareas todavía.') + '</div>') + '</div>'
+        : '<div class="empty">Esta zona no tiene tareas todavía.</div>') + '</div>'
     : '';
-  return '<div class="zone'+(mia?" mine":"")+'" style="--zc:'+at(z.color)+'">' +
+  return '<div class="zone'+(mia && !dormida ? " mine" : "")+(dormida ? " dormida" : "")+
+    '" style="--zc:'+at(z.color)+'">' +
     '<div class="zone-top" data-a="abre-zona" data-z="'+at(z.id)+'">' +
       '<span class="zone-bar"></span>' +
       '<div class="zone-id"><div class="zone-name"><span class="zone-dot"></span>'+esc(z.nombre)+'</div>' +
         (z.descripcion ? '<div class="zone-rooms">'+esc(z.descripcion)+'</div>' : '') +
         '<div class="zone-people">'+gente+'</div></div>' +
       '<div class="prog"><div class="n">' +
-        (p.t ? '<b>'+p.d+'</b>/'+p.t + (finde ? '<small> finde</small>' : '') : '—') + '</div>' +
+        (dormida ? (mia ? "tu zona" : esc(diasFondoTexto()))
+                 : (p.t ? '<b>'+p.d+'</b>/'+p.t : '—')) + '</div>' +
         '<div class="bar'+(p.p===100?" done":"")+'"><i style="width:'+p.p+'%"></i></div></div>' +
     '</div>' + cuerpo + '</div>';
 }
 
-function vCasa(){
-  var dia = hoy(), sem = semanaDe(dia);
-  var mias = misZonas(dia);
-  var ids = mias.map(function(z){ return z.id; });
-  var otras = S.zonas.filter(function(z){ return ids.indexOf(z.id) < 0; });
+/* Un bloque de sección: cabecera con icono, explicación y etiqueta, y el
+   cuerpo plegable. Lo que distingue de un vistazo el día a día del fondo. */
+function bloque(id, clase, icono, titulo, sub, tag, cuerpo){
+  var ab = abierto["b"+id] !== false;             /* abiertos por defecto */
+  return '<section class="blk '+clase+'">' +
+    '<div class="blk-h" data-a="abre-blk" data-b="'+at(id)+'">' +
+      '<span class="blk-ic">'+icono+'</span>' +
+      '<div class="blk-t"><div class="blk-n">'+esc(titulo)+'</div>' +
+        '<div class="blk-s">'+esc(sub)+'</div></div>' +
+      '<span class="blk-tag">'+esc(tag)+'</span>' +
+      '<span class="blk-ch">'+(ab ? "\u25be" : "\u25b8")+'</span>' +
+    '</div>' + (ab ? cuerpo : '') + '</section>';
+}
+
+function avisoCompra(){
   var falta = comprar();
-  var aviso = falta.length
-    ? '<div class="note buy" data-a="ir" data-v="stock"><div><b>Hay que comprar ('+falta.length+')</b><br>' +
-      esc(falta.slice(0,3).map(function(i){ return i.nombre; }).join(" · ")) +
-      (falta.length>3 ? ' · +'+(falta.length-3) : '') + '</div></div>'
-    : '';
-  var sig = hayTareas(dia) ? null : proximoDiaConTareas(dia);
-  var descanso = hayTareas(dia) ? '' :
-    '<div class="note"><div><b>Hoy no toca limpieza.</b><br>' +
-    (sig ? 'El siguiente día es el ' + DOW[dow(sig)] + ' ' + corta(sig) + '.'
-         : 'No hay ningún día de limpieza configurado.') + '</div></div>';
-  var sinRota = S.rotacionDesde && sem < S.rotacionDesde
-    ? '<div class="note"><div><b>La rotación empieza el ' + DOW[dow(S.rotacionDesde)] + ' ' +
-      corta(S.rotacionDesde) + '.</b><br>Hasta entonces las zonas no tienen equipo.</div></div>'
-    : '';
-  return aviso + sinRota + descanso +
-    (mias.length
-      ? '<div class="eyebrow">' + (mias.length > 1 ? "Lo que te toca hoy" : "Lo tuyo hoy") + '</div>' +
-        mias.map(function(z){ return zonaHTML(z, dia, true); }).join('') +
-        '<div class="eyebrow">El resto de la casa</div>'
-      : '<div class="eyebrow">La casa hoy</div>') +
-    otras.map(function(z){ return zonaHTML(z, dia, false); }).join('');
+  if(!falta.length) return '';
+  return '<div class="note buy" data-a="ir" data-v="stock"><div><b>Hay que comprar ('+falta.length+')</b><br>' +
+    esc(falta.slice(0,3).map(function(i){ return i.nombre; }).join(" \u00b7 ")) +
+    (falta.length>3 ? ' \u00b7 +'+(falta.length-3) : '') + '</div></div>';
+}
+
+function avisoSinRota(dia){
+  if(!S.rotacionDesde || semanaDe(dia) >= S.rotacionDesde) return '';
+  return '<div class="note"><div><b>La rotaci\u00f3n empieza el ' + DOW[dow(S.rotacionDesde)] + ' ' +
+    corta(S.rotacionDesde) + '.</b><br>Hasta entonces las zonas no tienen equipo.</div></div>';
+}
+
+/* La tira de arriba: lo tuyo de hoy, en una línea. */
+function tiraMia(dia){
+  if(!yo) return '';
+  var mias = misZonas(dia);
+  var conHoy = mias.filter(function(z){ return tareasDeDia(z.id, dia).length > 0; });
+  var pend = 0;
+  conHoy.forEach(function(z){ var p = progreso(z.id, dia); pend += p.t - p.d; });
+  var v, extra;
+  if(conHoy.length){
+    v = conHoy.map(function(z){ return z.nombre; }).join(" + ");
+    extra = pend
+      ? "\u00b7 " + (pend === 1 ? "queda 1 tarea" : "quedan " + pend + " tareas")
+      : "\u00b7 todo hecho";
+  } else {
+    v = "Nada por hoy";
+    var zf = mias.filter(function(z){ return !z.rota_aparte; })[0];
+    extra = zf ? "\u00b7 tu zona del finde es " + zf.nombre : "";
+  }
+  return '<div class="mio">' + avatar(yo) + '<div class="mio-t">' +
+    '<div class="mio-k">Hoy te toca</div>' +
+    '<div class="mio-v">' + esc(v) + ' <em>' + esc(extra) + '</em></div></div></div>';
+}
+
+/* Ordena poniendo delante lo que es tuyo. */
+function miasPrimero(zs, dia){
+  var mias = misZonas(dia).map(function(z){ return z.id; });
+  return zs.slice().sort(function(a, b){
+    return (mias.indexOf(b.id) > -1 ? 1 : 0) - (mias.indexOf(a.id) > -1 ? 1 : 0);
+  });
+}
+
+/* ---------- hoy: el turno diario y lo que se pide cada día ---------- */
+function vHoy(){
+  var dia = hoy();
+  var mias = misZonas(dia).map(function(z){ return z.id; });
+  var zs = miasPrimero(zonasAparte().filter(function(z){
+    return tareasDeDia(z.id, dia).length > 0;
+  }), dia);
+  var sig = zs.length ? null : proximoDiaAparte(dia);
+  var cuerpo = zs.length
+    ? zs.map(function(z){ return zonaHTML(z, dia, mias.indexOf(z.id) > -1, false); }).join('')
+    : '<div class="empty">Hoy no hay turno diario.' +
+      (sig ? ' El siguiente es el ' + DOW[dow(sig)] + ' ' + corta(sig) + '.' : '') + '</div>';
+  return avisoCompra() + avisoSinRota(dia) + tiraMia(dia) +
+    bloque("hoy", "blk-hoy", NAV_ICON.hoy, "Turno diario",
+           "Una persona al d\u00eda, para toda la casa.", "cada d\u00eda", cuerpo);
+}
+
+/* ---------- a fondo: las zonas, el fin de semana ---------- */
+function vFondo(){
+  var dia = hoy(), abierta = fondoAbierto(dia);
+  var mias = misZonas(dia).map(function(z){ return z.id; });
+  var tag, nota = '';
+  if(abierta){
+    tag = (ultimoFondo(dia) === dia) ? "\u00faltimo d\u00eda" : "abierto hoy";
+  } else {
+    tag = diasFondoTexto();
+    var sig = proximoFondo(dia);
+    if(sig){
+      var f = entre(dia, sig);
+      nota = '<div class="cuenta">Se abre el ' + DOW[dow(sig)] + ' \u00b7 ' +
+        (f === 1 ? "ma\u00f1ana" : "faltan " + f + " d\u00edas") + '</div>';
+    }
+  }
+  var zs = miasPrimero(zonasDeTurno(), dia);
+  var cuerpo = nota + (zs.length
+    ? zs.map(function(z){
+        return zonaHTML(z, dia, mias.indexOf(z.id) > -1, !tareasDeDia(z.id, dia).length);
+      }).join('')
+    : '<div class="empty">No hay zonas todav\u00eda.</div>');
+  return avisoSinRota(dia) +
+    bloque("fondo", "blk-fondo" + (abierta ? " activo" : ""), NAV_ICON.fondo,
+           "Limpieza a fondo",
+           "Por zonas, en equipo. Un solo tic: s\u00e1bado o domingo.", tag, cuerpo);
 }
 
 /* ---------- stock ---------- */
@@ -1215,6 +1376,11 @@ function onClick(e){
   }
   else if(a === "ir"){ vista = el.getAttribute("data-v"); pinta(); window.scrollTo(0,0); }
   else if(a === "abre-zona"){ var z = el.getAttribute("data-z"); abierto["z"+z] = !abierto["z"+z]; pinta(); }
+  else if(a === "abre-blk"){
+    var b = el.getAttribute("data-b");
+    abierto["b"+b] = abierto["b"+b] === false;    /* por defecto están abiertos */
+    pinta();
+  }
   else if(a === "abre-sem"){ var w = el.getAttribute("data-w"); abierto["w"+w] = !abierto["w"+w]; pinta(); }
   else if(a === "abre-acc"){ var k = el.getAttribute("data-k"); abierto["a"+k] = !abierto["a"+k]; pinta(); }
   else if(a === "foto"){ lightbox = el.getAttribute("data-src"); pinta(); }

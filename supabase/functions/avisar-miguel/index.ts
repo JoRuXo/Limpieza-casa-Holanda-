@@ -190,7 +190,10 @@ async function componerResumen(hoy: string) {
       (Date.parse(dia + "T00:00:00Z") - Date.parse(z.rota_desde + "T00:00:00Z")) / 86400000,
     );
     const cada = Math.max(1, z.rota_cada ?? 7);
-    const idx = Math.floor(dias / cada) + (cada < 7 ? Math.floor(dias / 7) : 0);
+    // rota_salto son los puestos extra que corre el turno cada semana. El turno
+    // diario lleva 2: con 1 se anula contra el avance semanal de las zonas y el
+    // turno del fin de semana caeria siempre sobre la misma zona.
+    const idx = Math.floor(dias / cada) + (z.rota_salto ?? 0) * Math.floor(dias / 7);
     let base = gente.indexOf(z.rota_persona);
     if (base < 0) base = 0;
     const out: string[] = [];
@@ -220,8 +223,8 @@ async function componerResumen(hoy: string) {
 
   const lineas: string[] = [
     `Semana del ${corta(sem)} al ${corta(mas(sem, 6))}. Hoy es ${DOW[diaSemana(hoy)]}.`,
-    `Turno diario ${diasLimpieza.length} dias por semana. ` +
-      `Limpieza a fondo de las zonas, el fin de semana.`,
+    `Turno diario: una persona al dia. ` +
+      `Limpieza a fondo por zonas: el fin de semana.`,
     "",
   ];
 
