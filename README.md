@@ -126,7 +126,23 @@ Dos niveles. Por semanas, con el porcentaje de cada zona; y al abrir una semana,
 
 ### Panel de admin
 
-Solo **Alberto**. Permite editar todo sin tocar código: personas y su orden en la rotación, los días de limpieza, zonas con sus plazas y colores, cada tarea (texto, días, si lleva foto), artículos con precio y mínimo, aportaciones al bote, el turno de los cubos y los destinatarios del correo.
+Solo quien esté en `admins`. **Todo el modelo se edita desde ahí, sin tocar código ni base de datos:**
+
+| Sección | Qué se puede cambiar |
+|---|---|
+| Personas y rotación | Añadir, quitar y reordenar personas · marcar quién es **admin** · la fecha en que arranca la rotación de zonas |
+| Días de limpieza | Qué días de la semana se pide lo que no tiene días propios |
+| Zonas y plazas | Nombre, qué incluye, plazas, color, orden · crear y borrar zonas · convertir una zona en **turno propio** y al revés, con su ritmo (cada día / cada semana) y su salto semanal |
+| Tareas | Texto · **qué días se pide**, uno a uno · si cuenta **1 vez por semana** o una por día · si lleva foto · orden dentro de la zona · crear y borrar |
+| Artículos | Nombre, precio, mínimo, **zona** · crear y borrar |
+| Bote común | Aportaciones |
+| Correo nocturno | Destinatarios |
+
+Lo único que no se hace desde ahí es **renombrar a una persona**: el historial guarda los nombres tal cual, así que un cambio dejaría huérfano lo ya hecho. Para eso, quitar y volver a añadir.
+
+Los días de una tarea se marcan uno a uno. Mientras no tenga días propios sigue los **días de limpieza de la casa** y sus botones salen con borde discontinuo; al tocar cualquiera se fijan en la tarea. Si se quitan todos, vuelve a heredarlos.
+
+No se puede quitar al último admin: no habría forma de volver a entrar.
 
 ## Arquitectura
 
