@@ -77,6 +77,18 @@ Van **aparte**, con su propio turno de una persona que avanza cada domingo. **No
 
 Se sacan el domingo y se entran el lunes. Su turno se cuenta **por días desde su propio domingo**, no por la semana de las zonas, así que quien los saca el domingo es siempre quien los entra el lunes aunque por medio haya un relevo de zonas.
 
+### Cambios de un día
+
+Cuando alguien cubre a otro, se apunta el cambio y ya está: **ese día esa sección la hace otro y nada más**. La rotación de debajo no se mueve, así que los demás conservan sus turnos y al borrar el cambio vuelve el titular solo.
+
+Es una capa encima de la rotación, no un parche dentro: el código sigue teniendo `turnoDe` (el turno de verdad, el que usa el panel de admin para re-anclar) y `turnoReal` (ese mismo turno con el cambio puesto encima, que es lo que mira todo lo que enseña quién limpia). El correo nocturno hace lo mismo y escribe `Alberto (cambio, por Sufian)`.
+
+A quién le tocaba **no se escribe a mano**: se saca de la rotación de ese día al guardar, así que no se puede apuntar un cambio contra alguien que no lo tenía.
+
+En la tira de la semana el día cambiado sale con borde ámbar y una marca `⇄`; en la ficha de la sección, una línea dice a quién se está cubriendo.
+
+Se gestionan desde **Admin → Cambios de un día**, y solo tienen sentido en las secciones con turno propio: las zonas de fondo se reparten por semana y ahí no hay un día suelto que cambiar.
+
 ### Por qué la semana va de lunes a domingo
 
 Para que **el fin de semana entero caiga dentro de la semana del mismo equipo**. Con semanas de domingo a sábado, el sábado y el domingo pertenecen a equipos distintos y la limpieza a fondo no se podría repartir entre los dos días.
@@ -140,6 +152,7 @@ Solo quien esté en `admins`. **Todo el modelo se edita desde ahí, sin tocar c�
 | Tareas | Texto · **qué días se pide**, uno a uno · si cuenta **1 vez por semana** o una por día · si lleva foto · orden dentro de la zona · crear y borrar |
 | Artículos | Nombre, precio, mínimo, **zona** · crear y borrar |
 | Bote común | Aportaciones |
+| Cambios de un día | Apuntar que una sección con turno propio la hace otra persona **ese día** · deshacerlos |
 | Correo nocturno | Destinatarios |
 
 Lo único que no se hace desde ahí es **renombrar a una persona**: el historial guarda los nombres tal cual, así que un cambio dejaría huérfano lo ya hecho. Para eso, quitar y volver a añadir.
@@ -167,6 +180,7 @@ Cada push a `main` despliega solo.
 - `casa_completadas` — una fila por tarea completada. `periodo` es el día, o el lunes que abre la semana para las semanales
 - `casa_semanas` — foto fija del reparto de cada semana, para que el historial no se reescriba si alguien entra o sale
 - `casa_items`, `casa_purchases`, `casa_contributions`, `casa_summary` — stock y bote
+- `casa_cambios` — cambios de turno de un solo día: `zona_id` + `dia` (únicos), quién lo hace, a quién sustituye y por qué. Borrar la fila deshace el cambio
 - `casa_avisos` — registro de cada intento de envío del correo
 - `casa_days` — historial del modelo antiguo (una persona al día), conservado sin tocar
 
@@ -179,6 +193,8 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-06 (cambios de un día)**: Se puede apuntar que una sección con turno propio la hace otro **ese día**, sin mover la rotación de nadie más: tabla `casa_cambios`, capa `turnoReal` encima de `turnoDe`, marca en la tira y en la ficha, y su sección en el panel de admin. El correo nocturno lo nombra igual. Primer uso: Alberto cubrió a Sufian el lunes 5 y Sufian le devuelve el domingo 11.
 
 - **2026-10-06 (los próximos días a la vista)**: La pestaña **Hoy** añade una tira con los **siete días de la semana** del turno diario y el nombre de quien lo tiene cada uno, más una línea que dice cuándo le vuelve a tocar a quien mira. Antes solo se veía el turno del día, y con el salto de dos puestos por semana nadie podía calcular su próxima vez contando personas. La tira va de lunes a domingo y no «los siete días que vienen»: dentro de una semana pasan los siete sin repetir, pero una ventana a caballo entre dos semanas enseñaba a uno dos veces y a otro ninguna.
 

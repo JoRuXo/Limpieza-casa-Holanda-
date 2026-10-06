@@ -276,11 +276,16 @@ img{max-width:100%;display:block}
 .prox-k{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.09em;
         color:var(--muted);margin-bottom:9px;padding:0 2px}
 .prox-d{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.prox-c{min-width:0;background:var(--surface);border:1px solid var(--line);
+.prox-c{position:relative;min-width:0;background:var(--surface);border:1px solid var(--line);
         border-radius:11px;padding:8px 4px 9px;display:flex;flex-direction:column;
         align-items:center;gap:5px}
 .prox-c.tu{border-color:var(--accent)}
 .prox-c.hoy{border-color:var(--accent);background:var(--accent-soft)}
+.prox-c.cambio{border-color:var(--warn)}
+.prox-sw{position:absolute;top:-6px;right:-5px;width:17px;height:17px;border-radius:50%;
+         background:var(--warn);color:#fff;font-size:10px;font-weight:700;line-height:1;
+         display:grid;place-items:center}
+.zone-sw{font-size:12px;color:var(--warn-ink);margin-top:7px;line-height:1.35}
 .prox-c.libre,.prox-c.pasado{opacity:.4}
 .prox-dow{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;color:var(--muted);
           white-space:nowrap}
@@ -414,7 +419,8 @@ function cargar(){
     api("casa_items?select=*&order=sort_order.asc,name.asc"),
     api("casa_purchases?select=*&order=at.desc&limit=30"),
     api("casa_contributions?select=*&order=at.desc&limit=40"),
-    api("casa_summary?select=*")
+    api("casa_summary?select=*"),
+    api("casa_cambios?select=*&dia=gte."+desde+"&order=dia.asc")
   ]).then(function(r){
     var cfg = (r[0] && r[0][0]) || {};
     var hechas = {};
@@ -431,6 +437,7 @@ function cargar(){
       tareas: r[2] || [],
       hechas: hechas,
       semanas: sem,
+      cambios: r[9] || [],
       items: (r[5]||[]).map(function(i){
         return {id:i.id, nombre:i.name, zona:i.zone, precio:i.price===null?null:Number(i.price),
                 cant:Number(i.quantity), min:Number(i.low_threshold), estado:i.status};
@@ -524,12 +531,36 @@ function turnoDe(z, dia){
   }
   return out;
 }
+/* Un cambio pactado: ese día esa sección la hace otro. Es una capa encima de
+   la rotación, no un parche dentro: `turnoDe` sigue dando el turno de verdad y
+   al retirar el cambio todo vuelve solo a su sitio. Por eso el panel de admin,
+   que re-ancla la rotación, sigue leyendo `turnoDe` y no esto. */
+function cambioDe(zid, dia){
+  for(var i=0;i<S.cambios.length;i++){
+    var c = S.cambios[i];
+    if(c.zona_id === zid && c.dia === dia) return c;
+  }
+  return null;
+}
+/* El turno que de verdad se aplica ese día: el de la rotación, con el cambio
+   puesto encima si lo hay. Lo usa todo lo que mira quién limpia; lo que mira
+   la rotación en sí usa `turnoDe`. */
+function turnoReal(z, dia){
+  var t = turnoDe(z, dia);
+  var c = cambioDe(z.id, dia);
+  if(c && t.length){
+    t = t.slice();
+    var i = t.indexOf(c.en_lugar_de);
+    t[i < 0 ? 0 : i] = c.quien;
+  }
+  return t;
+}
 /* Las personas distintas que pasan por una sección aparte a lo largo de una
    semana: una sola para los cubos, la casa entera para el turno diario. */
 function turnoSemana(z, sem){
   var out = [];
   for(var i=0;i<7;i++){
-    turnoDe(z, mas(sem, i)).forEach(function(q){ if(out.indexOf(q) < 0) out.push(q); });
+    turnoReal(z, mas(sem, i)).forEach(function(q){ if(out.indexOf(q) < 0) out.push(q); });
   }
   return out;
 }
@@ -539,7 +570,7 @@ function asignacion(sem){ return S.semanas[sem] || calcula(sem); }
 function asignacionDia(dia){
   var a = asignacion(semanaDe(dia)), map = {};
   S.zonas.forEach(function(z){
-    map[z.id] = z.rota_aparte ? turnoDe(z, dia) : (a[z.id] || []);
+    map[z.id] = z.rota_aparte ? turnoReal(z, dia) : (a[z.id] || []);
   });
   return map;
 }
@@ -781,6 +812,15 @@ function tareaHTML(t, puede, dia){
     (h ? '<div class="t-meta">'+esc(h.por)+' · '+hora(h.at)+'</div>' : '') + '</div>' + acc + '</div>';
 }
 
+
+/* El aviso del cambio en la ficha: quien lo hace ese día ya sale en los chips,
+   así que lo que falta decir es a quién se lo está cubriendo. */
+function cambioHTML(zid, dia){
+  var c = cambioDe(zid, dia);
+  if(!c) return '';
+  return '<div class="zone-sw">\u21c4 Cambio pactado \u00b7 en lugar de ' + esc(c.en_lugar_de) +
+    (c.nota ? ' \u00b7 ' + esc(c.nota) : '') + '</div>';
+}
 function zonaHTML(z, dia, mia, dormida){
   var sem = semanaDe(dia);
   var p = progreso(z.id, dia);
@@ -806,7 +846,7 @@ function zonaHTML(z, dia, mia, dormida){
       '<span class="zone-bar"></span>' +
       '<div class="zone-id"><div class="zone-name"><span class="zone-dot"></span>'+esc(z.nombre)+'</div>' +
         (z.descripcion ? '<div class="zone-rooms">'+esc(z.descripcion)+'</div>' : '') +
-        '<div class="zone-people">'+gente+'</div></div>' +
+        '<div class="zone-people">'+gente+'</div>' + cambioHTML(z.id, dia) + '</div>' +
       '<div class="prog"><div class="n">' +
         (dormida ? (mia ? "tu zona" : esc(diasFondoTexto()))
                  : (p.t ? '<b>'+p.d+'</b>/'+p.t : '—')) + '</div>' +
@@ -901,8 +941,9 @@ function agendaSemana(z, dia){
   var sem = semanaDe(dia), out = [];
   for(var i=0;i<7;i++){
     var d = mas(sem, i);
-    out.push({dia: d, quien: turnoDe(z, d)[0] || "", hoy: d === dia,
-              pasado: d < dia, libre: !tareasDeDia(z.id, d).length});
+    out.push({dia: d, quien: turnoReal(z, d)[0] || "", hoy: d === dia,
+              pasado: d < dia, libre: !tareasDeDia(z.id, d).length,
+              cambio: cambioDe(z.id, d)});
   }
   return out;
 }
@@ -911,7 +952,7 @@ function agendaSemana(z, dia){
 function miProximoTurno(z, dia){
   for(var i=1;i<=31;i++){
     var d = mas(dia, i);
-    if(turnoDe(z, d)[0] === yo) return d;
+    if(turnoReal(z, d)[0] === yo) return d;
   }
   return null;
 }
@@ -923,7 +964,7 @@ function proximosHTML(z, dia){
   var mio = miProximoTurno(z, dia), nota;
   if(!mio){
     nota = "Pr\u00f3ximos d\u00edas";
-  } else if(turnoDe(z, dia)[0] === yo){
+  } else if(turnoReal(z, dia)[0] === yo){
     nota = "Hoy te toca \u00b7 vuelves el " + DOW[dow(mio)] + " " + corta(mio);
   } else {
     var f = entre(dia, mio);
@@ -936,7 +977,10 @@ function proximosHTML(z, dia){
       var n = new Date(c.dia + "T00:00:00").getDate();
       return '<div class="prox-c' + (c.hoy ? " hoy" : "") +
           (c.quien === yo ? " tu" : "") + (c.pasado ? " pasado" : "") +
-          (c.libre ? " libre" : "") + '">' +
+          (c.libre ? " libre" : "") + (c.cambio ? " cambio" : "") + '">' +
+        (c.cambio ? '<span class="prox-sw" title="' +
+          at("Cambio pactado \u00b7 en lugar de " + c.cambio.en_lugar_de) +
+          '">\u21c4</span>' : '') +
         '<div class="prox-dow">' + (c.hoy ? "HOY" : DOW_C[dow(c.dia)] + " " + n) + '</div>' +
         (c.quien
           ? '<span class="av s" style="background:'+color(c.quien)+'">' +
@@ -1089,7 +1133,7 @@ function vHistorial(){
       dias.push({
         d: dd,
         p: progresoDia(dd),
-        quien: zd ? (turnoDe(zd, dd)[0] || "") : "",
+        quien: zd ? (turnoReal(zd, dd)[0] || "") : "",
         zs: S.zonas.map(function(z){ return {z:z, p:progreso(z.id, dd)}; })
       });
     }
@@ -1323,6 +1367,46 @@ function vAdmin(){
   '<button class="btn btn-pri" data-a="m-add">Añadir</button></div>' +
   '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">Resumen automático cada noche a las 23:00.</p>';
 
+
+  /* Cambios de un día. Solo tienen sentido en las secciones con turno propio:
+     las zonas de fondo se reparten por semana y ahí no hay un día que cambiar.
+     Los de antes de hoy se quedan a la vista hasta que se borren, que para eso
+     son la prueba de lo que se pactó. */
+  var aparte = zonasAparte();
+  var cambios = S.cambios.slice().sort(function(x, y){ return x.dia < y.dia ? 1 : -1; })
+    .map(function(c){
+      var z = S.zonas.filter(function(q){ return q.id === c.zona_id; })[0];
+      return '<div class="row"><span class="av s" style="background:'+color(c.quien)+'">' +
+          esc(c.quien.charAt(0))+'</span>' +
+        '<div class="grow" style="min-width:0"><div style="font-weight:600;font-size:13.5px">' +
+          esc(c.quien) + ' <span style="color:var(--muted);font-weight:500">en lugar de ' +
+          esc(c.en_lugar_de) + '</span></div>' +
+        '<div style="font-size:12px;color:var(--muted)">' +
+          esc(z ? z.nombre : c.zona_id) + ' \u00b7 ' + DOW[dow(c.dia)] + ' ' + corta(c.dia) +
+          (c.nota ? ' \u00b7 ' + esc(c.nota) : '') + '</div></div>' +
+        '<button class="mini btn-danger" data-a="cb-quita" data-id="'+at(c.id)+'" ' +
+          'title="Deshacer el cambio">\u00d7</button></div>';
+    }).join('');
+  var cambiosBody = (cambios || '<p style="font-size:12.5px;color:var(--muted);margin:0 0 10px">' +
+      'No hay ning\u00fan cambio apuntado.</p>') +
+    (aparte.length
+      ? '<div class="row" style="margin-top:10px"><div class="grow"><span class="lab">Secci\u00f3n</span>' +
+          '<select class="fld fld-sm" id="cb-zona">' +
+          aparte.map(function(z){ return '<option value="'+at(z.id)+'">'+esc(z.nombre)+'</option>'; }).join('') +
+          '</select></div>' +
+        '<div style="width:138px"><span class="lab">D\u00eda</span>' +
+          '<input class="fld fld-sm" type="date" id="cb-dia" value="'+at(hoy())+'"></div></div>' +
+        '<div class="row"><div class="grow"><span class="lab">Lo hace</span>' +
+          '<select class="fld fld-sm" id="cb-quien">' +
+          S.gente.map(function(n){ return '<option>'+esc(n)+'</option>'; }).join('') + '</select></div>' +
+        '<div class="grow"><span class="lab">Motivo (opcional)</span>' +
+          '<input class="fld fld-sm" id="cb-nota" placeholder="le cubr\u00ed el lunes"></div>' +
+        '<button class="btn btn-pri" data-a="cb-add">A\u00f1adir</button></div>'
+      : '') +
+    '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">' +
+      'Cambia qui\u00e9n hace esa secci\u00f3n <b>ese d\u00eda</b> y nada m\u00e1s: la rotaci\u00f3n de debajo ' +
+      'no se mueve, as\u00ed que los dem\u00e1s conservan sus turnos y al borrar el cambio vuelve ' +
+      'el titular. A qui\u00e9n le tocaba se guarda solo, mirando la rotaci\u00f3n de ese d\u00eda.</p>';
   var reparto = S.zonas.map(function(z){
     return '<div class="row"><span class="zone-dot" style="background:'+at(z.color)+'"></span>' +
       '<span class="grow" style="font-weight:600;font-size:13.5px">'+esc(z.nombre)+'</span>' +
@@ -1338,6 +1422,7 @@ function vAdmin(){
     acc("tar", "Tareas", S.tareas.length+" tareas", tareas) +
     acc("sto", "Artículos de limpieza", S.items.length+" art.", stock) +
     acc("bot", "Bote común", eur(S.bote), bote) +
+    acc("cam", "Cambios de un d\u00eda", S.cambios.length ? S.cambios.length+" apuntados" : "ninguno", cambiosBody) +
     acc("cor", "Correo nocturno", S.correos.length+" destinos", correos);
 }
 
@@ -1660,6 +1745,27 @@ function onClick(e){
     if(c === null || c <= 0){ toast("Pon la cantidad.", true); return; }
     run(api("casa_contributions", {method:"POST", prefer:"return=minimal",
       body:[{by_name:q, amount:c}]}), "Aportación registrada");
+  }
+  else if(a === "cb-add"){
+    var cz = document.getElementById("cb-zona").value;
+    var cd = document.getElementById("cb-dia").value;
+    var cq = document.getElementById("cb-quien").value;
+    var cn = document.getElementById("cb-nota").value.trim();
+    var zx = S.zonas.filter(function(q){ return q.id === cz; })[0];
+    if(!zx || !cd){ toast("Falta la secci\u00f3n o el d\u00eda.", true); return; }
+    /* A quién le tocaba lo saca la rotación, no el formulario: así no se puede
+       apuntar un cambio contra alguien que no tenía ese día. */
+    var tit = turnoDe(zx, cd)[0];
+    if(!tit){ toast("Ese d\u00eda esa secci\u00f3n no es de nadie.", true); return; }
+    if(tit === cq){ toast("Ya le toca a " + cq + " ese d\u00eda.", true); return; }
+    run(api("casa_cambios?on_conflict=zona_id,dia", {
+      method:"POST", prefer:"resolution=merge-duplicates,return=minimal",
+      body:[{zona_id:cz, dia:cd, quien:cq, en_lugar_de:tit, nota:cn || null, por:yo}]
+    }), "Cambio apuntado");
+  }
+  else if(a === "cb-quita"){
+    run(api("casa_cambios?id=eq." + encodeURIComponent(el.getAttribute("data-id")),
+            {method:"DELETE", prefer:"return=minimal"}), "Cambio deshecho");
   }
   else if(a === "m-add"){
     var m = document.getElementById("m-nuevo").value.trim();

@@ -138,7 +138,7 @@ async function enviarCorreo(destinos: string[], asunto: string, cuerpo: string) 
 
 async function componerResumen(hoy: string) {
   const sem = semanaDe(hoy);
-  const [cfgRows, zonas, tareas, hechas, semanas, items, summaryRows] = await Promise.all([
+  const [cfgRows, zonas, tareas, hechas, semanas, items, summaryRows, cambios] = await Promise.all([
     db("casa_config?id=eq.1&select=*"),
     db("casa_zonas?select=*&order=orden.asc"),
     db("casa_tareas?select=*&order=orden.asc"),
@@ -146,6 +146,7 @@ async function componerResumen(hoy: string) {
     db(`casa_semanas?select=*&semana=eq.${sem}`),
     db("casa_items?select=*&order=sort_order.asc"),
     db("casa_summary?select=*"),
+    db(`casa_cambios?select=*&dia=gte.${sem}`),
   ]);
   const cfg = cfgRows[0];
   if (!cfg) throw new Error("no hay fila de configuracion en casa_config");
@@ -202,6 +203,21 @@ async function componerResumen(hoy: string) {
     }
     return out;
   };
+  // Un cambio pactado: ese dia esa seccion la hace otro. Va encima de la
+  // rotacion, igual que en la app, para que el correo nombre a quien de verdad
+  // le tocaba y no al titular de la rotacion.
+  const turnoReal = (z: any, dia: string): string[] => {
+    const t = turnoDe(z, dia);
+    const c = (cambios ?? []).find((x: any) => x.zona_id === z.id && x.dia === dia);
+    if (!c || !t.length) return t;
+    const out = t.slice();
+    const i = out.indexOf(c.en_lugar_de);
+    out[i < 0 ? 0 : i] = c.quien;
+    return out;
+  };
+  const cambioDe = (zid: string, dia: string) =>
+    (cambios ?? []).find((x: any) => x.zona_id === zid && x.dia === dia) ?? null;
+
   const zonaDiaria = zonas.find((z: any) => z.rota_aparte && (z.rota_cada ?? 7) < 7) ?? null;
 
   // Una tarea se pide en sus dias propios, o en los dias de limpieza de la casa
@@ -234,7 +250,7 @@ async function componerResumen(hoy: string) {
   for (const z of zonas) {
     const ts = (tareas ?? []).filter((t: any) => t.zona_id === z.id);
     const equipo = z.rota_aparte
-      ? (turnoDe(z, hoy).join(", ") || "sin asignar")
+      ? (turnoReal(z, hoy).join(", ") || "sin asignar")
       : ((reparto[z.id] ?? []).join(", ") || "sin asignar");
     let total = 0, hecho = 0;
     const detalle: string[] = [];
@@ -249,10 +265,11 @@ async function componerResumen(hoy: string) {
         const puestas = delDia.filter((t: any) => hechasMap.has(`${t.id}|${periodo(t, dia)}`)).length;
         total += delDia.length;
         hecho += puestas;
-        const quien = turnoDe(z, dia)[0] ?? "sin asignar";
+        const quien = turnoReal(z, dia)[0] ?? "sin asignar";
+        const cb = cambioDe(z.id, dia);
         detalle.push(
           `    ${puestas === delDia.length ? "[x]" : "[ ]"} ${DOW_C[diaSemana(dia)]} ${corta(dia)} - ` +
-          `${quien} - ${puestas} de ${delDia.length}`,
+          `${quien}${cb ? ` (cambio, por ${cb.en_lugar_de})` : ""} - ${puestas} de ${delDia.length}`,
         );
       }
       totalGlobal += total;
