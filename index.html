@@ -270,6 +270,25 @@ img{max-width:100%;display:block}
 .zone.dormida .bar{display:none}
 .cuenta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:0 0 12px}
 
+/* Los próximos turnos del día a día. Nadie quiere contar puestos de cabeza
+   para saber cuándo le vuelve a tocar: la tira lo pone delante. */
+.prox{border-top:1px dashed var(--line);margin-top:2px;padding:12px 0 2px}
+.prox-k{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+        color:var(--muted);margin-bottom:9px;padding:0 2px}
+.prox-d{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.prox-c{min-width:0;background:var(--surface);border:1px solid var(--line);
+        border-radius:11px;padding:8px 4px 9px;display:flex;flex-direction:column;
+        align-items:center;gap:5px}
+.prox-c.tu{border-color:var(--accent)}
+.prox-c.hoy{border-color:var(--accent);background:var(--accent-soft)}
+.prox-c.libre,.prox-c.pasado{opacity:.4}
+.prox-dow{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;color:var(--muted);
+          white-space:nowrap}
+.prox-c.hoy .prox-dow{color:var(--accent)}
+.prox-n{font-size:11px;font-weight:600;line-height:1.2;max-width:100%;overflow:hidden;
+        text-overflow:ellipsis;white-space:nowrap}
+.prox-c.tu .prox-n{color:var(--accent)}
+
 /* Qué te toca a ti hoy, antes que nada. */
 .mio{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
      border-radius:var(--r);padding:13px 15px;margin-bottom:20px;box-shadow:var(--shadow)}
@@ -862,13 +881,71 @@ function vHoy(){
     return tareasDeDia(z.id, dia).length > 0;
   }), dia);
   var sig = zs.length ? null : proximoDiaAparte(dia);
-  var cuerpo = zs.length
+  var zd = zonaDiaria();
+  var cuerpo = (zs.length
     ? zs.map(function(z){ return zonaHTML(z, dia, mias.indexOf(z.id) > -1, false); }).join('')
     : '<div class="empty">Hoy no hay turno diario.' +
-      (sig ? ' El siguiente es el ' + DOW[dow(sig)] + ' ' + corta(sig) + '.' : '') + '</div>';
+      (sig ? ' El siguiente es el ' + DOW[dow(sig)] + ' ' + corta(sig) + '.' : '') + '</div>') +
+    (zd ? proximosHTML(zd, dia) : '');
   return avisoCompra() + avisoSinRota(dia) + tiraMia(dia) +
     bloque("hoy", "blk-hoy", NAV_ICON.hoy, "Turno diario",
            "Una persona al d\u00eda, para toda la casa.", "cada d\u00eda", cuerpo);
+}
+
+/* El turno de la semana en curso, de lunes a domingo. Va por semana y no por
+   los siete días siguientes a hoy a propósito: el turno corre un puesto al día
+   y dos más al cambiar de semana, así que dentro de una semana pasan los siete
+   sin repetir, pero una ventana que se montase sobre dos semanas enseñaría a
+   alguien dos veces y a otro ninguna. Eso no es la rotación, es la ventana. */
+function agendaSemana(z, dia){
+  var sem = semanaDe(dia), out = [];
+  for(var i=0;i<7;i++){
+    var d = mas(sem, i);
+    out.push({dia: d, quien: turnoDe(z, d)[0] || "", hoy: d === dia,
+              pasado: d < dia, libre: !tareasDeDia(z.id, d).length});
+  }
+  return out;
+}
+/* El próximo día que te toca a ti. Mira un mes por delante: con la casa llena
+   sobra, y antes de que arranque la rotación no hay nada que encontrar. */
+function miProximoTurno(z, dia){
+  for(var i=1;i<=31;i++){
+    var d = mas(dia, i);
+    if(turnoDe(z, d)[0] === yo) return d;
+  }
+  return null;
+}
+function proximosHTML(z, dia){
+  var ag = agendaSemana(z, dia);
+  if(!ag.some(function(c){ return c.quien; })) return '';
+  /* La semana enseña quién tiene cada día; la línea de encima dice cuándo le
+     toca al que mira, que puede caer en otra semana y no verse en la tira. */
+  var mio = miProximoTurno(z, dia), nota;
+  if(!mio){
+    nota = "Pr\u00f3ximos d\u00edas";
+  } else if(turnoDe(z, dia)[0] === yo){
+    nota = "Hoy te toca \u00b7 vuelves el " + DOW[dow(mio)] + " " + corta(mio);
+  } else {
+    var f = entre(dia, mio);
+    nota = "Te toca el " + DOW[dow(mio)] + " " + corta(mio) +
+           (f === 1 ? " \u00b7 ma\u00f1ana" : " \u00b7 en " + f + " d\u00edas");
+  }
+  return '<div class="prox">' +
+    '<div class="prox-k">' + esc(nota) + '</div>' +
+    '<div class="prox-d">' + ag.map(function(c){
+      var n = new Date(c.dia + "T00:00:00").getDate();
+      return '<div class="prox-c' + (c.hoy ? " hoy" : "") +
+          (c.quien === yo ? " tu" : "") + (c.pasado ? " pasado" : "") +
+          (c.libre ? " libre" : "") + '">' +
+        '<div class="prox-dow">' + (c.hoy ? "HOY" : DOW_C[dow(c.dia)] + " " + n) + '</div>' +
+        (c.quien
+          ? '<span class="av s" style="background:'+color(c.quien)+'">' +
+              esc(c.quien.charAt(0)) + '</span>' +
+            '<div class="prox-n">' + esc(c.quien === yo ? "T\u00fa" : c.quien) + '</div>'
+          : '<span class="av s" style="background:var(--line)"></span>' +
+            '<div class="prox-n">\u2014</div>') +
+      '</div>';
+    }).join('') + '</div></div>';
 }
 
 /* ---------- a fondo: las zonas, el fin de semana ---------- */

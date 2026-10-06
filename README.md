@@ -30,6 +30,10 @@ Sigue cumpliéndose que cada semana pasan los siete sin repetir y que en 7 seman
 
 No ocupa plaza en el reparto de zonas, así que se puede tener turno diario y zona a la vez.
 
+Debajo del turno de hoy va la tira de los **siete días de la semana**, con el nombre de quien lo tiene cada uno. Encima, una línea dice cuándo le toca a quien está mirando: *«Te toca el jueves 8 oct · en 2 días»*, o *«Hoy te toca · vuelves el domingo 18 oct»* si ya lo tiene hoy. Hace falta porque con el salto de dos puestos por semana la vuelta no cae a los siete días justos y no hay forma de contarla de cabeza.
+
+La tira va **de lunes a domingo**, no «los siete días que vienen». Es a propósito: el turno corre un puesto al día y dos más al cambiar de semana, así que dentro de una semana pasan los siete sin repetir, pero una ventana que se montase sobre dos semanas enseñaría a alguien dos veces y a otro ninguna. Los días ya pasados salen apagados.
+
 ### Zonas y equipos
 
 Para la limpieza a fondo, la casa se reparte en **4 zonas**, con un equipo por zona:
@@ -87,7 +91,7 @@ La barra de abajo separa las dos cosas:
 | **A fondo** | Las 4 zonas y su limpieza de fin de semana |
 | Stock · Historial · Admin | Como antes |
 
-Cada pestaña abre con una cabecera que explica de qué va la sección y se puede plegar. Entre semana las zonas de fondo salen **apagadas**, con borde discontinuo y un contador de cuánto falta para que se abran; el sábado y el domingo se encienden y la cabecera pasa a ámbar. Arriba del todo, una línea dice lo que te toca a ti hoy.
+Cada pestaña abre con una cabecera que explica de qué va la sección y se puede plegar. Entre semana las zonas de fondo salen **apagadas**, con borde discontinuo y un contador de cuánto falta para que se abran; el sábado y el domingo se encienden y la cabecera pasa a ámbar. Arriba del todo, una línea dice lo que te toca a ti hoy. Debajo del turno diario, una tira con los **siete días de la semana** y quién los tiene, con el tuyo marcado.
 
 ### Días y tareas
 
@@ -175,6 +179,8 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-06 (los próximos días a la vista)**: La pestaña **Hoy** añade una tira con los **siete días de la semana** del turno diario y el nombre de quien lo tiene cada uno, más una línea que dice cuándo le vuelve a tocar a quien mira. Antes solo se veía el turno del día, y con el salto de dos puestos por semana nadie podía calcular su próxima vez contando personas. La tira va de lunes a domingo y no «los siete días que vienen»: dentro de una semana pasan los siete sin repetir, pero una ventana a caballo entre dos semanas enseñaba a uno dos veces y a otro ninguna.
 
 - **2026-10-05 (arranque limpio)**: La rotación de zonas se re-ancla en el **lunes 5 de octubre**, que pasa a ser su semana 1, y el historial arranca de cero desde ahí. El turno diario **retoma la lista donde se quedó**: el último turno hecho de verdad fue Alberto el 29 de septiembre, así que empieza **Sufian**, que junto con Pablo nunca había tenido uno. Los cubos verdes no se tocan — Yassine los sacó el domingo 4 y los entra el lunes 5. El historial del modelo viejo (`casa_days`, septiembre) se conserva aparte; la app no lo lee.
 
