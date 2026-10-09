@@ -125,7 +125,22 @@ La barra de abajo separa las dos cosas:
 
 Cada bloque abre con una cabecera que explica de qué va y se puede plegar. De lunes a sábado las zonas de fondo salen **apagadas**, con borde discontinuo y un contador de cuánto falta; el domingo se encienden y la cabecera pasa a ámbar. Arriba del todo, una línea dice lo que te toca a ti hoy.
 
-**Mi mes** existe porque el turno diario cambia cada día y las zonas cada lunes: de memoria nadie sabe cómo tiene el mes. Enseña los días de turno de una persona (con los cubos que le caigan), su zona de cada domingo y las recogidas del mes con quién las saca y quién las entra. Se puede mirar el mes de otro, que para discutir un cambio hace falta ver los dos.
+**Mi mes** existe porque el turno diario cambia cada día y las zonas cada lunes: de memoria nadie sabe cómo tiene el mes. Se puede mirar el mes de otro, que para discutir un cambio hace falta ver los dos.
+
+Arriba va un **calendario** del mes, de lunes a domingo, con una abreviatura en cada día en que a esa persona le toca algo:
+
+| | Qué es | Qué hay que hacer |
+|---|---|---|
+| **TD** | Turno diario | Barrer, fregar y sacar la basura |
+| **AF** | A fondo | Tu zona, los domingos |
+| **CS** | Cubos: sacar | Sacarlos a la calle |
+| **CE** | Cubos: entrar | Entrarlos a casa |
+
+La misma leyenda va impresa debajo del calendario, para no tener que recordarla. Un día puede llevar dos (`TD CS` es turno diario y además sacar los cubos). **En rojo** sale lo que ya pasó y no se hizo; lo que está por venir nunca sale en rojo, que todavía no es un fallo. El día de hoy va recuadrado y los domingos tienen el fondo distinto.
+
+Debajo siguen las listas, que son el detalle: los días de turno con lo que cae cada uno, la zona de cada domingo y las recogidas del mes con quién las saca y quién las entra.
+
+El calendario y las listas preguntan lo mismo a las mismas funciones (`toca()` y el reparto de la semana), así que no pueden decir cosas distintas.
 
 ### Días y tareas
 
@@ -228,6 +243,8 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-10 (el mes en calendario)**: **Mi mes** gana un calendario arriba, con los días marcados con abreviaturas — `TD` turno diario, `AF` a fondo, `CS` sacar cubos, `CE` entrar cubos — y su leyenda impresa debajo. En rojo lo que ya pasó sin hacerse. Las listas de detalle se quedan como estaban.
 
 - **2026-10-10 (el domingo es para el fondo, cubos por calendario y lista de la compra)**: La limpieza a fondo pasa a ser **solo del domingo**, y ese día **no hay turno diario**: a quien le cae en domingo no tiene turno esa semana, y le toca a uno distinto cada semana. A cambio el turno diario recupera el sábado, así que son seis días iguales de lunes a sábado. Los **cubos** pierden su rotación propia y pasan a un **calendario de recogidas** con fecha y color: los saca quien tenga el turno diario ese día y los entra quien lo tenga al siguiente. El **stock desaparece** —nunca se usó— y lo sustituye una **lista de la compra** compartida; el **bote** se queda, en su propia pestaña. Y entra **Mi mes**, que enseña de un vistazo los días de turno y las zonas de todo el mes de una persona.
 

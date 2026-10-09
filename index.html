@@ -18,6 +18,7 @@
   --accent:#176B4A; --accent-soft:#E4EFE9;
   --ok:#2E8B57; --warn:#B07A24; --warn-soft:#FBF3E4; --warn-ink:#7A5312;
   --bad:#B4453A; --bad-soft:#F7E8E6;
+  --cubo:#3D6B9E; --cubo-soft:#E7EDF5;
   --r:14px;
   --shadow:0 1px 2px rgba(16,32,24,.05), 0 8px 24px -12px rgba(16,32,24,.18);
   --font:'Instrument Sans',system-ui,-apple-system,sans-serif;
@@ -31,6 +32,7 @@
     --accent:#4FB487; --accent-soft:#1A2E26;
     --ok:#5CBE87; --warn:#D6A050; --warn-soft:#2C2516; --warn-ink:#E0BE78;
     --bad:#DE7A6D; --bad-soft:#331F1C;
+    --cubo:#83ABD9; --cubo-soft:#1B2634;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
   }
 }
@@ -40,6 +42,7 @@
   --accent:#4FB487; --accent-soft:#1A2E26;
   --ok:#5CBE87; --warn:#D6A050; --warn-soft:#2C2516; --warn-ink:#E0BE78;
   --bad:#DE7A6D; --bad-soft:#331F1C;
+  --cubo:#83ABD9; --cubo-soft:#1B2634;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
 }
 *{box-sizing:border-box}
@@ -304,9 +307,8 @@ img{max-width:100%;display:block}
 /* Mi mes: el mes de una persona, fila por fila. */
 .mes-top{display:flex;align-items:center;gap:10px;padding:2px 0 12px}
 .mes-n{flex:1;text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:.1em}
-.mes-gente{display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
-.mes-gente::-webkit-scrollbar{display:none}
-.mes-gente .chip{flex-shrink:0;cursor:pointer;border:1px solid transparent}
+.mes-gente{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:12px}
+.mes-gente .chip{cursor:pointer;border:1px solid transparent}
 .mes-gente .chip.you{border-color:var(--accent)}
 .mrow{display:flex;align-items:baseline;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
 .mrow:last-child{border-bottom:0}
@@ -321,6 +323,33 @@ img{max-width:100%;display:block}
 .zchip{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;
        margin-right:8px;--zc:var(--muted)}
 .zchip .zone-dot{width:7px;height:7px}
+
+/* El mes en rejilla: una celda por día, con las abreviaturas de lo que toca. */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
+.cal-h{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:0 0 3px}
+.cal-c{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-height:48px;
+       padding:4px 1px 4px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.cal-c.vacia{background:transparent;border-color:transparent;min-height:0}
+.cal-c.dom{background:var(--surface-2)}
+.cal-c.libre .cal-d{color:var(--muted);font-weight:500}
+.cal-c.pasado{opacity:.5}
+.cal-c.hoy{border-color:var(--accent);border-width:2px;background:var(--accent-soft);opacity:1}
+.cal-d{font-family:var(--mono);font-size:11.5px;font-weight:700;line-height:1}
+.cal-c.hoy .cal-d{color:var(--accent)}
+.cal-ms{display:flex;flex-wrap:wrap;gap:2px;justify-content:center}
+.cal-m{font-family:var(--mono);font-size:8.5px;font-weight:700;border-radius:4px;
+       padding:1px 3px;line-height:1.4;white-space:nowrap}
+.cal-m.td{background:var(--accent-soft);color:var(--accent)}
+.cal-m.af{background:var(--warn-soft);color:var(--warn-ink)}
+.cal-m.cu{background:var(--cubo-soft);color:var(--cubo)}
+.cal-m.falta{background:var(--bad-soft);color:var(--bad)}
+.cal-leyenda{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;padding:11px 12px;
+             background:var(--surface);border:1px solid var(--line);border-radius:12px;
+             margin-bottom:20px}
+.cal-l{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--muted);line-height:1.3}
+.cal-l .cal-m{flex-shrink:0;margin-top:1px}
+.cal-l b{color:var(--ink);font-weight:600}
+.cal-l.ancha{grid-column:1 / -1;border-top:1px solid var(--line);padding-top:8px}
 
 /* La lista de la compra. */
 .li{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
@@ -1126,6 +1155,77 @@ function diasDelMes(m){
   while(d <= fin){ out.push(d); d = mas(d, 1); }
   return out;
 }
+/* Lo que le toca a alguien un día, separado por tipo. Se apoya en toca() y en
+   el reparto de siempre, así que el calendario no puede decir una cosa y la
+   lista de abajo otra: las dos preguntan lo mismo. */
+function loDeUnDia(quien, d){
+  var zd = zonaDiaria();
+  var mio = !!zd && turnoReal(zd, d)[0] === quien;
+  var ts = mio ? tareasDeDia(zd.id, d) : [];
+  var hechas = function(lista){
+    return lista.length > 0 && lista.every(function(t){ return !!hecha(t, d); });
+  };
+  var normales = ts.filter(function(t){ return !t.cubos; });
+  var saca     = ts.filter(function(t){ return t.cubos === "sacar"; });
+  var entra    = ts.filter(function(t){ return t.cubos === "entrar"; });
+  var zonas = [];
+  if(fondoAbierto(d)){
+    var a = asignacionDia(d);
+    zonas = zonasDeTurno().filter(function(z){ return (a[z.id] || []).indexOf(quien) > -1; });
+  }
+  var tFondo = [];
+  zonas.forEach(function(z){ tFondo = tFondo.concat(tareasDeDia(z.id, d)); });
+  return {
+    td: normales.length > 0, tdHecho: hechas(normales),
+    cs: saca.length > 0,     csHecho: hechas(saca),
+    ce: entra.length > 0,    ceHecho: hechas(entra),
+    af: zonas.length > 0,    afHecho: hechas(tFondo),
+    zonas: zonas
+  };
+}
+/* El mes en rejilla. Es lo primero que se ve porque responde de un vistazo a
+   "¿cuándo me toca?", que es para lo que se abre esta pantalla; las listas de
+   abajo son el detalle. Empieza en lunes, como la semana de la casa. */
+var CAL_MARCAS = [
+  {k:"td", cl:"td", ab:"TD", qu:"Turno diario", de:"barrer, fregar y sacar la basura"},
+  {k:"af", cl:"af", ab:"AF", qu:"A fondo",      de:"tu zona, los domingos"},
+  {k:"cs", cl:"cu", ab:"CS", qu:"Cubos: sacar", de:"sacarlos a la calle"},
+  {k:"ce", cl:"cu", ab:"CE", qu:"Cubos: entrar",de:"entrarlos a casa"}
+];
+function calendarioHTML(quien){
+  var dias = diasDelMes(mesVisto), hoyEs = hoy();
+  var cabe = ["L","M","X","J","V","S","D"]
+    .map(function(x){ return '<div class="cal-h">' + x + '</div>'; }).join('');
+  var celdas = "";
+  /* Hueco hasta el primer día: la rejilla arranca en lunes. */
+  for(var i = 0; i < (dow(dias[0]) + 6) % 7; i++) celdas += '<div class="cal-c vacia"></div>';
+
+  dias.forEach(function(d){
+    var x = loDeUnDia(quien, d), pas = d < hoyEs;
+    var marcas = CAL_MARCAS.filter(function(m){ return x[m.k]; }).map(function(m){
+      /* En rojo solo lo que ya pasó y no se hizo: lo que está por venir no es
+         un fallo todavía. */
+      var falta = pas && !x[m.k === "td" ? "tdHecho" : m.k === "af" ? "afHecho"
+                            : m.k === "cs" ? "csHecho" : "ceHecho"];
+      return '<span class="cal-m ' + (falta ? "falta" : m.cl) + '">' + m.ab + '</span>';
+    }).join('');
+    celdas += '<div class="cal-c' + (d === hoyEs ? " hoy" : "") + (pas ? " pasado" : "") +
+      (dow(d) === 0 ? " dom" : "") + (marcas ? "" : " libre") + '">' +
+      '<div class="cal-d">' + Number(d.slice(8,10)) + '</div>' +
+      '<div class="cal-ms">' + marcas + '</div></div>';
+  });
+
+  var leyenda = CAL_MARCAS.map(function(m){
+    return '<div class="cal-l"><span class="cal-m ' + m.cl + '">' + m.ab + '</span>' +
+      '<span><b>' + esc(m.qu) + '</b> \u00b7 ' + esc(m.de) + '</span></div>';
+  }).join('') +
+    '<div class="cal-l ancha"><span class="cal-m falta">TD</span>' +
+      '<span>En rojo, lo que ya pas\u00f3 y <b>no se hizo</b>.</span></div>';
+
+  return '<div class="cal">' + cabe + celdas + '</div>' +
+    '<div class="cal-leyenda">' + leyenda + '</div>';
+}
+
 function vMes(){
   var quien = mesQuien || yo;
   var zd = zonaDiaria();
@@ -1209,7 +1309,7 @@ function vMes(){
       }).join('')
     : '<div class="empty">No hay recogidas apuntadas este mes.</div>';
 
-  return sel +
+  return sel + calendarioHTML(quien) +
     '<div class="eyebrow">Turno diario · ' + turnos.length +
       (turnos.length === 1 ? " día" : " días") + '</div>' +
     '<div class="zone" style="padding:6px 14px 8px">' + filasTurno + '</div>' +
