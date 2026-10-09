@@ -230,6 +230,13 @@ img{max-width:100%;display:block}
             display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted)}
 .nav button.on{color:var(--accent)}
 .nav .lb{font-size:10.5px;font-weight:600}
+/* Con seis o siete secciones las etiquetas ya no caben a tamaño normal en un
+   móvil estrecho: encogen antes que partirse en dos líneas. */
+@media (max-width:420px){
+  .nav .lb{font-size:9px;letter-spacing:-.01em}
+  .nav svg{width:19px;height:19px}
+  .nav button{padding:6px 0 4px}
+}
 .nav svg{width:21px;height:21px}
 .nav .dot{position:absolute;transform:translate(13px,-3px);width:7px;height:7px;border-radius:50%;background:var(--bad)}
 
@@ -293,6 +300,41 @@ img{max-width:100%;display:block}
 .prox-n{font-size:11px;font-weight:600;line-height:1.2;max-width:100%;overflow:hidden;
         text-overflow:ellipsis;white-space:nowrap}
 .prox-c.tu .prox-n{color:var(--accent)}
+
+/* Mi mes: el mes de una persona, fila por fila. */
+.mes-top{display:flex;align-items:center;gap:10px;padding:2px 0 12px}
+.mes-n{flex:1;text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:.1em}
+.mes-gente{display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+.mes-gente::-webkit-scrollbar{display:none}
+.mes-gente .chip{flex-shrink:0;cursor:pointer;border:1px solid transparent}
+.mes-gente .chip.you{border-color:var(--accent)}
+.mrow{display:flex;align-items:baseline;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:0}
+.mrow.pasado{opacity:.45}
+.mrow.hoy .mrow-d{color:var(--accent)}
+.mrow-d{font-family:var(--mono);font-size:10.5px;color:var(--muted);width:52px;flex-shrink:0;
+        text-transform:uppercase;letter-spacing:.04em}
+.mrow-d b{font-size:14px;color:var(--ink);font-weight:700}
+.mrow.hoy .mrow-d b{color:var(--accent)}
+.mrow-t{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.35}
+.mrow-x{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}
+.zchip{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;
+       margin-right:8px;--zc:var(--muted)}
+.zchip .zone-dot{width:7px;height:7px}
+
+/* La lista de la compra. */
+.li{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
+    border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.li.done{background:transparent;border-style:dashed}
+.li.done .li-n{text-decoration:line-through;color:var(--muted)}
+.li-tick{width:24px;height:24px;flex-shrink:0;border-radius:50%;border:1.8px solid var(--line);
+         background:none;cursor:pointer;display:grid;place-items:center;padding:0;color:#fff}
+.li.done .li-tick{background:var(--ok);border-color:var(--ok)}
+.li-tick svg{width:13px;height:13px}
+.li-m{flex:1;min-width:0}
+.li-n{font-size:14.5px;font-weight:600;line-height:1.3}
+.li-q{font-family:var(--mono);font-size:12px;color:var(--accent);margin-left:7px;font-weight:700}
+.li-s{font-size:12px;color:var(--muted);margin-top:1px;line-height:1.35}
 
 /* Qué te toca a ti hoy, antes que nada. */
 .mio{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
@@ -368,7 +410,9 @@ var TICK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 var NAV_ICON = {
   hoy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>',
   fondo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 14.5 3 21M6 11l7-7 4 4-7 7z"/><path d="M14 4.5 16.5 2 22 7.5 19.5 10"/><path d="M4 17.5 6.5 20"/></svg>',
-  stock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>',
+  mes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  compra:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h2.1l2.1 10a1.8 1.8 0 0 0 1.8 1.4h7.1a1.8 1.8 0 0 0 1.8-1.4L21 8.2H7"/><circle cx="10.5" cy="19.4" r="1.3"/><circle cx="17.4" cy="19.4" r="1.3"/></svg>',
+  bote:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="12.5" rx="2.5"/><path d="M3 11.2h18"/><circle cx="12" cy="15.3" r="1.6"/><path d="M7 7V5.6A1.6 1.6 0 0 1 8.6 4h6.8A1.6 1.6 0 0 1 17 5.6V7"/></svg>',
   historial:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
   admin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8A1.6 1.6 0 0 0 4 14a2 2 0 1 1 0-4 1.6 1.6 0 0 0 1-2.8 2 2 0 1 1 2.8-2.8A1.6 1.6 0 0 0 10 4.6a2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8A1.6 1.6 0 0 0 20 10a2 2 0 1 1 0 4z"/></svg>'
 };
@@ -383,7 +427,13 @@ var lightbox = null;
 var guardando = "ok";
 var camStream = null, camCb = null, camShot = null, camMax = 1024;
 var compraAbierta = false;
-var compra = {importe:"", concepto:"", ticket:null, items:{}};
+var compra = {importe:"", concepto:"", ticket:null};
+/* Mi mes: qué mes se está mirando y de quién. Arranca en el mes de hoy y en
+   uno mismo, que es para lo que se abre el 99% de las veces. */
+var mesVisto = hoy().slice(0,7);
+var mesQuien = null;
+/* El artículo de la lista que se está editando ahora mismo. */
+var editando = null;
 
 /* ================= fechas ================= */
 function f(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -416,11 +466,12 @@ function cargar(){
     api("casa_tareas?select=*&order=orden.asc"),
     api("casa_completadas?select=*&periodo=gte."+desde+"&order=at.desc"),
     api("casa_semanas?select=*&semana=gte."+desde),
-    api("casa_items?select=*&order=sort_order.asc,name.asc"),
     api("casa_purchases?select=*&order=at.desc&limit=30"),
     api("casa_contributions?select=*&order=at.desc&limit=40"),
     api("casa_summary?select=*"),
-    api("casa_cambios?select=*&dia=gte."+desde+"&order=dia.asc")
+    api("casa_cambios?select=*&dia=gte."+desde+"&order=dia.asc"),
+    api("casa_cubos?select=*&order=dia.asc"),
+    api("casa_lista?select=*&order=orden.asc,at.asc")
   ]).then(function(r){
     var cfg = (r[0] && r[0][0]) || {};
     var hechas = {};
@@ -431,23 +482,25 @@ function cargar(){
       gente: cfg.people || [],
       admins: cfg.admins || [],
       rotacionDesde: cfg.rotacion_desde,
-      diasLimpieza: (cfg.dias_limpieza && cfg.dias_limpieza.length) ? cfg.dias_limpieza : [0,1,2,3,4,5,6],
+      diasLimpieza: (cfg.dias_limpieza && cfg.dias_limpieza.length) ? cfg.dias_limpieza : [1,2,3,4,5,6],
       correos: cfg.aviso_emails || [],
       zonas: r[1] || [],
       tareas: r[2] || [],
       hechas: hechas,
       semanas: sem,
-      cambios: r[9] || [],
-      items: (r[5]||[]).map(function(i){
-        return {id:i.id, nombre:i.name, zona:i.zone, precio:i.price===null?null:Number(i.price),
-                cant:Number(i.quantity), min:Number(i.low_threshold), estado:i.status};
-      }),
-      compras: (r[6]||[]).map(function(p){
+      compras: (r[5]||[]).map(function(p){
         return {id:p.id, at:p.at, por:p.by_name, importe:Number(p.amount), nota:p.note, ticket:p.ticket_url};
       }),
-      aportes: (r[7]||[]).map(function(c){ return {id:c.id, at:c.at, por:c.by_name, importe:Number(c.amount)}; }),
-      bote: (r[8] && r[8][0]) ? Number(r[8][0].bote) : 0,
-      gastoMes: (r[8] && r[8][0]) ? Number(r[8][0].gastado_mes) : 0
+      aportes: (r[6]||[]).map(function(c){ return {id:c.id, at:c.at, por:c.by_name, importe:Number(c.amount)}; }),
+      bote: (r[7] && r[7][0]) ? Number(r[7][0].bote) : 0,
+      gastoMes: (r[7] && r[7][0]) ? Number(r[7][0].gastado_mes) : 0,
+      cambios: r[8] || [],
+      cubos: r[9] || [],
+      lista: (r[10]||[]).map(function(i){
+        return {id:i.id, nombre:i.nombre, cant:Number(i.cantidad), nota:i.nota,
+                por:i.pedido_por, at:i.at, comprado:!!i.comprado,
+                compradoPor:i.comprado_por, compradoAt:i.comprado_at, orden:i.orden};
+      })
     };
   });
 }
@@ -606,10 +659,31 @@ function misZonas(dia){
 function tareasDe(zid){ return S.tareas.filter(function(t){ return t.zona_id === zid; }); }
 function diasLimpieza(){ return S.diasLimpieza || []; }
 function esDiaDeLimpieza(dia){ return diasLimpieza().indexOf(dow(dia)) > -1; }
+/* La recogida de cubos de un día, si ese día hay. */
+function recogidaDe(dia){
+  for(var i=0;i<S.cubos.length;i++) if(S.cubos[i].dia === dia) return S.cubos[i];
+  return null;
+}
+/* Los cubos no se piden por día de la semana sino por calendario: se sacan el
+   día de la recogida y se entran al siguiente. Se los queda quien tenga el
+   turno diario cada uno de esos dos días, así que no hay rotación propia que
+   cuadrar ni plaza que gastar. */
+function cuboDe(t, dia){
+  if(t.cubos === "sacar")  return recogidaDe(dia);
+  if(t.cubos === "entrar") return recogidaDe(mas(dia, -1));
+  return null;
+}
 function toca(t, dia){
+  if(t.cubos) return !!cuboDe(t, dia);
   return (t.dias && t.dias.length)
     ? t.dias.indexOf(dow(dia)) > -1
     : esDiaDeLimpieza(dia);
+}
+/* El texto de una tarea puede depender del día: el de los cubos lleva el color
+   que toque esa fecha. */
+function textoTarea(t, dia){
+  var c = cuboDe(t, dia);
+  return c ? t.label.replace("los cubos", "los cubos " + c.color) : t.label;
 }
 function tareasDeDia(zid, dia){
   /* Una zona sin nadie asignado ese día no pide nada: no puede estar "sin
@@ -678,6 +752,20 @@ function diasFondo(){
   });
   return Object.keys(s).map(Number).sort(function(a, b){ return ((a+6)%7) - ((b+6)%7); });
 }
+/* Los días de la casa escritos en largo, para los textos que se leen como una
+   frase. Nada de esto va a mano: si cambian los días, cambian los textos. */
+function listaDias(ds){
+  if(!ds.length) return "ning\u00fan d\u00eda";
+  if(ds.length === 7) return "todos los d\u00edas";
+  var o = ds.slice().sort(function(a, b){ return ((a+6)%7) - ((b+6)%7); });
+  /* Un tramo seguido se dice "de lunes a sábado", no uno por uno. */
+  var seguido = o.every(function(d, i){ return i === 0 || ((d+6)%7) === ((o[i-1]+6)%7) + 1; });
+  if(seguido && o.length > 2) return "de " + DOW[o[0]] + " a " + DOW[o[o.length-1]];
+  if(o.length === 1) return "el " + DOW[o[0]];
+  return o.map(function(d){ return DOW[d]; }).join(", ");
+}
+function diasLimpiezaTexto(){ return listaDias(diasLimpieza()); }
+function diasFondoLargo(){ return listaDias(diasFondo()); }
 function diasFondoTexto(){
   var ds = diasFondo();
   if(!ds.length) return "sin días";
@@ -697,11 +785,6 @@ function ultimoFondo(dia){
   for(var i=6;i>=0;i--){ var d = mas(sem, i); if(fondoAbierto(d)) return d; }
   return null;
 }
-/* Una tarea de fin de semana: se pide sábado y domingo y cuenta una sola vez. */
-function esDeFinde(t){
-  return !!t.semanal && !!t.dias && t.dias.length === 2 &&
-         t.dias.indexOf(6) > -1 && t.dias.indexOf(0) > -1;
-}
 /* El próximo día en que una sección con turno propio cambia de manos. */
 function proximoRelevo(z){
   var cada = Math.max(1, z.rota_cada || 7), d = hoy();
@@ -717,7 +800,7 @@ function color(n){
   var i = S.gente.indexOf(n);
   return PAL[(i < 0 ? 0 : i) % PAL.length];
 }
-function comprar(){ return S.items.filter(function(i){ return i.estado === "low" || i.estado === "out"; }); }
+function comprar(){ return S.lista.filter(function(i){ return !i.comprado; }); }
 
 /* ================= escapado ================= */
 function esc(s){ return String(s==null?"":s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; }); }
@@ -732,7 +815,9 @@ function pinta(){
   pintaNav();
   var cuerpo = vista === "hoy" ? vHoy()
     : vista === "fondo" ? vFondo()
-    : vista === "stock" ? vStock()
+    : vista === "mes" ? vMes()
+    : vista === "compra" ? vCompra()
+    : vista === "bote" ? vBote()
     : vista === "historial" ? vHistorial()
     : vAdmin();
   el.innerHTML = cabecera() + '<div class="app" style="padding-top:0">' + cuerpo + '</div>' +
@@ -765,18 +850,17 @@ function cabecera(){
 }
 
 function pintaNav(){
-  var defs = [{id:"hoy",lb:"Hoy"},{id:"fondo",lb:"A fondo"},
-              {id:"stock",lb:"Stock"},{id:"historial",lb:"Historial"}];
+  var defs = [{id:"hoy",lb:"Hoy"},{id:"fondo",lb:"A fondo"},{id:"mes",lb:"Mi mes"},
+              {id:"compra",lb:"Compra"},{id:"bote",lb:"Bote"},{id:"historial",lb:"Historial"}];
   if(esAdmin()) defs.push({id:"admin",lb:"Admin"});
-  var falta = comprar().length;
-  /* El punto rojo avisa de lo que pide atención: material por comprar, y la
-     limpieza a fondo mientras esté abierta y le falte algo a alguna zona. */
+  /* El punto rojo avisa de lo que pide atención hoy. La lista de la compra no
+     lleva: tener cosas apuntadas es su estado normal, no una alarma. */
   var fondoPide = fondoAbierto(hoy()) && zonasDeTurno().some(function(z){
     var pr = progreso(z.id, hoy());
     return pr.t > pr.d;
   });
   document.getElementById("navIn").innerHTML = defs.map(function(d){
-    var punto = (d.id === "stock" && falta) || (d.id === "fondo" && fondoPide);
+    var punto = (d.id === "fondo" && fondoPide);
     return '<button data-a="ir" data-v="'+d.id+'" class="'+(vista===d.id?"on":"")+'">' +
       '<span style="position:relative;display:block">'+NAV_ICON[d.id] +
       (punto ? '<span class="dot"></span>' : '') + '</span>' +
@@ -787,14 +871,13 @@ function pintaNav(){
 /* ---------- casa ---------- */
 function tareaHTML(t, puede, dia){
   var h = hecha(t, dia), acc;
-  /* Solo se etiqueta la tarea que se sale del calendario de su sección. La
-     limpieza a fondo no lleva etiqueta: ya está dentro del bloque del finde. */
+  /* Solo se etiqueta la tarea que se sale del calendario de su sección: las
+     semanales viven en el bloque de la limpieza a fondo, que ya dice el día, y
+     las de cubos llevan el color escrito en su propio texto. */
   var etiqueta = "";
-  if(t.dias && t.dias.length && t.dias.length < 7 && !esDeFinde(t)){
+  if(!t.semanal && !t.cubos && t.dias && t.dias.length && t.dias.length < 7){
     var ds = t.dias.slice().sort(function(a, b){ return ((a+6)%7) - ((b+6)%7); });
-    etiqueta = (ds.length === 5 && ds.join() === "1,2,3,4,5")
-      ? "LUN A VIE"
-      : ds.map(function(n){ return DOW_C[n]; }).join(" ");
+    etiqueta = ds.map(function(n){ return DOW_C[n]; }).join(" ");
   }
   if(h){
     acc = (h.foto_url ? '<img class="thumb" src="'+at(h.foto_url)+'" data-a="foto" data-src="'+at(h.foto_url)+'" alt="" loading="lazy">' : '');
@@ -807,7 +890,7 @@ function tareaHTML(t, puede, dia){
   }
   return '<div class="task'+(h?" done":"")+'">' +
     '<span class="tick">'+TICK_SVG+'</span>' +
-    '<div class="t-main"><div class="t-label">'+esc(t.label) +
+    '<div class="t-main"><div class="t-label">'+esc(textoTarea(t, dia)) +
       (etiqueta ? '<span class="freq">'+esc(etiqueta)+'</span>' : '') + '</div>' +
     (h ? '<div class="t-meta">'+esc(h.por)+' · '+hora(h.at)+'</div>' : '') + '</div>' + acc + '</div>';
 }
@@ -868,13 +951,6 @@ function bloque(id, clase, icono, titulo, sub, tag, cuerpo){
     '</div>' + (ab ? cuerpo : '') + '</section>';
 }
 
-function avisoCompra(){
-  var falta = comprar();
-  if(!falta.length) return '';
-  return '<div class="note buy" data-a="ir" data-v="stock"><div><b>Hay que comprar ('+falta.length+')</b><br>' +
-    esc(falta.slice(0,3).map(function(i){ return i.nombre; }).join(" \u00b7 ")) +
-    (falta.length>3 ? ' \u00b7 +'+(falta.length-3) : '') + '</div></div>';
-}
 
 function avisoSinRota(dia){
   if(!S.rotacionDesde || semanaDe(dia) >= S.rotacionDesde) return '';
@@ -898,7 +974,7 @@ function tiraMia(dia){
   } else {
     v = "Nada por hoy";
     var zf = mias.filter(function(z){ return !z.rota_aparte; })[0];
-    extra = zf ? "\u00b7 tu zona del finde es " + zf.nombre : "";
+    extra = zf ? "\u00b7 tu zona del " + diasFondoLargo().replace(/^el /, "") + " es " + zf.nombre : "";
   }
   return '<div class="mio">' + avatar(yo) + '<div class="mio-t">' +
     '<div class="mio-k">Hoy te toca</div>' +
@@ -927,9 +1003,10 @@ function vHoy(){
     : '<div class="empty">Hoy no hay turno diario.' +
       (sig ? ' El siguiente es el ' + DOW[dow(sig)] + ' ' + corta(sig) + '.' : '') + '</div>') +
     (zd ? proximosHTML(zd, dia) : '');
-  return avisoCompra() + avisoSinRota(dia) + tiraMia(dia) +
+  return avisoSinRota(dia) + tiraMia(dia) +
     bloque("hoy", "blk-hoy", NAV_ICON.hoy, "Turno diario",
-           "Una persona al d\u00eda, para toda la casa.", "cada d\u00eda", cuerpo);
+           "Una persona al d\u00eda, para toda la casa \u00b7 " + diasLimpiezaTexto() + ".",
+           diasFondoTexto() === "dom" ? "salvo dom" : "cada d\u00eda", cuerpo);
 }
 
 /* El turno de la semana en curso, de lunes a domingo. Va por semana y no por
@@ -947,12 +1024,18 @@ function agendaSemana(z, dia){
   }
   return out;
 }
-/* El próximo día que te toca a ti. Mira un mes por delante: con la casa llena
-   sobra, y antes de que arranque la rotación no hay nada que encontrar. */
+/* Tener el turno de un día no es lo mismo que tener algo que hacer: el día de
+   la limpieza a fondo la rotación sigue nombrando a alguien, pero ese día no se
+   le pide nada porque le toca su zona como a todos. Lo que cuenta es esto. */
+function tieneTurno(z, dia, quien){
+  return turnoReal(z, dia)[0] === quien && tareasDeDia(z.id, dia).length > 0;
+}
+/* El próximo día que te toca a ti de verdad. Mira un mes por delante: con la
+   casa llena sobra, y antes de que arranque la rotación no hay nada. */
 function miProximoTurno(z, dia){
   for(var i=1;i<=31;i++){
     var d = mas(dia, i);
-    if(turnoReal(z, d)[0] === yo) return d;
+    if(tieneTurno(z, d, yo)) return d;
   }
   return null;
 }
@@ -964,7 +1047,7 @@ function proximosHTML(z, dia){
   var mio = miProximoTurno(z, dia), nota;
   if(!mio){
     nota = "Pr\u00f3ximos d\u00edas";
-  } else if(turnoReal(z, dia)[0] === yo){
+  } else if(tieneTurno(z, dia, yo)){
     nota = "Hoy te toca \u00b7 vuelves el " + DOW[dow(mio)] + " " + corta(mio);
   } else {
     var f = entre(dia, mio);
@@ -976,18 +1059,21 @@ function proximosHTML(z, dia){
     '<div class="prox-d">' + ag.map(function(c){
       var n = new Date(c.dia + "T00:00:00").getDate();
       return '<div class="prox-c' + (c.hoy ? " hoy" : "") +
-          (c.quien === yo ? " tu" : "") + (c.pasado ? " pasado" : "") +
+          (c.quien === yo && !c.libre ? " tu" : "") + (c.pasado ? " pasado" : "") +
           (c.libre ? " libre" : "") + (c.cambio ? " cambio" : "") + '">' +
         (c.cambio ? '<span class="prox-sw" title="' +
           at("Cambio pactado \u00b7 en lugar de " + c.cambio.en_lugar_de) +
           '">\u21c4</span>' : '') +
         '<div class="prox-dow">' + (c.hoy ? "HOY" : DOW_C[dow(c.dia)] + " " + n) + '</div>' +
-        (c.quien
-          ? '<span class="av s" style="background:'+color(c.quien)+'">' +
-              esc(c.quien.charAt(0)) + '</span>' +
-            '<div class="prox-n">' + esc(c.quien === yo ? "T\u00fa" : c.quien) + '</div>'
-          : '<span class="av s" style="background:var(--line)"></span>' +
-            '<div class="prox-n">\u2014</div>') +
+        (c.libre
+          ? '<span class="av s" style="background:var(--line)"></span>' +
+            '<div class="prox-n">' + (fondoAbierto(c.dia) ? "a fondo" : "\u2014") + '</div>'
+          : c.quien
+            ? '<span class="av s" style="background:'+color(c.quien)+'">' +
+                esc(c.quien.charAt(0)) + '</span>' +
+              '<div class="prox-n">' + esc(c.quien === yo ? "T\u00fa" : c.quien) + '</div>'
+            : '<span class="av s" style="background:var(--line)"></span>' +
+              '<div class="prox-n">\u2014</div>') +
       '</div>';
     }).join('') + '</div></div>';
 }
@@ -1020,61 +1106,227 @@ function vFondo(){
            "Por zonas, en equipo. Un solo tic: " + diasFondoTexto() + ".", tag, cuerpo);
 }
 
-/* ---------- stock ---------- */
-function vStock(){
-  var falta = comprar();
-  var porZona = S.zonas.map(function(z){
-    return {nombre:z.nombre, color:z.color, items:S.items.filter(function(i){ return i.zona === z.nombre; })};
-  });
-  var sueltos = S.items.filter(function(i){
-    return !S.zonas.some(function(z){ return z.nombre === i.zona; });
-  });
-  if(sueltos.length) porZona.push({nombre:"Otros", color:"var(--muted)", items:sueltos});
+/* ---------- mi mes: lo que te toca en todo el mes, de un vistazo ---------- */
+/* El turno diario cambia cada día y las zonas cada lunes, así que de memoria
+   nadie sabe cómo tiene el mes. Aquí se ve de una vez: tus días de turno y tu
+   zona de cada domingo. Se puede mirar el de otro, que para discutir un cambio
+   hace falta ver los dos. */
+function ultimoDiaMes(m){
+  var a = Number(m.slice(0,4)), b = Number(m.slice(5,7));
+  return f(new Date(a, b, 0));
+}
+function mesCorto(m){ return MES[Number(m.slice(5,7)) - 1] + " " + m.slice(0,4); }
+function mesMas(m, n){
+  var a = Number(m.slice(0,4)), b = Number(m.slice(5,7)) - 1 + n;
+  var d = new Date(a, b, 1);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+}
+function diasDelMes(m){
+  var out = [], d = m + "-01", fin = ultimoDiaMes(m);
+  while(d <= fin){ out.push(d); d = mas(d, 1); }
+  return out;
+}
+function vMes(){
+  var quien = mesQuien || yo;
+  var zd = zonaDiaria();
+  var dias = diasDelMes(mesVisto);
+  var turnos = [], domingos = [], recogidas = [];
 
-  return '<div class="eyebrow">Inventario</div>' +
-    '<div class="stat-row">' +
-      '<div class="stat"><div class="k">Bote común</div><div class="v">'+eur(S.bote)+'</div></div>' +
-      '<div class="stat"><div class="k">Por comprar</div><div class="v">'+falta.length+'<small> / '+S.items.length+'</small></div></div>' +
+  dias.forEach(function(d){
+    if(zd && turnoReal(zd, d)[0] === quien && tareasDeDia(zd.id, d).length){
+      turnos.push(d);
+    }
+    /* Solo los días de limpieza a fondo, y solo desde que la rotación arranca:
+       antes de eso las zonas no son de nadie y la fila saldría vacía. */
+    if(fondoAbierto(d)){
+      var a = asignacionDia(d);
+      var mias = zonasDeTurno().filter(function(z){
+        return (a[z.id] || []).indexOf(quien) > -1;
+      });
+      if(mias.length) domingos.push({dia:d, zonas:mias});
+    }
+    var rec = recogidaDe(d);
+    if(rec) recogidas.push(rec);
+  });
+
+  var sel = '<div class="mes-top">' +
+    '<button class="icon-btn" data-a="mes-mueve" data-n="-1" title="Mes anterior">‹</button>' +
+    '<div class="mes-n">' + esc(mesCorto(mesVisto).toUpperCase()) + '</div>' +
+    '<button class="icon-btn" data-a="mes-mueve" data-n="1" title="Mes siguiente">›</button>' +
     '</div>' +
-    porZona.map(function(g){
-      return '<div class="zone" style="--zc:'+at(g.color)+'">' +
-        '<div class="zone-top" style="padding-bottom:12px;cursor:default"><span class="zone-bar"></span>' +
-        '<div class="zone-id"><div class="zone-name"><span class="zone-dot"></span>'+esc(g.nombre)+'</div></div>' +
-        '<div class="prog"><div class="n" style="font-size:12px;color:var(--muted)">'+g.items.length+' art.</div></div></div>' +
-        (g.items.length ? '<div class="tasks">' + g.items.map(itemHTML).join('') + '</div>' : '') +
-      '</div>';
-    }).join('') +
+    '<div class="mes-gente">' + S.gente.slice().sort(function(a, b){
+      return (b === yo ? 1 : 0) - (a === yo ? 1 : 0);
+    }).map(function(n){
+      return '<button class="chip' + (n === quien ? " you" : "") + '" data-a="mes-quien" data-n="'+at(n)+'">' +
+        '<span class="av s" style="background:'+color(n)+'">'+esc(n.charAt(0))+'</span>' +
+        esc(n === yo ? "Tú" : n) + '</button>';
+    }).join('') + '</div>';
+
+  var filasTurno = turnos.length
+    ? turnos.map(function(d){
+        var rec = recogidaDe(d), ent = recogidaDe(mas(d, -1));
+        var extra = [];
+        if(rec) extra.push("saca los cubos " + rec.color);
+        if(ent) extra.push("entra los cubos " + ent.color);
+        var p = progreso(zd.id, d), pas = d < hoy();
+        return '<div class="mrow' + (d === hoy() ? " hoy" : "") + (pas ? " pasado" : "") + '">' +
+          '<div class="mrow-d">' + DOW_C[dow(d)] + ' <b>' + Number(d.slice(8,10)) + '</b></div>' +
+          '<div class="mrow-t">Turno diario' +
+            (extra.length ? '<span class="mrow-x">· ' + esc(extra.join(" · ")) + '</span>' : '') +
+          '</div>' +
+          (pas ? '<span class="tag ' + (p.t && p.d >= p.t ? "ok" : "out") + '">' +
+                   (p.t && p.d >= p.t ? "hecho" : "sin hacer") + '</span>' : '') +
+        '</div>';
+      }).join('')
+    : '<div class="empty">Ningún turno diario este mes.</div>';
+
+  var filasDom = domingos.length
+    ? domingos.map(function(x){
+        var pas = x.dia < hoy();
+        return '<div class="mrow' + (x.dia === hoy() ? " hoy" : "") + (pas ? " pasado" : "") + '">' +
+          '<div class="mrow-d">DOM <b>' + Number(x.dia.slice(8,10)) + '</b></div>' +
+          '<div class="mrow-t">' + (x.zonas.length
+            ? x.zonas.map(function(z){
+                return '<span class="zchip" style="--zc:'+at(z.color)+'">' +
+                  '<span class="zone-dot"></span>' + esc(z.nombre) + '</span>';
+              }).join(' ')
+            : '<span style="color:var(--muted)">sin zona</span>') + '</div>' +
+        '</div>';
+      }).join('')
+    : '<div class="empty">Este mes no hay domingos con reparto.</div>';
+
+  var filasCubos = recogidas.length
+    ? recogidas.map(function(r){
+        var sig = mas(r.dia, 1);
+        var qs = zd ? (turnoReal(zd, r.dia)[0] || "—") : "—";
+        var qe = zd ? (turnoReal(zd, sig)[0] || "—") : "—";
+        return '<div class="mrow' + (r.dia < hoy() ? " pasado" : "") + '">' +
+          '<div class="mrow-d">' + DOW_C[dow(r.dia)] + ' <b>' + Number(r.dia.slice(8,10)) + '</b></div>' +
+          '<div class="mrow-t"><b>' + esc(r.color) + '</b>' +
+            '<span class="mrow-x">saca ' + esc(qs) + ' · entra ' + esc(qe) +
+            ' el ' + DOW_C[dow(sig)].toLowerCase() + ' ' + Number(sig.slice(8,10)) + '</span></div>' +
+        '</div>';
+      }).join('')
+    : '<div class="empty">No hay recogidas apuntadas este mes.</div>';
+
+  return sel +
+    '<div class="eyebrow">Turno diario · ' + turnos.length +
+      (turnos.length === 1 ? " día" : " días") + '</div>' +
+    '<div class="zone" style="padding:6px 14px 8px">' + filasTurno + '</div>' +
+    '<div class="eyebrow">Limpieza a fondo · ' + diasFondoLargo() + '</div>' +
+    '<div class="zone" style="padding:6px 14px 8px">' + filasDom + '</div>' +
+    '<div class="eyebrow">Cubos del mes</div>' +
+    '<div class="zone" style="padding:6px 14px 8px">' + filasCubos + '</div>';
+}
+
+/* ---------- compra: la lista compartida ---------- */
+/* Sustituye al stock, que pedía llevar existencias y mínimos al día y nunca se
+   usó. Aquí cualquiera apunta, cualquiera tacha y todos ven lo mismo. */
+function vCompra(){
+  var pend = S.lista.filter(function(i){ return !i.comprado; });
+  var comp = S.lista.filter(function(i){ return i.comprado; })
+    .sort(function(a,b){ return (b.compradoAt||"") < (a.compradoAt||"") ? -1 : 1; });
+
+  var alta = '<div class="zone" style="padding:13px 15px;margin-bottom:14px">' +
+    '<div class="row" style="margin:0">' +
+      '<div class="grow"><span class="lab">Qué falta</span>' +
+        '<input class="fld" id="l-nombre" placeholder="Papel de cocina" autocomplete="off"></div>' +
+      '<div style="width:72px"><span class="lab">Cuántos</span>' +
+        '<input class="fld" id="l-cant" inputmode="numeric" value="1"></div>' +
+    '</div>' +
+    '<div class="row" style="margin-top:9px">' +
+      '<input class="fld grow" id="l-nota" placeholder="Nota (opcional): la marca, dónde…" autocomplete="off">' +
+      '<button class="btn btn-pri" data-a="l-add">Añadir</button></div>' +
+    '</div>';
+
+  var lista = pend.length
+    ? pend.map(filaLista).join('')
+    : '<div class="empty">La lista está vacía. Nada que comprar.</div>';
+
+  var compradas = comp.length
+    ? '<div class="eyebrow" style="display:flex;align-items:center;gap:8px">' +
+        '<span style="flex:1">Ya comprado · ' + comp.length + '</span>' +
+        '<button class="mini" data-a="l-limpia" title="Quitar de la lista todo lo comprado">Vaciar</button>' +
+      '</div>' + comp.slice(0, 20).map(filaLista).join('')
+    : '';
+
+  return '<div class="eyebrow">Lista de la compra · ' + pend.length +
+      (pend.length === 1 ? " cosa" : " cosas") + '</div>' +
+    alta + lista + compradas;
+}
+function filaLista(i){
+  if(editando === i.id) return formLista(i);
+  return '<div class="li' + (i.comprado ? " done" : "") + '">' +
+    '<button class="li-tick" data-a="l-tick" data-id="'+at(i.id)+'" ' +
+      'title="' + (i.comprado ? "Devolver a la lista" : "Marcar como comprado") + '">' +
+      (i.comprado ? TICK_SVG : '') + '</button>' +
+    '<div class="li-m"><div class="li-n">' + esc(i.nombre) +
+      (i.cant > 1 ? '<span class="li-q">×' + qty(i.cant) + '</span>' : '') + '</div>' +
+      (i.nota || i.por
+        ? '<div class="li-s">' + esc([i.nota, i.por ? "lo pidió " + i.por : ""]
+            .filter(Boolean).join(" · ")) + '</div>'
+        : '') +
+    '</div>' +
+    '<button class="mini" data-a="l-edita" data-id="'+at(i.id)+'" title="Editar">✎</button>' +
+    '<button class="mini btn-danger" data-a="l-quita" data-id="'+at(i.id)+'" title="Borrar">×</button>' +
+  '</div>';
+}
+function formLista(i){
+  return '<div class="zone" style="border-color:var(--accent);padding:13px 15px;margin-bottom:10px">' +
+    '<div class="row" style="margin:0">' +
+      '<div class="grow"><span class="lab">Qué es</span>' +
+        '<input class="fld" id="e-nombre" value="'+at(i.nombre)+'"></div>' +
+      '<div style="width:72px"><span class="lab">Cuántos</span>' +
+        '<input class="fld" id="e-cant" inputmode="numeric" value="'+at(qty(i.cant))+'"></div>' +
+    '</div>' +
+    '<div class="row" style="margin-top:9px">' +
+      '<input class="fld grow" id="e-nota" placeholder="Nota" value="'+at(i.nota || "")+'">' +
+      '<button class="btn btn-pri" data-a="l-guarda" data-id="'+at(i.id)+'">Guardar</button>' +
+      '<button class="btn" data-a="l-cancela">Cancelar</button></div>' +
+    '</div>';
+}
+
+/* ---------- bote: el dinero común, aparte de la lista ---------- */
+function vBote(){
+  return '<div class="eyebrow">Bote común</div>' +
+    '<div class="stat-row">' +
+      '<div class="stat"><div class="k">Bote</div><div class="v">'+eur(S.bote)+'</div></div>' +
+      '<div class="stat"><div class="k">Gastado este mes</div><div class="v">'+eur(S.gastoMes)+'</div></div>' +
+    '</div>' +
     (compraAbierta ? formCompra() : '<button class="btn btn-wide" data-a="compra-abre">Registrar una compra</button>') +
+    '<div class="eyebrow">Aportaciones</div>' +
+    '<div class="zone" style="padding:13px 15px">' +
+      (S.aportes.length
+        ? S.aportes.slice(0,10).map(function(c){
+            return '<div class="row" style="margin:0 0 8px"><span class="av s" style="background:'+color(c.por)+'">' +
+              esc(String(c.por||"?").charAt(0))+'</span>' +
+              '<span class="grow">'+esc(c.por)+'</span>' +
+              '<span style="font-family:var(--mono)">'+eur(c.importe)+'</span>' +
+              '<span style="font-family:var(--mono);font-size:11px;color:var(--muted)">'+corta((c.at||"").slice(0,10))+'</span></div>';
+          }).join('')
+        : '<div class="empty" style="padding:6px 0">Todavía no hay aportaciones.</div>') +
+      '<div class="row" style="margin-top:4px"><select class="fld" style="width:auto;flex:1" id="ap-quien">' +
+        S.gente.map(function(n){ return '<option'+(n===yo?" selected":"")+'>'+esc(n)+'</option>'; }).join('') + '</select>' +
+      '<input class="fld" style="width:90px" inputmode="decimal" id="ap-cuanto" placeholder="€">' +
+      '<button class="btn btn-pri" data-a="ap-add">Añadir</button></div>' +
+    '</div>' +
+    '<div class="eyebrow">Compras</div>' +
     (S.compras.length
-      ? '<div class="eyebrow">Compras</div>' + S.compras.map(function(p){
+      ? S.compras.map(function(p){
           return '<div class="item" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px">' +
             (p.ticket ? '<img class="thumb" src="'+at(p.ticket)+'" data-a="foto" data-src="'+at(p.ticket)+'" alt="" loading="lazy">' : '<span class="tag plain">sin ticket</span>') +
             '<div class="nm">'+esc(p.nota || "Compra")+'<small>'+esc(p.por)+' · '+corta((p.at||"").slice(0,10))+'</small></div>' +
             '<span style="font-weight:700;font-variant-numeric:tabular-nums">'+eur(p.importe)+'</span></div>';
         }).join('')
-      : '');
-}
-function itemHTML(i){
-  var e = i.cant<=0 ? ["out","Agotado"] : (i.cant<=i.min ? ["low","Queda poco"] : ["ok","OK"]);
-  return '<div class="item">' +
-    '<div class="nm">'+esc(i.nombre)+'<small>avisa con '+qty(i.min)+(i.precio!==null?" · "+eur(i.precio):"")+'</small></div>' +
-    '<span class="tag '+e[0]+'">'+e[1]+'</span>' +
-    '<div class="qty"><button data-a="cant" data-id="'+at(i.id)+'" data-d="-1">−</button>' +
-    '<span class="n">'+qty(i.cant)+'</span>' +
-    '<button data-a="cant" data-id="'+at(i.id)+'" data-d="1">+</button></div></div>';
+      : '<div class="empty">Todavía no se ha registrado ninguna compra.</div>');
 }
 function formCompra(){
-  var falta = comprar();
   return '<div class="zone" style="border-color:var(--accent);padding:15px 16px">' +
     '<div style="font-weight:700;margin-bottom:12px">Registrar compra</div>' +
     '<div class="row"><div class="grow"><span class="lab">Importe</span>' +
       '<input class="fld" id="c-imp" inputmode="decimal" placeholder="12,50" value="'+at(compra.importe)+'"></div></div>' +
     '<div class="row"><div class="grow"><span class="lab">Concepto</span>' +
       '<input class="fld" id="c-con" placeholder="Limpiacristales y bolsas" value="'+at(compra.concepto)+'"></div></div>' +
-    (falta.length ? '<div class="row" style="display:block"><span class="lab">Repuestos</span><div style="display:flex;flex-wrap:wrap;gap:6px">' +
-      falta.map(function(i){
-        return '<label class="chip" style="cursor:pointer"><input type="checkbox" data-a="c-item" data-id="'+at(i.id)+'"'+(compra.items[i.id]?" checked":"")+'> '+esc(i.nombre)+'</label>';
-      }).join('') + '</div></div>' : '') +
     '<div class="row"><span class="lab" style="width:100%">Ticket (obligatorio)</span>' +
       (compra.ticket ? '<img class="thumb" src="'+compra.ticket+'" alt="">' : '') +
       '<button class="btn" data-a="c-ticket">'+CAM_SVG+' '+(compra.ticket?"Repetir":"Foto del ticket")+'</button></div>' +
@@ -1083,7 +1335,6 @@ function formCompra(){
       '<button class="btn" data-a="c-cancela">Cancelar</button></div>' +
     '</div>';
 }
-
 /* ---------- historial ---------- */
 /* Dos niveles: la semana con su media, y dentro una fila por día. Un día en
    que tocaba limpiar y no se hizo nada sale marcado: era lo que no se veía. */
@@ -1303,37 +1554,36 @@ function vAdmin(){
     '</div>';
   }).join('');
 
-  var stock = S.zonas.concat([{id:"_otros", nombre:"Otros", color:"var(--muted)"}]).map(function(z){
-    var its = S.items.filter(function(i){
-      return z.id==="_otros"
-        ? !S.zonas.some(function(x){ return x.nombre === i.zona; })
-        : i.zona === z.nombre;
-    });
-    if(z.id==="_otros" && !its.length) return "";
-    return '<div class="sub" style="--zc:'+at(z.color)+'">' +
-      '<div class="sub-h"><span class="zone-dot"></span>'+esc(z.nombre)+'</div>' +
-      its.map(function(i){
-        return '<div class="card-task">' +
-          '<input class="fld fld-sm" data-f="i-nombre" data-id="'+at(i.id)+'" value="'+at(i.nombre)+'" style="margin-bottom:7px">' +
-          '<div class="row" style="margin:0 0 7px"><div class="grow"><span class="lab">Zona</span>' +
-            '<select class="fld fld-sm" data-f="i-zona" data-id="'+at(i.id)+'">' +
-            S.zonas.map(function(x){
-              return '<option value="'+at(x.nombre)+'"'+(x.nombre===i.zona?" selected":"")+'>'+esc(x.nombre)+'</option>';
-            }).join('') +
-            (S.zonas.some(function(x){ return x.nombre === i.zona; }) ? ''
-              : '<option value="'+at(i.zona||"")+'" selected>'+esc(i.zona||"Sin zona")+'</option>') +
-            '</select></div></div>' +
-          '<div class="row" style="margin:0">' +
-            '<div style="width:90px"><span class="lab">Precio</span><input class="fld fld-sm" inputmode="decimal" data-f="i-precio" data-id="'+at(i.id)+'" value="'+(i.precio===null?"":qty(i.precio))+'"></div>' +
-            '<div style="width:80px"><span class="lab">Mínimo</span><input class="fld fld-sm" inputmode="decimal" data-f="i-min" data-id="'+at(i.id)+'" value="'+qty(i.min)+'"></div>' +
-            '<button class="mini btn-danger" data-a="i-quita" data-id="'+at(i.id)+'" style="margin-top:16px">×</button>' +
-          '</div></div>';
-      }).join('') +
-      (z.id==="_otros" ? '' :
-        '<div class="row"><input class="fld fld-sm grow" data-f="i-nuevo" data-z="'+at(z.nombre)+'" placeholder="Añadir artículo…">' +
-        '<button class="btn btn-sm btn-pri" data-a="i-add" data-z="'+at(z.nombre)+'">Añadir</button></div>') +
-    '</div>';
-  }).join('');
+  /* Calendario de cubos. No hay rotación que configurar: basta con decir qué
+     días hay recogida y de qué color, y el turno diario de ese día y del
+     siguiente se encarga. */
+  var zdc = zonaDiaria();
+  var cubos = S.cubos.slice().sort(function(a, b){ return a.dia < b.dia ? 1 : -1; })
+    .map(function(c){
+      var sig = mas(c.dia, 1);
+      var qs = zdc ? (turnoReal(zdc, c.dia)[0] || "sin asignar") : "sin asignar";
+      var qe = zdc ? (turnoReal(zdc, sig)[0] || "sin asignar") : "sin asignar";
+      return '<div class="row"><div class="grow" style="min-width:0">' +
+        '<div style="font-weight:600;font-size:13.5px">' + esc(c.color) +
+          ' <span style="color:var(--muted);font-weight:500">' + DOW[dow(c.dia)] +
+          ' ' + corta(c.dia) + '</span></div>' +
+        '<div style="font-size:12px;color:var(--muted)">saca ' + esc(qs) +
+          ' \u00b7 entra ' + esc(qe) + ' el ' + DOW[dow(sig)] + '</div></div>' +
+        '<button class="mini btn-danger" data-a="cu-quita" data-d="'+at(c.dia)+'" ' +
+          'title="Quitar esta recogida">\u00d7</button></div>';
+    }).join('') +
+    '<div class="row" style="margin-top:10px">' +
+      '<div style="width:138px"><span class="lab">D\u00eda</span>' +
+        '<input class="fld fld-sm" type="date" id="cu-dia"></div>' +
+      '<div class="grow"><span class="lab">Color</span>' +
+        '<input class="fld fld-sm" id="cu-color" placeholder="verdes" list="cu-colores" autocomplete="off">' +
+        '<datalist id="cu-colores"><option>verdes</option><option>azules</option>' +
+        '<option>grises</option><option>marrones</option><option>amarillos</option></datalist></div>' +
+      '<button class="btn btn-sm btn-pri" data-a="cu-add" style="margin-top:16px">A\u00f1adir</button></div>' +
+    '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">' +
+      'Los saca quien tenga el <b>turno diario</b> ese d\u00eda y los entra quien lo tenga ' +
+      'al d\u00eda siguiente. Las tareas aparecen solas en el turno de cada uno, con el ' +
+      'color escrito. Si no hay recogida apuntada, no se pide nada.</p>';
 
   var ordenados = diasLimpieza().slice().sort(function(a,b){ return a - b; });
   var limp = '<div class="dchips">' + DOW_C.map(function(d, i){
@@ -1346,18 +1596,6 @@ function vAdmin(){
     (ordenados.length ? ': ' + esc(ordenados.map(function(i){ return DOW[i]; }).join(", ")) : '') + '. ' +
     (ordenados.length ? '' : '<b style="color:var(--bad)">Sin días marcados no se pide nada.</b> ') +
     'La limpieza a fondo de las zonas no depende de esto: va marcada como fin de semana desde Tareas.</p>';
-
-  var bote = '<div class="row"><div class="stat grow"><div class="k">Bote</div><div class="v">'+eur(S.bote)+'</div></div>' +
-    '<div class="stat grow"><div class="k">Gastado este mes</div><div class="v">'+eur(S.gastoMes)+'</div></div></div>' +
-    S.aportes.slice(0,8).map(function(c){
-      return '<div class="row"><span class="grow">'+esc(c.por)+'</span>' +
-        '<span style="font-family:var(--mono)">'+eur(c.importe)+'</span>' +
-        '<span style="font-family:var(--mono);font-size:11px;color:var(--muted)">'+corta((c.at||"").slice(0,10))+'</span></div>';
-    }).join('') +
-    '<div class="row" style="margin-top:10px"><select class="fld" style="width:auto;flex:1" id="ap-quien">' +
-      S.gente.map(function(n){ return '<option>'+esc(n)+'</option>'; }).join('') + '</select>' +
-    '<input class="fld" style="width:90px" inputmode="decimal" id="ap-cuanto" placeholder="€">' +
-    '<button class="btn btn-pri" data-a="ap-add">Añadir</button></div>';
 
   var correos = S.correos.map(function(c,i){
     return '<div class="row"><span class="grow" style="font-family:var(--mono);font-size:12.5px;word-break:break-all">'+esc(c)+'</span>' +
@@ -1420,8 +1658,7 @@ function vAdmin(){
     acc("lim", "Días de limpieza", ordenados.length+(ordenados.length===1?" día":" días"), limp) +
     acc("zon", "Zonas y plazas", S.zonas.length+" zonas", zonas) +
     acc("tar", "Tareas", S.tareas.length+" tareas", tareas) +
-    acc("sto", "Artículos de limpieza", S.items.length+" art.", stock) +
-    acc("bot", "Bote común", eur(S.bote), bote) +
+    acc("cub", "Cubos de la basura", S.cubos.length ? S.cubos.length+" recogidas" : "sin fechas", cubos) +
     acc("cam", "Cambios de un d\u00eda", S.cambios.length ? S.cambios.length+" apuntados" : "ninguno", cambiosBody) +
     acc("cor", "Correo nocturno", S.correos.length+" destinos", correos);
 }
@@ -1457,11 +1694,6 @@ function completa(tareaId, url){
     body:[{tarea_id:t.id, periodo:periodoDe(t, hoy()), por:yo, at:new Date().toISOString(), foto_url:url || null}]
   }), "Hecho");
 }
-function cantidad(id, q){
-  if(q===null || isNaN(q) || q<0) q = 0;
-  run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-    body:{quantity:q, updated_by:yo, updated_at:new Date().toISOString()}}));
-}
 function cfg(patch){
   patch.updated_at = new Date().toISOString();
   return api("casa_config?id=eq.1", {method:"PATCH", prefer:"return=minimal", body:patch});
@@ -1476,19 +1708,13 @@ function guardaCompra(){
   var imp = num(compra.importe);
   if(imp === null || imp < 0){ toast("Pon el importe.", true); return; }
   if(!compra.ticket){ toast("Falta la foto del ticket.", true); return; }
-  var repuestos = Object.keys(compra.items).filter(function(k){ return compra.items[k]; });
   guardando = "guardando"; pinta();
   uploadPhoto(compra.ticket, "tickets").then(function(url){
-    var jobs = [api("casa_purchases", {method:"POST", prefer:"return=minimal",
-      body:[{by_name:yo, amount:imp, note:compra.concepto || "Compra de limpieza", ticket_url:url}]})];
-    repuestos.forEach(function(id){
-      var it = S.items.filter(function(x){ return x.id === id; })[0];
-      jobs.push(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-        body:{quantity:(it ? it.min : 0) + 2, updated_by:yo, updated_at:new Date().toISOString()}}));
-    });
     compraAbierta = false;
-    compra = {importe:"", concepto:"", ticket:null, items:{}};
-    return run(Promise.all(jobs), "Compra registrada");
+    compra = {importe:"", concepto:"", ticket:null};
+    return run(api("casa_purchases", {method:"POST", prefer:"return=minimal",
+      body:[{by_name:yo, amount:imp, note:compra.concepto || "Compra de limpieza", ticket_url:url}]}),
+      "Compra registrada");
   }).catch(function(e){
     guardando = "error"; pinta();
     toast("No se pudo guardar la compra.", true);
@@ -1621,11 +1847,9 @@ function onClick(e){
   }
   else if(a === "marcar") completa(el.getAttribute("data-t"), null);
   else if(a === "cant"){
-    var it = S.items.filter(function(x){ return x.id === id; })[0];
-    if(it) cantidad(id, Math.max(0, Number(it.cant||0) + parseInt(el.getAttribute("data-d"),10)));
   }
   else if(a === "compra-abre"){ compraAbierta = true; pinta(); }
-  else if(a === "c-cancela"){ compraAbierta = false; compra = {importe:"",concepto:"",ticket:null,items:{}}; pinta(); }
+  else if(a === "c-cancela"){ compraAbierta = false; compra = {importe:"",concepto:"",ticket:null}; pinta(); }
   else if(a === "c-ticket"){ sincroCompra(); abreCamara("Foto del ticket", 1400, function(img){ compra.ticket = img; pinta(); }); }
   else if(a === "c-guardar") guardaCompra();
 
@@ -1726,25 +1950,65 @@ function onClick(e){
     if(!window.confirm("¿Eliminar esta tarea?")) return;
     run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"DELETE", prefer:"return=minimal"}));
   }
-  else if(a === "i-add"){
-    var zona = el.getAttribute("data-z");
-    var ii = document.querySelector("[data-f='i-nuevo'][data-z='"+zona+"']");
-    var nn = ii.value.trim();
-    if(!nn) return;
-    ii.value = "";
-    run(api("casa_items", {method:"POST", prefer:"return=minimal",
-      body:[{name:nn, zone:zona, sort_order:S.items.length+1}]}), "Artículo añadido");
+  else if(a === "mes-mueve"){
+    mesVisto = mesMas(mesVisto, parseInt(el.getAttribute("data-n"), 10));
+    pinta(); window.scrollTo(0,0);
   }
-  else if(a === "i-quita"){
-    if(!window.confirm("¿Eliminar este artículo?")) return;
-    run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"DELETE", prefer:"return=minimal"}));
+  else if(a === "mes-quien"){
+    mesQuien = el.getAttribute("data-n");
+    pinta();
   }
-  else if(a === "ap-add"){
-    var q = document.getElementById("ap-quien").value;
-    var c = num(document.getElementById("ap-cuanto").value);
-    if(c === null || c <= 0){ toast("Pon la cantidad.", true); return; }
-    run(api("casa_contributions", {method:"POST", prefer:"return=minimal",
-      body:[{by_name:q, amount:c}]}), "Aportación registrada");
+  else if(a === "l-add"){
+    var ln = document.getElementById("l-nombre").value.trim();
+    if(!ln){ toast("Pon qu\u00e9 falta.", true); return; }
+    var lc = num(document.getElementById("l-cant").value);
+    if(lc === null || lc <= 0) lc = 1;
+    var lt = document.getElementById("l-nota").value.trim();
+    var tope = S.lista.reduce(function(m, x){ return Math.max(m, x.orden || 0); }, 0);
+    run(api("casa_lista", {method:"POST", prefer:"return=minimal",
+      body:[{nombre:ln, cantidad:lc, nota:lt || null, pedido_por:yo, orden:tope + 1}]}),
+      "A\u00f1adido a la lista");
+  }
+  else if(a === "l-tick"){
+    var li = S.lista.filter(function(x){ return x.id === id; })[0];
+    if(!li) return;
+    /* Tachar y destachar es el mismo bot\u00f3n: equivocarse es barato. */
+    run(api("casa_lista?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body: li.comprado
+        ? {comprado:false, comprado_por:null, comprado_at:null}
+        : {comprado:true, comprado_por:yo, comprado_at:new Date().toISOString()}}));
+  }
+  else if(a === "l-edita"){ editando = id; pinta(); }
+  else if(a === "l-cancela"){ editando = null; pinta(); }
+  else if(a === "l-guarda"){
+    var en = document.getElementById("e-nombre").value.trim();
+    if(!en){ toast("El nombre no puede quedar vac\u00edo.", true); return; }
+    var ec = num(document.getElementById("e-cant").value);
+    if(ec === null || ec <= 0) ec = 1;
+    var et = document.getElementById("e-nota").value.trim();
+    editando = null;
+    run(api("casa_lista?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
+      body:{nombre:en, cantidad:ec, nota:et || null}}), "Guardado");
+  }
+  else if(a === "l-quita"){
+    if(editando === id) editando = null;
+    run(api("casa_lista?id=eq."+encodeURIComponent(id), {method:"DELETE", prefer:"return=minimal"}));
+  }
+  else if(a === "l-limpia"){
+    run(api("casa_lista?comprado=is.true", {method:"DELETE", prefer:"return=minimal"}),
+      "Lista limpia");
+  }
+  else if(a === "cu-add"){
+    var cud = document.getElementById("cu-dia").value;
+    var cuc = document.getElementById("cu-color").value.trim().toLowerCase();
+    if(!cud || !cuc){ toast("Pon el d\u00eda y el color.", true); return; }
+    run(api("casa_cubos?on_conflict=dia", {method:"POST",
+      prefer:"resolution=merge-duplicates,return=minimal",
+      body:[{dia:cud, color:cuc, por:yo}]}), "Recogida apuntada");
+  }
+  else if(a === "cu-quita"){
+    run(api("casa_cubos?dia=eq."+encodeURIComponent(el.getAttribute("data-d")),
+      {method:"DELETE", prefer:"return=minimal"}), "Recogida quitada");
   }
   else if(a === "cb-add"){
     var cz = document.getElementById("cb-zona").value;
@@ -1787,7 +2051,6 @@ document.getElementById("app").addEventListener("change", function(e){
   var id = el.getAttribute("data-id");
   if(!S) return;
 
-  if(a === "c-item"){ compra.items[id] = el.checked; return; }
   if(!fl) return;
 
   if(fl === "z-turno"){
@@ -1813,23 +2076,11 @@ document.getElementById("app").addEventListener("change", function(e){
   if(fl === "z-nombre" || fl === "z-desc" || fl === "z-plazas" || fl === "z-color"){
     var campo = {"z-nombre":"nombre","z-desc":"descripcion","z-plazas":"plazas","z-color":"color"}[fl];
     var val = fl === "z-plazas" ? Math.max(0, parseInt(el.value,10) || 0) : el.value;
-    var antes = S.zonas.filter(function(z){ return z.id === id; })[0];
     var p = {}; p[campo] = val;
-    var cad = api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:p});
-    /* Si cambia el nombre de la zona, el stock debe seguirla. */
-    if(fl === "z-nombre" && antes && antes.nombre !== val){
-      cad = cad.then(function(){
-        return api("casa_items?zone=eq."+encodeURIComponent(antes.nombre), {method:"PATCH", prefer:"return=minimal", body:{zone:val}});
-      });
-    }
-    run(cad);
+    run(api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:p}));
   }
   else if(fl === "t-label"){
     run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:{label: el.value}}));
-  }
-  else if(fl === "i-zona"){
-    run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-      body:{zone: el.value}}), "Artículo movido");
   }
   else if(fl === "cfg-ancla"){
     if(!el.value) return;
@@ -1841,17 +2092,6 @@ document.getElementById("app").addEventListener("change", function(e){
     var sl = parseInt(el.value, 10);
     run(api("casa_zonas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
       body:{rota_salto: (isNaN(sl) || sl < 0) ? 0 : sl}}));
-  }
-  else if(fl === "i-nombre"){
-    run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:{name: el.value}}));
-  }
-  else if(fl === "i-precio"){
-    run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal", body:{price: num(el.value)}}));
-  }
-  else if(fl === "i-min"){
-    var mn = num(el.value);
-    run(api("casa_items?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
-      body:{low_threshold: (mn === null || mn < 0) ? 0 : mn}}));
   }
 });
 
@@ -1896,7 +2136,7 @@ cargar().then(function(){
 /* El refresco repinta la pantalla entera, así que no puede saltar mientras
    alguien escribe: le borraría lo tecleado a media frase. */
 function escribiendo(){
-  if(compraAbierta) return true;
+  if(compraAbierta || editando) return true;
   var el = document.activeElement;
   return !!el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA");
 }

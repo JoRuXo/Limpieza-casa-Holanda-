@@ -138,15 +138,16 @@ async function enviarCorreo(destinos: string[], asunto: string, cuerpo: string) 
 
 async function componerResumen(hoy: string) {
   const sem = semanaDe(hoy);
-  const [cfgRows, zonas, tareas, hechas, semanas, items, summaryRows, cambios] = await Promise.all([
+  const [cfgRows, zonas, tareas, hechas, semanas, lista, summaryRows, cambios, cubos] = await Promise.all([
     db("casa_config?id=eq.1&select=*"),
     db("casa_zonas?select=*&order=orden.asc"),
     db("casa_tareas?select=*&order=orden.asc"),
     db(`casa_completadas?select=*&periodo=gte.${sem}`),
     db(`casa_semanas?select=*&semana=eq.${sem}`),
-    db("casa_items?select=*&order=sort_order.asc"),
+    db("casa_lista?select=*&comprado=is.false&order=orden.asc,at.asc"),
     db("casa_summary?select=*"),
     db(`casa_cambios?select=*&dia=gte.${sem}`),
+    db(`casa_cubos?select=*&dia=gte.${mas(sem, -1)}&order=dia.asc`),
   ]);
   const cfg = cfgRows[0];
   if (!cfg) throw new Error("no hay fila de configuracion en casa_config");
@@ -156,7 +157,7 @@ async function componerResumen(hoy: string) {
   for (const h of hechas ?? []) hechasMap.set(`${h.tarea_id}|${h.periodo}`, h);
 
   // Reparto de zonas de la semana: el guardado si existe, calculado si todavía
-  // no. Las secciones con turno propio (el turno diario, los cubos) no ocupan
+  // no. Las secciones con turno propio (el turno diario) no ocupan
   // plaza y se calculan aparte, por día.
   const n = gente.length;
   let reparto: Record<string, string[]> = semanas?.[0]?.asignacion ?? {};
@@ -221,14 +222,25 @@ async function componerResumen(hoy: string) {
   const zonaDiaria = zonas.find((z: any) => z.rota_aparte && (z.rota_cada ?? 7) < 7) ?? null;
 
   // Una tarea se pide en sus dias propios, o en los dias de limpieza de la casa
-  // si no los tiene. El turno diario usa los de la casa; la limpieza a fondo va
-  // fijada a sabado y domingo, y los cubos a domingo y lunes.
-  const diasLimpieza: number[] = (cfg.dias_limpieza?.length ? cfg.dias_limpieza : [0, 1, 2, 3, 4, 5, 6]);
+  // si no los tiene. El turno diario usa los de la casa (lunes a sabado) y la
+  // limpieza a fondo va fijada al domingo.
+  const diasLimpieza: number[] = (cfg.dias_limpieza?.length ? cfg.dias_limpieza : [1, 2, 3, 4, 5, 6]);
+  // Los cubos no siguen los dias de la semana: se sacan el dia de la recogida
+  // y se entran al siguiente, y se los queda el turno diario de cada uno de
+  // esos dos dias.
+  const recogidaDe = (dia: string) =>
+    (cubos ?? []).find((c: any) => c.dia === dia) ?? null;
+  const cuboDe = (t: any, dia: string) =>
+    t.cubos === "sacar" ? recogidaDe(dia)
+    : t.cubos === "entrar" ? recogidaDe(mas(dia, -1))
+    : null;
   const toca = (t: any, dia: string): boolean =>
-    (t.dias && t.dias.length) ? t.dias.includes(diaSemana(dia)) : diasLimpieza.includes(diaSemana(dia));
+    t.cubos ? !!cuboDe(t, dia)
+    : (t.dias && t.dias.length) ? t.dias.includes(diaSemana(dia))
+    : diasLimpieza.includes(diaSemana(dia));
   // El periodo es la clave con la que se guarda que una tarea esta hecha: el
   // dia para las diarias, el lunes que abre la semana para las semanales. La
-  // limpieza a fondo se pide sabado y domingo pero cuenta una sola vez.
+  // limpieza a fondo se pide el domingo y cuenta una sola vez.
   const periodo = (t: any, dia: string): string => (t.semanal ? semanaDe(dia) : dia);
   // Una zona sin nadie asignado ese dia no pide nada: no puede estar sin hacer
   // lo que no era de nadie. Pasa antes de que arranque una rotacion.
@@ -239,8 +251,8 @@ async function componerResumen(hoy: string) {
 
   const lineas: string[] = [
     `Semana del ${corta(sem)} al ${corta(mas(sem, 6))}. Hoy es ${DOW[diaSemana(hoy)]}.`,
-    `Turno diario: una persona al dia. ` +
-      `Limpieza a fondo por zonas: el fin de semana.`,
+    `Turno diario: una persona al dia, de lunes a sabado. ` +
+      `Limpieza a fondo por zonas: el domingo.`,
     "",
   ];
 
@@ -267,9 +279,15 @@ async function componerResumen(hoy: string) {
         hecho += puestas;
         const quien = turnoReal(z, dia)[0] ?? "sin asignar";
         const cb = cambioDe(z.id, dia);
+        const saca = recogidaDe(dia), entra = recogidaDe(mas(dia, -1));
+        const conCubos = [
+          saca ? `saca ${saca.color}` : "",
+          entra ? `entra ${entra.color}` : "",
+        ].filter(Boolean).join(", ");
         detalle.push(
           `    ${puestas === delDia.length ? "[x]" : "[ ]"} ${DOW_C[diaSemana(dia)]} ${corta(dia)} - ` +
-          `${quien}${cb ? ` (cambio, por ${cb.en_lugar_de})` : ""} - ${puestas} de ${delDia.length}`,
+          `${quien}${cb ? ` (cambio, por ${cb.en_lugar_de})` : ""} - ${puestas} de ${delDia.length}` +
+          `${conCubos ? ` - cubos: ${conCubos}` : ""}`,
         );
       }
       totalGlobal += total;
@@ -298,7 +316,7 @@ async function componerResumen(hoy: string) {
       if (t.semanal) {
         detalle.push(
           faltan.length
-            ? `    [ ] ${t.label} - SIN HACER este fin de semana`
+            ? `    [ ] ${t.label} - SIN HACER este domingo`
             : `    [x] ${t.label} - ${ult?.por ?? "?"} a las ${horaLocal(ult?.at ?? "")}`,
         );
       } else {
@@ -347,13 +365,28 @@ async function componerResumen(hoy: string) {
   }
   lineas.push("", ...bloques);
 
-  const porComprar = (items ?? [])
-    .filter((i: any) => i.status === "low" || i.status === "out")
-    .map((i: any) =>
-      `  - ${i.name} (${i.zone}): ${i.status === "out" ? "AGOTADO" : "queda poco"}` +
-      ` - quedan ${Number(i.quantity)}, avisa a partir de ${Number(i.low_threshold)}`
-    );
-  if (porComprar.length) lineas.push("PRODUCTOS POR COMPRAR", ...porComprar, "");
+  const porComprar = (lista ?? []).map((i: any) =>
+    `  - ${i.nombre}${Number(i.cantidad) > 1 ? ` x${Number(i.cantidad)}` : ""}` +
+    `${i.nota ? ` (${i.nota})` : ""}${i.pedido_por ? ` - lo pidio ${i.pedido_por}` : ""}`
+  );
+  if (porComprar.length) {
+    lineas.push(`LISTA DE LA COMPRA (${porComprar.length})`, ...porComprar, "");
+  }
+
+  // Las recogidas de cubos que vienen, con quien las tiene. Es lo que mas se
+  // olvida, porque no cae siempre el mismo dia de la semana.
+  const zonaD = zonas.find((z: any) => z.rota_aparte && (z.rota_cada ?? 7) < 7) ?? null;
+  const proximos = (cubos ?? [])
+    .filter((c: any) => c.dia >= hoy)
+    .slice(0, 3)
+    .map((c: any) => {
+      const sig = mas(c.dia, 1);
+      const qs = zonaD ? (turnoReal(zonaD, c.dia)[0] ?? "sin asignar") : "sin asignar";
+      const qe = zonaD ? (turnoReal(zonaD, sig)[0] ?? "sin asignar") : "sin asignar";
+      return `  - ${DOW[diaSemana(c.dia)]} ${corta(c.dia)}: ${c.color}` +
+        ` - saca ${qs}, entra ${qe} el ${DOW[diaSemana(sig)]}`;
+    });
+  if (proximos.length) lineas.push("PROXIMOS CUBOS", ...proximos, "");
 
   const bote = summaryRows?.[0] ? Number(summaryRows[0].bote) : 0;
   lineas.push(`Bote comun: ${eur(bote)}`, "", `Abrir la app: ${APP_URL}`);
