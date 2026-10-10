@@ -85,7 +85,11 @@ Cada recogida es una fecha y un color. Y entonces:
 - Los **saca** quien tenga el turno diario **ese día**.
 - Los **entra** quien tenga el turno diario **al día siguiente**.
 
-Casi siempre son dos personas distintas, y está bien: cada uno hace lo que le cae en su día. Las dos tareas aparecen solas dentro del turno diario de cada uno, con el color escrito (*«Sacar los cubos azules a la calle»*). Si un día no hay recogida apuntada, no se pide nada.
+**Normalmente son dos personas distintas, y está garantizado**: el turno corre un puesto al día (tres al cambiar de semana) y con siete personas ninguno de esos avances vuelve al mismo sitio, así que dos días seguidos nunca caen en la misma persona.
+
+La única forma de que el mismo saque y entre es que un **cambio pactado** le ponga encima el día anterior o el siguiente al suyo. Pasa fácil entre vecinos de la lista: como el turno avanza un puesto al día, **quien va detrás de ti en la lista tiene casi siempre el día justo después del tuyo**. No es un error, pero conviene tenerlo en cuenta al elegir el día de un cambio, porque esa persona acabaría haciendo dos días seguidos.
+
+Las dos tareas aparecen solas dentro del turno diario de cada uno, con el color escrito (*«Sacar los cubos azules a la calle»*). Si un día no hay recogida apuntada, no se pide nada.
 
 Esto es más simple que la rotación propia que tenían antes: no hay nada que cuadrar con el reparto de zonas, no gasta plaza y no hace falta re-anclar nada cuando cambia el calendario. Las fechas se meten en **Admin → Cubos de la basura**, y hay que ir añadiéndolas mes a mes.
 
@@ -248,7 +252,7 @@ En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`.
 
 - **2026-10-10 (el domingo es para el fondo, cubos por calendario y lista de la compra)**: La limpieza a fondo pasa a ser **solo del domingo**, y ese día **no hay turno diario**: a quien le cae en domingo no tiene turno esa semana, y le toca a uno distinto cada semana. A cambio el turno diario recupera el sábado, así que son seis días iguales de lunes a sábado. Los **cubos** pierden su rotación propia y pasan a un **calendario de recogidas** con fecha y color: los saca quien tenga el turno diario ese día y los entra quien lo tenga al siguiente. El **stock desaparece** —nunca se usó— y lo sustituye una **lista de la compra** compartida; el **bote** se queda, en su propia pestaña. Y entra **Mi mes**, que enseña de un vistazo los días de turno y las zonas de todo el mes de una persona.
 
-  De paso, la auditoría encontró que el cambio pactado que había apuntado (Sufian cubría a Alberto el domingo 11) se quedaba sin sentido al no haber turno ese día: se movió al viernes 16.
+  De paso, la auditoría encontró que el cambio pactado que había apuntado (Sufian cubría a Alberto el domingo 11) se quedaba sin sentido al no haber turno ese día. Se movió al viernes 16, y eso destapó el problema de los vecinos de lista: Sufian tiene el día siguiente al de Alberto casi siempre, así que acabó con dos turnos pegados y sacando y entrando él solo los mismos cubos. Al final el cambio se retiró: el lunes 5 queda apuntado a nombre de Alberto en el historial y ahí acaba el asunto.
 
 - **2026-10-06 (cambios de un día)**: Se puede apuntar que una sección con turno propio la hace otro **ese día**, sin mover la rotación de nadie más: tabla `casa_cambios`, capa `turnoReal` encima de `turnoDe`, marca en la tira y en la ficha, y su sección en el panel de admin. El correo nocturno lo nombra igual. Primer uso: Alberto cubrió a Sufian el lunes 5 y Sufian le devuelve el domingo 11.
 
