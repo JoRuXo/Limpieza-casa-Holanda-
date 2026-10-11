@@ -279,6 +279,8 @@ img{max-width:100%;display:block}
                        text-transform:uppercase;letter-spacing:.06em}
 .zone.dormida .bar{display:none}
 .cuenta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:0 0 12px}
+.cuenta.libre{color:var(--accent);margin-top:-8px}
+.cuenta.libre b{font-weight:700}
 
 /* Los próximos turnos del día a día. Nadie quiere contar puestos de cabeza
    para saber cuándo le vuelve a tocar: la tira lo pone delante. */
@@ -704,6 +706,10 @@ function cuboDe(t, dia){
 }
 function toca(t, dia){
   if(t.cubos) return !!cuboDe(t, dia);
+  /* Hay tareas que no dependen del calendario sino del tiempo que haga: el
+     césped no se corta con lluvia. Se piden toda la semana del equipo y se
+     hacen el día que se pueda; al ser semanales siguen contando un solo tic. */
+  if(t.cualquier_dia) return true;
   return (t.dias && t.dias.length)
     ? t.dias.indexOf(dow(dia)) > -1
     : esDiaDeLimpieza(dia);
@@ -762,8 +768,17 @@ function progresoSemana(zid, sem, entera){
 /* Un día vacío es un día en que tocó limpiar y no se hizo nada en ninguna
    zona. Son los que hay que ver de un golpe en el historial. */
 function progresoDia(dia){
-  var total = 0, d = 0;
-  S.zonas.forEach(function(z){ var p = progreso(z.id, dia); total += p.t; d += p.d; });
+  var total = 0, d = 0, fondo = fondoAbierto(dia);
+  S.zonas.forEach(function(z){
+    tareasDeDia(z.id, dia).forEach(function(t){
+      /* Una tarea sin día fijo se imputa al día del fondo. Se puede hacer
+         antes, pero si contase los siete días saldría pendiente toda la semana
+         y teñiría el historial entero de días a medias. */
+      if(t.cualquier_dia && !fondo) return;
+      total++;
+      if(hecha(t, dia)) d++;
+    });
+  });
   return {d:d, t:total, p: total ? Math.round(d/total*100) : 0};
 }
 function puedoHacer(zid, dia){
@@ -772,10 +787,15 @@ function puedoHacer(zid, dia){
   return (asignacionDia(dia)[zid] || []).indexOf(yo) > -1;
 }
 /* Los días en que se pide algo de las zonas de equipo: el fin de semana. */
+/* Qué días hay limpieza a fondo. Las tareas sin día fijo quedan fuera de esta
+   cuenta a propósito: se piden los siete días, así que si contasen la app
+   creería que el fondo está abierto siempre y se vendría abajo todo lo que
+   cuelga de ahí (la cuenta atrás, el domingo libre del turno diario, el mes). */
 function diasFondo(){
   var s = {};
   zonasDeTurno().forEach(function(z){
     tareasDe(z.id).forEach(function(t){
+      if(t.cualquier_dia) return;
       (t.dias && t.dias.length ? t.dias : diasLimpieza()).forEach(function(d){ s[d] = 1; });
     });
   });
@@ -801,8 +821,13 @@ function diasFondoTexto(){
   if(ds.length > 3) return ds.length + " días";
   return ds.map(function(d){ return DOW_C[d].toLowerCase(); }).join(" y ");
 }
+/* Hoy es día de limpieza a fondo. Por el mismo motivo, una zona que solo tenga
+   pendiente algo sin día fijo no abre el fondo: se puede ir haciendo, pero el
+   día del fondo sigue siendo el que es. */
 function fondoAbierto(dia){
-  return zonasDeTurno().some(function(z){ return tareasDeDia(z.id, dia).length > 0; });
+  return zonasDeTurno().some(function(z){
+    return tareasDeDia(z.id, dia).some(function(t){ return !t.cualquier_dia; });
+  });
 }
 function proximoFondo(dia){
   for(var i=1;i<=7;i++){ var d = mas(dia, i); if(fondoAbierto(d)) return d; }
@@ -904,7 +929,8 @@ function tareaHTML(t, puede, dia){
      semanales viven en el bloque de la limpieza a fondo, que ya dice el día, y
      las de cubos llevan el color escrito en su propio texto. */
   var etiqueta = "";
-  if(!t.semanal && !t.cubos && t.dias && t.dias.length && t.dias.length < 7){
+  if(t.cualquier_dia) etiqueta = "CUALQUIER D\u00cdA";
+  else if(!t.semanal && !t.cubos && t.dias && t.dias.length && t.dias.length < 7){
     var ds = t.dias.slice().sort(function(a, b){ return ((a+6)%7) - ((b+6)%7); });
     etiqueta = ds.map(function(n){ return DOW_C[n]; }).join(" ");
   }
@@ -1121,6 +1147,15 @@ function vFondo(){
       var f = entre(dia, sig);
       nota = '<div class="cuenta">Se abre el ' + DOW[dow(sig)] + ' \u00b7 ' +
         (f === 1 ? "ma\u00f1ana" : "faltan " + f + " d\u00edas") + '</div>';
+    }
+    /* Lo que no depende del día ya se puede ir haciendo, aunque el fondo no
+       esté abierto. Si no se dice, la cuenta atrás parece cerrarlo todo. */
+    if(zonasDeTurno().some(function(z){
+         return tareasDeDia(z.id, dia).some(function(t){
+           return t.cualquier_dia && !hecha(t, dia);
+         });
+       })){
+      nota += '<div class="cuenta libre">Lo marcado <b>cualquier d\u00eda</b> ya se puede hacer</div>';
     }
   }
   var zs = miasPrimero(zonasDeTurno(), dia);
@@ -1640,6 +1675,8 @@ function vAdmin(){
             '<button class="pill'+(t.semanal ? " on" : "")+'" data-a="t-sem" data-id="'+at(t.id)+'" ' +
               'title="Un solo tic por semana, aunque se pida varios días">1 vez/semana</button>' +
             '<button class="pill'+(t.foto ? " on" : "")+'" data-a="t-foto" data-id="'+at(t.id)+'">foto</button>' +
+            '<button class="pill'+(t.cualquier_dia ? " on" : "")+'" data-a="t-libre" data-id="'+at(t.id)+'" ' +
+              'title="Se pide toda la semana y se hace el d\u00eda que se pueda. No fija el d\u00eda del fondo">cualquier d\u00eda</button>' +
             '<span class="minis">' +
               '<button class="mini" data-a="t-sube" data-z="'+at(z.id)+'" data-i="'+ti+'" title="Subir">▲</button>' +
               '<button class="mini" data-a="t-baja" data-z="'+at(z.id)+'" data-i="'+ti+'" title="Bajar">▼</button>' +
@@ -2018,11 +2055,14 @@ function onClick(e){
     run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
       body:{dias: ds2.length ? ds2 : null}}));
   }
-  else if(a === "t-sem" || a === "t-foto"){
+  else if(a === "t-sem" || a === "t-foto" || a === "t-libre"){
     var tf = S.tareas.filter(function(x){ return x.id === id; })[0];
     if(!tf) return;
-    var campo = a === "t-sem" ? "semanal" : "foto";
+    var campo = a === "t-sem" ? "semanal" : a === "t-foto" ? "foto" : "cualquier_dia";
     var cuerpo2 = {}; cuerpo2[campo] = !tf[campo];
+    /* Sin día fijo solo tiene sentido contando una vez por semana: si no, se
+       pediría de nuevo cada día y habría que marcarla siete veces. */
+    if(campo === "cualquier_dia" && !tf.cualquier_dia) cuerpo2.semanal = true;
     run(api("casa_tareas?id=eq."+encodeURIComponent(id), {method:"PATCH", prefer:"return=minimal",
       body: cuerpo2}));
   }

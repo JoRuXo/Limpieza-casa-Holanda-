@@ -193,8 +193,8 @@ async function componerResumen(hoy: string) {
     );
     const cada = Math.max(1, z.rota_cada ?? 7);
     // rota_salto son los puestos extra que corre el turno cada semana. El turno
-    // diario lleva 2: con 1 se anula contra el avance semanal de las zonas y el
-    // turno del fin de semana caeria siempre sobre la misma zona.
+    // diario lleva 2: con 1 el que cae en domingo seria siempre de la misma
+    // zona durante toda una ronda, y libraria siempre la misma gente.
     const idx = Math.floor(dias / cada) + (z.rota_salto ?? 0) * Math.floor(dias / 7);
     let base = gente.indexOf(z.rota_persona);
     if (base < 0) base = 0;
@@ -234,8 +234,12 @@ async function componerResumen(hoy: string) {
     t.cubos === "sacar" ? recogidaDe(dia)
     : t.cubos === "entrar" ? recogidaDe(mas(dia, -1))
     : null;
+  // Hay tareas que no dependen del calendario sino del tiempo que haga (el
+  // cesped no se corta con lluvia): se piden toda la semana del equipo y se
+  // hacen el dia que se pueda. Al ser semanales cuentan un solo tic.
   const toca = (t: any, dia: string): boolean =>
     t.cubos ? !!cuboDe(t, dia)
+    : t.cualquier_dia ? true
     : (t.dias && t.dias.length) ? t.dias.includes(diaSemana(dia))
     : diasLimpieza.includes(diaSemana(dia));
   // El periodo es la clave con la que se guarda que una tarea esta hecha: el
@@ -314,10 +318,14 @@ async function componerResumen(hoy: string) {
       hecho += puestas;
       const ult = hechasMap.get(`${t.id}|${claves[claves.length - 1]}`);
       if (t.semanal) {
+        // Una sin dia fijo no esta "sin hacer el domingo": tiene toda la
+        // semana por delante, asi que no se la nombra como un fallo.
         detalle.push(
-          faltan.length
-            ? `    [ ] ${t.label} - SIN HACER este domingo`
-            : `    [x] ${t.label} - ${ult?.por ?? "?"} a las ${horaLocal(ult?.at ?? "")}`,
+          !faltan.length
+            ? `    [x] ${t.label} - ${ult?.por ?? "?"} a las ${horaLocal(ult?.at ?? "")}`
+            : t.cualquier_dia
+              ? `    [ ] ${t.label} - pendiente, cualquier dia de la semana`
+              : `    [ ] ${t.label} - SIN HACER este domingo`,
         );
       } else {
         detalle.push(
@@ -349,6 +357,10 @@ async function componerResumen(hoy: string) {
     for (const z of zonas) {
       if (!asignado(z, dia)) continue;
       for (const t of (tareas ?? []).filter((x: any) => x.zona_id === z.id)) {
+        // Fuera las que no tienen dia fijo. Si contasen, bastaria con cortar
+        // el cesped un martes para que ningun dia del resto de la semana
+        // pudiera salir ya como "no se hizo nada": su tic vale toda la semana.
+        if (t.cualquier_dia) continue;
         if (!toca(t, dia)) continue;
         tocaba++;
         if (hechasMap.has(`${t.id}|${periodo(t, dia)}`)) puestas++;

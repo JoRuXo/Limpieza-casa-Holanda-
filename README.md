@@ -156,10 +156,22 @@ Una tarea se pide en unos días y cuenta por día o por semana:
 | Sacar la basura | los días de limpieza de la casa | una vez por día |
 | Limpieza a fondo | domingo | una vez por semana |
 | Sacar / entrar los cubos | por calendario, no por día de la semana | una vez por día |
+| Cortar el césped, desbrozadora | cualquier día de la semana | una vez por semana |
 
 **Qué días se limpia** es un ajuste de casa (Admin → Días de limpieza): es el calendario del turno diario, ahora **de lunes a sábado**. Las dos tareas del turno diario no tienen días propios, heredan los de la casa, así que cambiar ese ajuste las cambia a la vez y no hay dos sitios que puedan contradecirse. La limpieza a fondo no depende de él: va fijada al domingo.
 
 Las tareas de cubos son la excepción: llevan una marca `cubos` (`sacar` o `entrar`) y **no miran el día de la semana**, sino el calendario de recogidas.
+
+### Tareas sin día fijo
+
+Algunas tareas no dependen del calendario sino del tiempo que haga: el césped no se corta con lluvia. Esas llevan la marca `cualquier_dia` y **se piden los siete días de la semana de su equipo**; se hacen el día que se pueda y, al ser semanales, cuentan **un solo tic**. En la lista salen con la etiqueta `CUALQUIER DÍA`, y el bloque de la limpieza a fondo avisa de que ya se pueden hacer aunque el domingo quede lejos.
+
+Hay dos detalles que las hacen menos triviales de lo que parecen, y los dos están resueltos en el código:
+
+- **No cuentan para decidir qué días hay limpieza a fondo.** Si contasen, al pedirse los siete días la app creería que el fondo está abierto siempre, y se vendría abajo todo lo que cuelga de eso: la cuenta atrás, el domingo sin turno diario, la pestaña del mes.
+- **No cuentan en la cuenta de un día suelto** salvo el día del fondo. Si contasen, bastaría con cortar el césped un martes para que ningún día del resto de la semana pudiera volver a salir como «no se hizo nada»: su tic vale para toda la semana y taparía el hueco.
+
+Se marcan desde **Admin → Tareas**, con el interruptor `cualquier día`, que además pone la tarea en «1 vez/semana» porque sin eso habría que marcarla los siete días.
 
 La mayoría de tareas piden **foto**, que queda guardada con el nombre de quien la hizo y la hora.
 
@@ -202,7 +214,7 @@ Solo quien esté en `admins`. **Todo el modelo se edita desde ahí, sin tocar c�
 | Personas y rotación | Añadir, quitar y reordenar personas · marcar quién es **admin** · la fecha en que arranca la rotación de zonas |
 | Días de limpieza | Qué días de la semana se pide lo que no tiene días propios |
 | Zonas y plazas | Nombre, qué incluye, plazas, color, orden · crear y borrar zonas · convertir una zona en **turno propio** y al revés, con su ritmo (cada día / cada semana) y su salto semanal |
-| Tareas | Texto · **qué días se pide**, uno a uno · si cuenta **1 vez por semana** o una por día · si lleva foto · orden dentro de la zona · crear y borrar |
+| Tareas | Texto · **qué días se pide**, uno a uno · si cuenta **1 vez por semana** o una por día · si vale **cualquier día** · si lleva foto · orden dentro de la zona · crear y borrar |
 | Cubos de la basura | Las fechas de recogida y su color · añadir y quitar |
 | Cambios de un día | Apuntar que una sección con turno propio la hace otra persona **ese día** · deshacerlos |
 | Correo nocturno | Destinatarios |
@@ -228,7 +240,7 @@ Cada push a `main` despliega solo.
 
 - `casa_config` — fila única: gente, admins, ancla de rotación, `dias_limpieza`, destinatarios del correo
 - `casa_zonas` — zonas con plazas y color. `rota_aparte` marca las que no consumen plaza y llevan turno propio (`rota_desde`, `rota_persona`, `rota_cada` días entre relevos y `rota_salto` puestos extra por semana). Hoy la única es el turno diario, con 1 y 2
-- `casa_tareas` — tareas por zona. `dias` son los días en que se pide (`NULL` = los días de limpieza de la casa), `semanal` dice si cuenta una vez por semana en vez de una por día, y `cubos` (`sacar`/`entrar`) marca las que van por el calendario de recogidas en vez de por día de la semana
+- `casa_tareas` — tareas por zona. `dias` son los días en que se pide (`NULL` = los días de limpieza de la casa), `semanal` dice si cuenta una vez por semana en vez de una por día, `cubos` (`sacar`/`entrar`) marca las que van por el calendario de recogidas en vez de por día de la semana, y `cualquier_dia` las que se piden toda la semana y se hacen cuando se pueda
 - `casa_completadas` — una fila por tarea completada. `periodo` es el día, o el lunes que abre la semana para las semanales
 - `casa_semanas` — foto fija del reparto de cada semana, para que el historial no se reescriba si alguien entra o sale
 - `casa_lista` — la lista de la compra: nombre, cantidad, nota, quién la pidió y si ya está comprada
@@ -247,6 +259,10 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-11 (tareas sin día fijo)**: Cortar el césped y pasar la desbrozadora no se pueden hacer si llueve, así que dejan de estar atadas al domingo: se piden **toda la semana** y se marcan el día que se pueda, contando igual un solo tic. Columna `cualquier_dia` en `casa_tareas` e interruptor en Admin → Tareas para marcar cualquier otra.
+
+  Lo delicado no era pedirlas los siete días sino que eso no contaminara el resto: no definen el día de la limpieza a fondo (si no, la app lo daría por abierto siempre) ni cuentan en la cuenta de un día suelto (si no, cortar el césped un martes taparía los días sin hacer nada del resto de la semana).
 
 - **2026-10-11 (las tareas de cada zona, revisadas)**: Listas nuevas despues del primer domingo de uso real. Cocina pierde «Limpiar el cristal»; Planta baja suelta la escalera y gana «Limpiar la mesa»; **Arriba** se reescribe entera (algas de la ducha, mampara, lavamanos, baño, bolsas, escalera y pasillo) y se queda la escalera en su descripción; **Jardín** pasa a cinco tareas de garaje, césped, desbrozadora y hojas, y es la única zona sin «Limpiar las ventanas».
 
