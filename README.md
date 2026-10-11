@@ -47,8 +47,8 @@ Para la limpieza a fondo, la casa se reparte en **4 zonas**, con un equipo por z
 |---|---|---|
 | Cocina | 1 | Cocina |
 | Jardín / Garaje | 2 | Jardín y garaje |
-| Planta baja | 2 | Comedor, salón, escalera, baño 1 y cuarto de la lavadora |
-| Arriba | 2 | Ducha, baño y pasillo de arriba |
+| Planta baja | 2 | Comedor, salón, baño 1 y cuarto de la lavadora |
+| Arriba | 2 | Ducha, baño, escalera y pasillo de arriba |
 
 Son **7 plazas para 7 personas**: encaje exacto.
 
@@ -247,6 +247,10 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-11 (las tareas de cada zona, revisadas)**: Listas nuevas despues del primer domingo de uso real. Cocina pierde «Limpiar el cristal»; Planta baja suelta la escalera y gana «Limpiar la mesa»; **Arriba** se reescribe entera (algas de la ducha, mampara, lavamanos, baño, bolsas, escalera y pasillo) y se queda la escalera en su descripción; **Jardín** pasa a cinco tareas de garaje, césped, desbrozadora y hojas, y es la única zona sin «Limpiar las ventanas».
+
+  En Arriba las tareas que seguían existiendo con otro nombre se **renombraron en vez de borrarse**: `casa_completadas` cuelga de `casa_tareas` con `ON DELETE CASCADE`, y borrarlas habría tirado las tres marcas con foto que Pablo acababa de hacer ese mismo domingo. Es la regla a seguir siempre que se toquen tareas ya usadas.
 
 - **2026-10-10 (el mes en calendario)**: **Mi mes** gana un calendario arriba, con los días marcados con abreviaturas — `TD` turno diario, `AF` a fondo, `CS` sacar cubos, `CE` entrar cubos — y su leyenda impresa debajo. En rojo lo que ya pasó sin hacerse. Las listas de detalle se quedan como estaban.
 
