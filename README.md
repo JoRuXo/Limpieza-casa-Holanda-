@@ -287,6 +287,8 @@ Lo que se marca sin red **se apunta en una cola** con la foto dentro y sale solo
 
 Reenviar no es peligroso porque el tic se guarda con `on_conflict` sobre (tarea, periodo): repetirlo no duplica nada. Esa idempotencia es lo que permite reintentar sin llevar la cuenta de qué llegó. La cola admite **5 marcas** —una foto ocupa y `localStorage` no da para mucho más— y avisa si se llena.
 
+Reintentar sin más no basta: hay fallos que no se arreglan esperando. Si el servidor **contesta que no** —la tarea ya no existe, la foto está corrupta—, la marca se descarta con el motivo en pantalla en vez de reintentarse cada 45 segundos para siempre dejando la cuenta encallada. Solo se conserva lo que falló por falta de red. Y la foto, una vez subida, se apunta en la propia entrada: si lo que falla es la marca, el reintento no vuelve a subir la imagen.
+
 ### Permisos: qué puede hacer la clave pública
 
 La app no tiene cuentas: entra quien tiene el enlace, y la clave pública va dentro del HTML. Eso está asumido. Lo que no hacía falta asumir es que esa misma clave pudiera **borrar**: las once tablas tenían una política `ALL` y desde la consola del navegador se podía vaciar la casa entera.

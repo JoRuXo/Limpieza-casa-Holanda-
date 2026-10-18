@@ -515,7 +515,13 @@ function leeCopia(){
   return false;
 }
 function cola(){
-  try{ return JSON.parse(localStorage.getItem(CLAVE_COLA) || "[]"); }catch(e){ return []; }
+  /* Pase lo que pase devuelve un array. Si lo guardado se corrompe y parsea a
+     otra cosa, un reduce sobre ello reventaría la cadena del arranque y la app
+     acabaría enseñando la copia vieja como si no hubiera cobertura. */
+  try{
+    var c = JSON.parse(localStorage.getItem(CLAVE_COLA) || "[]");
+    return Array.isArray(c) ? c : [];
+  }catch(e){ return []; }
 }
 function guardaCola(c){
   try{ localStorage.setItem(CLAVE_COLA, JSON.stringify(c)); return true; }catch(e){ return false; }
@@ -526,22 +532,35 @@ function sinRed(e){
   if(!navigator.onLine) return true;
   return !/^(HTTP|Subida) \d/.test(String((e && e.message) || ""));
 }
+/* Devuelve null si se ha apuntado, o el motivo por el que no. Devolver el
+   texto en vez de avisar aquí evita que quien llama lo tape con el suyo. */
 function encola(tareaId, periodo, foto, url){
   var c = cola();
   if(c.length >= MAX_COLA){
-    toast("Ya hay " + c.length + " marcas sin enviar. Con\u00e9ctate antes de seguir.", true);
-    return false;
+    return "Ya hay " + c.length + " marcas sin enviar. Con\u00e9ctate antes de seguir.";
   }
   c.push({tarea_id:tareaId, periodo:periodo, por:yo, at:new Date().toISOString(),
           foto:foto || null, foto_url:url || null});
   if(!guardaCola(c)){
-    toast("No cabe otra foto sin conexi\u00f3n. Con\u00e9ctate para enviar las que hay.", true);
-    return false;
+    return "No cabe otra foto sin conexi\u00f3n. Con\u00e9ctate para enviar las que hay.";
   }
-  return true;
+  return null;
 }
 /* Manda lo apuntado, de una en una y en orden. Lo que sale se quita; lo que
    falla se queda para el siguiente intento. */
+/* Cambia un apunte de la cola sin pisar lo que otros hayan añadido mientras. */
+function tocaEnCola(m, cambio){
+  guardaCola(cola().map(function(x){
+    if(x.tarea_id !== m.tarea_id || x.periodo !== m.periodo) return x;
+    for(var k in cambio) x[k] = cambio[k];
+    return x;
+  }));
+}
+function sacaDeCola(m){
+  guardaCola(cola().filter(function(x){
+    return !(x.tarea_id === m.tarea_id && x.periodo === m.periodo);
+  }));
+}
 function vaciaCola(){
   if(vaciando || !cola().length || !navigator.onLine) return Promise.resolve(false);
   vaciando = true;
@@ -552,16 +571,26 @@ function vaciaCola(){
                : m.foto ? uploadPhoto(m.foto, "tareas")
                : Promise.resolve(null);
       return foto.then(function(url){
+        /* La foto ya está arriba: se apunta antes de intentar la marca. Si no,
+           cada reintento la volvería a subir y dejaría copias huérfanas. */
+        if(url && url !== m.foto_url){ m.foto_url = url; m.foto = null; tocaEnCola(m, {foto_url:url, foto:null}); }
         return api("casa_completadas?on_conflict=tarea_id,periodo", {
           method:"POST", prefer:"resolution=merge-duplicates,return=minimal",
           body:[{tarea_id:m.tarea_id, periodo:m.periodo, por:m.por, at:m.at, foto_url:url}]
         });
       }).then(function(){
         algo = true;
-        guardaCola(cola().filter(function(x){
-          return !(x.tarea_id === m.tarea_id && x.periodo === m.periodo);
-        }));
-      }).catch(function(){});
+        sacaDeCola(m);
+      }).catch(function(e){
+        /* Sin red se queda para luego. Pero si el servidor ha contestado que
+           no —la tarea ya no existe, la foto está corrupta—, reintentarla cada
+           45 segundos no la va a arreglar nunca y deja la cuenta encallada
+           para siempre. Esa se suelta y se dice por qué. */
+        if(sinRed(e)) return;
+        sacaDeCola(m);
+        toast("Una marca pendiente no se pudo enviar y se ha descartado: " + motivo(e), true);
+        if(window.console) console.error(e);
+      });
     });
   }, Promise.resolve()).then(function(){
     vaciando = false;
@@ -2026,11 +2055,12 @@ function completa(tareaId, url, foto){
   }).then(cargar).then(function(){
     guardando = "ok"; pinta(); toast("Hecho");
   }).catch(function(e){
-    if(sinRed(e) && encola(t.id, per, foto || null, url || null)){
+    var fallo = sinRed(e) ? encola(t.id, per, foto || null, url || null) : motivo(e);
+    if(fallo){
+      guardando = "error"; pinta(); toast(fallo, true);
+    }else{
       guardando = "ok"; pinta();
       toast("Sin conexi\u00f3n: guardado, se env\u00eda solo al volver.");
-    }else{
-      guardando = "error"; pinta(); toast(motivo(e), true);
     }
     if(window.console) console.error(e);
   });
@@ -2506,7 +2536,9 @@ if("serviceWorker" in navigator){
   });
 }
 window.addEventListener("online", function(){
-  vaciaCola().then(function(mandado){ if(!mandado && S) refrescar(); });
+  /* Sin el `|| !S` no se recupera quien abrió la app por primera vez sin
+     cobertura: se quedaría en la pantalla de error hasta recargar a mano. */
+  vaciaCola().then(function(mandado){ if(!mandado || !S) refrescar(); });
 });
 
 /* El refresco repinta la pantalla entera, así que no puede saltar mientras
