@@ -553,10 +553,39 @@ function run(p, msg){
    reparto de zonas: por eso 7 plazas siguen cuadrando con 7 personas. */
 function zonasDeTurno(){ return S.zonas.filter(function(z){ return !z.rota_aparte; }); }
 function zonasAparte(){ return S.zonas.filter(function(z){ return z.rota_aparte; }); }
+/* La fila de plazas por la que corre la rotación. Las plazas de una zona NO
+   van juntas: se reparten en ronda, una por zona y vuelta a empezar.
+
+   Importa porque cada lunes todos corren una plaza. Si las dos plazas de una
+   zona fuesen vecinas en la fila, al avanzar caerías en la de al lado y harías
+   **la misma zona dos semanas seguidas**, que es justo lo que no se quiere.
+
+   Y se empieza por las zonas con más plazas. Repartir en ronda sin ordenar
+   también evita el repetido, pero deja las dos plazas de cada zona a tres de
+   distancia, y entonces cada uno coincide siempre con la misma persona: de 6
+   parejas posibles se baja a 3. Empezando por las grandes quedan a cuatro, que
+   conserva las 6. */
 function plazas(){
-  var out = [];
-  zonasDeTurno().forEach(function(z){ for(var i=0;i<z.plazas;i++) out.push(z.id); });
+  var zs = zonasDeTurno().slice().sort(function(a, b){
+    return (b.plazas - a.plazas) || (a.orden - b.orden);
+  });
+  var out = [], hubo = true;
+  for(var r = 0; hubo; r++){
+    hubo = false;
+    for(var j = 0; j < zs.length; j++){
+      if(zs[j].plazas > r){ out.push(zs[j].id); hubo = true; }
+    }
+  }
   return out;
+}
+/* ¿Queda alguna zona con sus plazas pegadas en la fila? Entonces alguien la
+   repetiría dos semanas seguidas. Con el reparto en ronda solo pasa si una
+   zona acapara casi todas las plazas, pero más vale decirlo que callarlo. */
+function plazasPegadas(){
+  var p = plazas();
+  if(p.length < 2) return false;
+  for(var i=0;i<p.length;i++) if(p[i] === p[(i+1) % p.length]) return true;
+  return false;
 }
 /* El paso de la rotación. Con paso 1 todos avanzan una plaza y las parejas son
    siempre vecinos de la lista; con paso 2 quedan a dos puestos, y así. Vale
@@ -1638,6 +1667,12 @@ function vAdmin(){
         corta(S.rotacionDesde) + '</b>. ') +
     'Cada ronda dura ' + (S.gente.length||1) +
     ' semanas y en ella todos pasan por todas las zonas. ' +
+    (plazasPegadas()
+      ? '<b style="color:var(--bad)">Ahora mismo hay una zona con sus plazas ' +
+        'seguidas, así que alguien la repetirá dos semanas seguidas.</b> Se ' +
+        'arregla repartiendo mejor las plazas entre las zonas. '
+      : 'Las plazas de cada zona van repartidas por la fila, no juntas, para ' +
+        'que nadie repita zona dos semanas seguidas. ') +
     (pasos(S.gente.length||1).length > 1
       ? 'Al empezar la siguiente cambia el paso y con él las parejas, así que ' +
         'nadie repite compañero hasta haber trabajado con toda la casa.'

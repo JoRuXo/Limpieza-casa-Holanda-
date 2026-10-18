@@ -61,19 +61,24 @@ Todas las zonas incluyen **limpiar las ventanas**. La cocina lleva además horno
 
 Las 6 plazas van en fila fija y las personas en una lista ordenada. **Cada lunes todos avanzan una plaza**, así que en 6 semanas cada uno ha pasado por todas las zonas. Eso es una **ronda**.
 
-La fórmula es `persona de la plaza i = gente[(paso × i + semana) mod 7]`. El **paso** es lo que hace que roten también los equipos: con paso 1 las parejas son vecinos de la lista, con paso 2 quedan a dos puestos, con paso 3 a tres. Al terminar una ronda se pasa al siguiente paso.
+La fórmula es `persona de la plaza i = gente[(paso × i + semana) mod n]`. El **paso** es lo que hace que roten también los equipos: con paso 1 las parejas son vecinos de la lista, con paso 2 quedan a dos puestos, y así. Al terminar una ronda se pasa al siguiente paso, cuando hay más de uno.
 
-| Ronda | Semanas | Paso | Parejas |
-|---|---|---|---|
-| 1 | 1–7 | 1 | vecinos de la lista |
-| 2 | 8–14 | 2 | saltando uno |
-| 3 | 15–21 | 3 | saltando dos |
+#### Cómo se ordena la fila de plazas
+
+Las plazas de una zona **no van juntas**: se reparten en ronda, una por zona y vuelta a empezar, **empezando por las zonas con más plazas**. Con la casa de ahora la fila queda `jardín · planta baja · cocina · arriba · jardín · planta baja`.
+
+Las dos decisiones tienen un motivo medido:
+
+- **Por qué no van juntas.** Como cada lunes todos corren una plaza, si las dos de una zona fuesen vecinas caerías en la de al lado y harías **la misma zona dos semanas seguidas**. Eso pasaba: con la fila agrupada, todos hacían Jardín dos domingos seguidos y Planta baja otros dos.
+- **Por qué las grandes primero.** Repartir en ronda sin ordenar también evita el repetido, pero deja las dos plazas de cada zona a tres puestos de distancia, y entonces cada uno coincide **siempre con la misma persona**: de 6 parejas posibles se baja a 3. Empezando por las grandes quedan a cuatro, y se conservan las 6.
+
+Si alguna vez una zona acapara tantas plazas que el reparto en ronda no basta para separarlas, el panel de admin lo avisa en rojo en vez de dejarlo pasar.
 
 Con 6 personas hay **una sola ronda**, y eso tiene una consecuencia que conviene saber: **las parejas no rotan**. Cada uno coincide siempre con los mismos dos vecinos de lista, y de las 15 parejas posibles solo llegan a darse 6.
 
 No es un fallo ni se arregla reordenando la lista: reordenar cambia quién va con quién, pero no hace que roten. Es aritmética — hace falta un número de personas con más coprimos, como 5 o 7. Con 7 había 3 rondas y en 21 semanas cada uno había trabajado con los otros seis. El panel de admin lo dice en su texto, para que no prometa lo que ya no cumple.
 
-Vale cualquier paso coprimo con el número de personas, que es lo que garantiza que las 7 plazas caigan en 7 personas distintas. Si cambia el número de habitantes, la app recalcula los pasos disponibles (con 6 personas solo hay uno, con 9 hay tres).
+Vale cualquier paso coprimo con el número de personas, que es lo que garantiza que las plazas caigan en personas distintas. Si cambia el número de habitantes, la app recalcula los pasos disponibles (con 6 personas solo hay uno, con 7 hay tres).
 
 En las zonas de 2 plazas siempre **se queda uno y entra otro**, así que nunca cambia el equipo entero de golpe y siempre hay quien ya conoce la zona.
 
@@ -272,6 +277,10 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-18 (nadie repite zona dos semanas seguidas)**: La fila de plazas deja de ir agrupada por zona. Antes las dos plazas de Jardín eran vecinas, y como cada lunes todos corren una plaza, al avanzar caías en la de al lado: **todo el mundo hacía Jardín dos domingos seguidos**, y Planta baja otros dos. Ahora se reparten en ronda, una por zona y vuelta a empezar, empezando por las zonas con más plazas.
+
+  Lo de empezar por las grandes no es un detalle: repartir en ronda sin ordenar también quita el repetido, pero deja las plazas de cada zona a tres puestos y entonces cada uno coincide siempre con la misma persona — de 6 parejas posibles se cae a 3. Ordenando quedan a cuatro y se conservan las 6. Comprobado sobre 15 semanas: nadie repite zona y las parejas se mantienen.
 
 - **2026-10-18 (Raul se va: la casa pasa a 6)**: Fuera Raul, **Arriba baja a una persona** y vuelve a cuadrar exacto (1+2+2+1 = 6 plazas para 6). El turno diario pasa a ser **correlativo**: `rota_salto` de 2 a **4**, que con 6 personas es el único valor que hace que el día de cada uno avance uno por semana. Y como ahora hay 6 días de turno para 6 personas, **desaparece el domingo libre**: trabajan los seis, de lunes a sábado.
 

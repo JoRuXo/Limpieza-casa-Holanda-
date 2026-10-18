@@ -41,3 +41,9 @@ update public.casa_zonas set plazas = 1 where id = 'arriba';
 -- otros cinco: 0 va hacia atras, 1/2/3 saltan y repiten patron sin recorrer la
 -- semana, y 5 deja a cada uno clavado en el mismo dia para siempre.
 update public.casa_zonas set rota_salto = 4 where id = 'diario';
+
+-- Nota: la fila de plazas por la que corre la rotacion de zonas no vive en la
+-- base de datos, se construye en el codigo a partir de casa_zonas.plazas. Con
+-- este cambio deja de ir agrupada por zona y pasa a repartirse en ronda,
+-- empezando por las zonas con mas plazas, para que nadie repita zona dos
+-- semanas seguidas. Ver plazas() en index.html.

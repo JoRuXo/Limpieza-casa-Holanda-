@@ -164,10 +164,16 @@ async function componerResumen(hoy: string) {
   if (!semanas?.length && n && cfg.rotacion_desde && sem >= cfg.rotacion_desde) {
     reparto = {};
     const plazas: string[] = [];
-    for (const z of zonas) {
-      if (z.rota_aparte) continue;
-      reparto[z.id] = [];
-      for (let i = 0; i < z.plazas; i++) plazas.push(z.id);
+    // Misma fila que la app: las plazas de una zona no van juntas sino
+    // repartidas en ronda, empezando por las zonas con mas plazas. Si fuesen
+    // vecinas, al correr una plaza cada lunes se repetiria zona dos semanas
+    // seguidas; y repartirlas sin ordenar dejaria las parejas fijas de tres.
+    const zf = zonas.filter((z: any) => !z.rota_aparte)
+      .sort((a: any, b: any) => (b.plazas - a.plazas) || (a.orden - b.orden));
+    for (const z of zf) reparto[z.id] = [];
+    for (let r = 0, hubo = true; hubo; r++) {
+      hubo = false;
+      for (const z of zf) if (z.plazas > r) { plazas.push(z.id); hubo = true; }
     }
     const w = Math.round(
       (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
