@@ -276,6 +276,37 @@ Cada push a `main` despliega solo.
 - `casa_avisos` — registro de cada intento de envío del correo
 - `casa_days` — historial del modelo antiguo (una persona al día), conservado sin tocar
 
+### Sin cobertura
+
+El garaje y el jardín son donde peor entra la señal y donde más se marca, así que la app está pensada para que eso no se pierda. Dos piezas:
+
+- Un **service worker** (`sw.js`) guarda la app para que **abra sin red**. Va primero a la red y solo tira del guardado si no hay: al revés, la casa se quedaría con una versión vieja hasta vaciar el navegador. Los datos **no** se cachean ahí a propósito — una respuesta vieja servida como fresca es peor que no tener nada.
+- La app guarda aparte una **copia de lo último que supo**, y si no puede conectar la enseña diciendo de qué hora es (*«Sin conexión · datos de las 23:40»*). Se puede mirar el turno y marcar igual.
+
+Lo que se marca sin red **se apunta en una cola** con la foto dentro y sale solo al volver la cobertura, o al refrescar, o al abrir la app. Mientras tanto la cabecera lo dice: *«1 marca por enviar»*.
+
+Reenviar no es peligroso porque el tic se guarda con `on_conflict` sobre (tarea, periodo): repetirlo no duplica nada. Esa idempotencia es lo que permite reintentar sin llevar la cuenta de qué llegó. La cola admite **5 marcas** —una foto ocupa y `localStorage` no da para mucho más— y avisa si se llena.
+
+### Permisos: qué puede hacer la clave pública
+
+La app no tiene cuentas: entra quien tiene el enlace, y la clave pública va dentro del HTML. Eso está asumido. Lo que no hacía falta asumir es que esa misma clave pudiera **borrar**: las once tablas tenían una política `ALL` y desde la consola del navegador se podía vaciar la casa entera.
+
+Ahora cada tabla tiene solo los verbos que la app usa:
+
+| Tabla | Puede |
+|---|---|
+| `casa_completadas`, `casa_semanas` | leer, insertar, actualizar — **nunca borrar** |
+| `casa_purchases`, `casa_contributions` | leer e insertar — ni editar ni borrar |
+| `casa_config` | leer y editar la fila única |
+| `casa_zonas`, `casa_tareas`, `casa_lista`, `casa_cubos`, `casa_cambios` | todo: el admin las crea y las borra de verdad |
+| `casa_days` (modelo viejo) | nada |
+
+Quitar el `DELETE` cierra la puerta principal, pero quedaba la de atrás: `casa_completadas` cuelga de `casa_tareas` con `ON DELETE CASCADE`, así que borrar una zona se llevaría las fotos de sus tareas. Un **trigger** lo impide y lo dice con nombre y apellidos: *«La tarea X no se puede borrar: tiene 3 marcas con su foto. Cámbiale el nombre en vez de borrarla.»* Es la regla que ya estaba escrita, ahora hecha norma de la base.
+
+Para que ese mensaje llegue, los errores del servidor se enseñan tal cual en vez del genérico «revisa la conexión», que mandaba a mirar donde no era.
+
+**Lo que sigue abierto, a sabiendas:** cualquiera con el enlace puede *escribir* — marcar por otro, añadir a la lista, cambiar la configuración. Para una casa de seis compensa; cerrarlo pediría cuentas de usuario.
+
 ### Sobre el acceso
 
 No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escribir a cualquiera con la clave publicable, que va en el código de la página. Es el modelo buscado, pero conviene saberlo.
@@ -285,6 +316,16 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-18 (candado y sin cobertura)**: Dos cosas que faltaban y un fallo propio.
+
+  **Permisos.** Las once tablas tenían política `ALL`, así que la clave pública del HTML podía vaciar el historial desde la consola del navegador. Cada tabla pasa a tener solo lo que la app usa, y un trigger impide borrar una tarea con historial — también por la puerta de atrás del `ON DELETE CASCADE` al borrar una zona. Los errores del servidor ya se leen en pantalla en vez del «revisa la conexión» genérico.
+
+  **Sin cobertura.** Service worker para que la app abra sin red, copia de lo último sabido con su hora, y cola de marcas pendientes con la foto dentro que sale sola al volver la cobertura. Reenviar es inofensivo porque el tic es idempotente.
+
+  **El fallo:** el botón de añadir aportación al Bote llevaba desde el día 10 sin hacer nada — me llevé su manejador por delante al quitar el stock del admin. Nadie lo notó porque el bote no se usa.
+
+  Y una cosa que **no** se ha hecho: el borrado automático de fotos viejas que yo mismo había propuesto. Al medirlo resultaron ser 4 MB en seis semanas (51 KB por foto, ya se redimensionan), unos 35 MB al año sobre 1 GB de plan. No hacía falta.
 
 - **2026-10-18 (el salto entre la casa vieja y la nueva)**: Reordenar la fila de plazas evita que dos semanas **calculadas** repitan zona, pero no cubre el salto desde una semana **congelada**, repartida con la casa y la fila de antes. Ese salto cayó justo en el peor de los seis desfases: Noel habría seguido en Jardín, Alberto en Planta baja y Pablo en Arriba. Se re-ancla la rotación de zonas en el **lunes 19**, el único arranque limpio junto con el 12 y el que de verdad estrena la casa de seis.
 

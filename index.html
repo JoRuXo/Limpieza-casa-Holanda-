@@ -488,6 +488,88 @@ function eur(n){ return (n===null||n===undefined||isNaN(n)) ? "—" : Number(n).
 function num(v){ var n = parseFloat(String(v).replace(",",".")); return isNaN(n) ? null : n; }
 function qty(n){ n = Math.round(Number(n||0)*100)/100; return String(n).replace(".",","); }
 
+/* ================= sin cobertura ================= */
+/* El garaje y el jardín son donde peor entra la señal y donde más se marca.
+   Hasta ahora una foto hecha sin cobertura se perdía y había que repetirla.
+   Dos piezas: una copia de lo último que supo la app, para poder mirar, y una
+   cola de marcas que no pudieron salir, para mandarlas luego.
+
+   Reenviar una marca es inofensivo: el tic se guarda con on_conflict sobre
+   (tarea, periodo), así que repetirlo no duplica nada. Esa es la propiedad
+   que hace que la cola pueda reintentar sin miedo. */
+var CLAVE_COPIA = "casaHolanda_copia";
+var CLAVE_COLA  = "casaHolanda_cola";
+var MAX_COLA = 5;          /* una foto ocupa; localStorage no da para mucho más */
+var copiaDe = null;        /* de cuándo es lo que se está enseñando, si es copia */
+var vaciando = false;
+
+function guardaCopia(){
+  try{ localStorage.setItem(CLAVE_COPIA, JSON.stringify({at:new Date().toISOString(), S:S})); }
+  catch(e){}               /* si no cabe se sigue sin copia: no es crítico */
+}
+function leeCopia(){
+  try{
+    var c = JSON.parse(localStorage.getItem(CLAVE_COPIA) || "null");
+    if(c && c.S && c.S.gente){ S = c.S; copiaDe = c.at; return true; }
+  }catch(e){}
+  return false;
+}
+function cola(){
+  try{ return JSON.parse(localStorage.getItem(CLAVE_COLA) || "[]"); }catch(e){ return []; }
+}
+function guardaCola(c){
+  try{ localStorage.setItem(CLAVE_COLA, JSON.stringify(c)); return true; }catch(e){ return false; }
+}
+/* ¿El fallo ha sido quedarse sin red, o el servidor diciendo que no? Solo lo
+   primero se apunta para después; un "no" del servidor hay que enseñarlo. */
+function sinRed(e){
+  if(!navigator.onLine) return true;
+  return !/^(HTTP|Subida) \d/.test(String((e && e.message) || ""));
+}
+function encola(tareaId, periodo, foto, url){
+  var c = cola();
+  if(c.length >= MAX_COLA){
+    toast("Ya hay " + c.length + " marcas sin enviar. Con\u00e9ctate antes de seguir.", true);
+    return false;
+  }
+  c.push({tarea_id:tareaId, periodo:periodo, por:yo, at:new Date().toISOString(),
+          foto:foto || null, foto_url:url || null});
+  if(!guardaCola(c)){
+    toast("No cabe otra foto sin conexi\u00f3n. Con\u00e9ctate para enviar las que hay.", true);
+    return false;
+  }
+  return true;
+}
+/* Manda lo apuntado, de una en una y en orden. Lo que sale se quita; lo que
+   falla se queda para el siguiente intento. */
+function vaciaCola(){
+  if(vaciando || !cola().length || !navigator.onLine) return Promise.resolve(false);
+  vaciando = true;
+  var algo = false;
+  return cola().reduce(function(antes, m){
+    return antes.then(function(){
+      var foto = m.foto_url ? Promise.resolve(m.foto_url)
+               : m.foto ? uploadPhoto(m.foto, "tareas")
+               : Promise.resolve(null);
+      return foto.then(function(url){
+        return api("casa_completadas?on_conflict=tarea_id,periodo", {
+          method:"POST", prefer:"resolution=merge-duplicates,return=minimal",
+          body:[{tarea_id:m.tarea_id, periodo:m.periodo, por:m.por, at:m.at, foto_url:url}]
+        });
+      }).then(function(){
+        algo = true;
+        guardaCola(cola().filter(function(x){
+          return !(x.tarea_id === m.tarea_id && x.periodo === m.periodo);
+        }));
+      }).catch(function(){});
+    });
+  }, Promise.resolve()).then(function(){
+    vaciando = false;
+    if(algo) return refrescar().then(function(){ toast("Enviado lo que qued\u00f3 pendiente."); return true; });
+    return false;
+  });
+}
+
 /* ================= carga ================= */
 function cargar(){
   var desde = mas(semanaDe(hoy()), -7*(SEMANAS_HIST-1));
@@ -533,6 +615,8 @@ function cargar(){
                 compradoPor:i.comprado_por, compradoAt:i.comprado_at, orden:i.orden};
       })
     };
+    copiaDe = null;
+    guardaCopia();
   });
 }
 function refrescar(){ return cargar().then(pinta).catch(function(){}); }
@@ -543,9 +627,23 @@ function run(p, msg){
     guardando = "ok"; pinta(); if(msg) toast(msg);
   }).catch(function(e){
     guardando = "error"; pinta();
-    toast("No se pudo guardar. Revisa la conexión.", true);
+    toast(motivo(e), true);
     if(window.console) console.error(e);
   });
+}
+/* El porqué de un fallo, en cristiano. Cuando el servidor dice algo concreto
+   —y las reglas de la base las dicen, como que una tarea con historial no se
+   borra— vale más eso que un "revisa la conexión" que manda a mirar donde no
+   es. Solo si no hay nada mejor se cae al mensaje genérico. */
+function motivo(e){
+  var t = String((e && e.message) || ""), i = t.indexOf("{");
+  if(i > -1){
+    try{
+      var j = JSON.parse(t.slice(i));
+      if(j && j.message) return j.message;
+    }catch(x){}
+  }
+  return "No se pudo guardar. Revisa la conexión.";
 }
 
 /* ================= rotación ================= */
@@ -961,6 +1059,11 @@ function selector(){
 function cabecera(){
   var sem = semanaDe(hoy());
   var estado = {ok:"", guardando:"Guardando…", error:"Sin conexión"}[guardando];
+  /* Mirar una copia vieja sin saberlo es peor que no ver nada, así que cuando
+     lo que hay en pantalla no viene del servidor se dice, con su hora. */
+  var pend = cola().length;
+  if(copiaDe) estado = "Sin conexi\u00f3n \u00b7 datos de las " + hora(copiaDe);
+  else if(pend) estado = pend + (pend === 1 ? " marca" : " marcas") + " por enviar";
   return '<div class="app" style="padding-bottom:0"><div class="topbar">' +
     '<div class="brand"><div class="name">Casa Holanda</div>' +
     '<div class="week">' + (estado ? esc(estado) : rango(sem).toUpperCase()) + '</div></div>' +
@@ -1910,13 +2013,27 @@ function toast(m, mal){
   clearTimeout(toast._t);
   toast._t = setTimeout(function(){ el.hidden = true; }, mal ? 4500 : 2200);
 }
-function completa(tareaId, url){
+/* `foto` es la imagen que todavía no ha podido subir: si la marca tampoco
+   sale, se guardan las dos juntas y se mandan enteras más tarde. */
+function completa(tareaId, url, foto){
   var t = S.tareas.filter(function(x){ return x.id === tareaId; })[0];
-  if(!t) return;
-  run(api("casa_completadas?on_conflict=tarea_id,periodo", {
+  if(!t) return Promise.resolve();
+  var per = periodoDe(t, hoy());
+  guardando = "guardando"; pinta();
+  return api("casa_completadas?on_conflict=tarea_id,periodo", {
     method:"POST", prefer:"resolution=merge-duplicates,return=minimal",
-    body:[{tarea_id:t.id, periodo:periodoDe(t, hoy()), por:yo, at:new Date().toISOString(), foto_url:url || null}]
-  }), "Hecho");
+    body:[{tarea_id:t.id, periodo:per, por:yo, at:new Date().toISOString(), foto_url:url || null}]
+  }).then(cargar).then(function(){
+    guardando = "ok"; pinta(); toast("Hecho");
+  }).catch(function(e){
+    if(sinRed(e) && encola(t.id, per, foto || null, url || null)){
+      guardando = "ok"; pinta();
+      toast("Sin conexi\u00f3n: guardado, se env\u00eda solo al volver.");
+    }else{
+      guardando = "error"; pinta(); toast(motivo(e), true);
+    }
+    if(window.console) console.error(e);
+  });
 }
 function cfg(patch){
   patch.updated_at = new Date().toISOString();
@@ -2065,13 +2182,18 @@ function onClick(e){
     var tid = el.getAttribute("data-t");
     abreCamara("Foto de la tarea", 1024, function(img){
       guardando = "guardando"; pinta();
-      uploadPhoto(img, "tareas").then(function(u){ completa(tid, u); })
-        .catch(function(err){ guardando = "error"; pinta(); toast("No se pudo subir la foto.", true); if(window.console) console.error(err); });
+      uploadPhoto(img, "tareas")
+        .then(function(u){ return completa(tid, u, null); })
+        .catch(function(err){
+          /* Si la foto no sube por falta de red, la marca se apunta con la
+             imagen dentro y suben las dos juntas cuando vuelva. */
+          if(sinRed(err)) return completa(tid, null, img);
+          guardando = "error"; pinta(); toast(motivo(err), true);
+          if(window.console) console.error(err);
+        });
     });
   }
   else if(a === "marcar") completa(el.getAttribute("data-t"), null);
-  else if(a === "cant"){
-  }
   else if(a === "compra-abre"){ compraAbierta = true; pinta(); }
   else if(a === "c-cancela"){ compraAbierta = false; compra = {importe:"",concepto:"",ticket:null}; pinta(); }
   else if(a === "c-ticket"){ sincroCompra(); abreCamara("Foto del ticket", 1400, function(img){ compra.ticket = img; pinta(); }); }
@@ -2237,6 +2359,13 @@ function onClick(e){
     run(api("casa_cubos?dia=eq."+encodeURIComponent(el.getAttribute("data-d")),
       {method:"DELETE", prefer:"return=minimal"}), "Recogida quitada");
   }
+  else if(a === "ap-add"){
+    var apq = document.getElementById("ap-quien").value;
+    var apc = num(document.getElementById("ap-cuanto").value);
+    if(apc === null || apc <= 0){ toast("Pon la cantidad.", true); return; }
+    run(api("casa_contributions", {method:"POST", prefer:"return=minimal",
+      body:[{by_name:apq, amount:apc}]}), "Aportaci\u00f3n registrada");
+  }
   else if(a === "cb-add"){
     var cz = document.getElementById("cb-zona").value;
     var cd = document.getElementById("cb-dia").value;
@@ -2354,10 +2483,30 @@ document.getElementById("cam").addEventListener("change", function(e){
 cargar().then(function(){
   pinta();
   return fijarSemana();
-}).then(pinta).catch(function(e){
-  document.getElementById("app").innerHTML =
-    '<div class="boot">No se pudo conectar con el servidor.<br>Comprueba la conexión y recarga la página.</div>';
+}).then(pinta).then(vaciaCola).catch(function(e){
+  /* Sin servidor, se enseña la última copia en vez de una pantalla muerta:
+     con ella se puede al menos ver a quién le toca y marcar, que se enviará
+     al volver la red. */
+  if(leeCopia()){
+    pinta();
+    vaciaCola();
+  }else{
+    document.getElementById("app").innerHTML =
+      '<div class="boot">No se pudo conectar y no hay copia guardada.<br>' +
+      'Con\u00e9ctate una vez y la app ya funcionar\u00e1 sin cobertura.</div>';
+  }
   if(window.console) console.error(e);
+});
+
+/* La app guardada en el navegador: con esto abre sin cobertura. Si falla, no
+   pasa nada — es una mejora, no un requisito. */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+window.addEventListener("online", function(){
+  vaciaCola().then(function(mandado){ if(!mandado && S) refrescar(); });
 });
 
 /* El refresco repinta la pantalla entera, así que no puede saltar mientras
@@ -2367,7 +2516,10 @@ function escribiendo(){
   var el = document.activeElement;
   return !!el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA");
 }
-setInterval(function(){ if(!document.hidden && S && !escribiendo()) refrescar(); }, 45000);
+setInterval(function(){
+  if(document.hidden || !S || escribiendo()) return;
+  vaciaCola().then(function(mandado){ if(!mandado) refrescar(); });
+}, 45000);
 window.addEventListener("focus", function(){ if(S && !escribiendo()) refrescar(); });
 
 })();
