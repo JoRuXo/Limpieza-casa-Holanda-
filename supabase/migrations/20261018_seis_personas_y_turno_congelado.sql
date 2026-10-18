@@ -47,3 +47,10 @@ update public.casa_zonas set rota_salto = 4 where id = 'diario';
 -- este cambio deja de ir agrupada por zona y pasa a repartirse en ronda,
 -- empezando por las zonas con mas plazas, para que nadie repita zona dos
 -- semanas seguidas. Ver plazas() en index.html.
+
+-- Al reordenar la fila de plazas, el salto desde la semana congelada del 12
+-- (repartida con 7 personas y la fila vieja) caia justo en el desfase que
+-- repite: Noel seguia en Jardin, Alberto en Planta baja y Pablo en Arriba.
+-- Reordenar la fila solo garantiza que no repitan dos semanas CALCULADAS; el
+-- salto desde una congelada hay que mirarlo a mano y se corrige con el ancla.
+update public.casa_config set rotacion_desde = '2026-10-19', updated_at = now() where id = 1;

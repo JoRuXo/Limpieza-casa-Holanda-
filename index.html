@@ -1077,6 +1077,10 @@ function bloque(id, clase, icono, titulo, sub, tag, cuerpo){
 
 function avisoSinRota(dia){
   if(!S.rotacionDesde || semanaDe(dia) >= S.rotacionDesde) return '';
+  /* Una semana anterior al ancla pero ya congelada sí tiene equipo: es lo que
+     pasa la semana en que se re-ancla la rotación, y decir lo contrario ese
+     día asusta sin motivo. */
+  if(S.semanas[semanaDe(dia)]) return '';
   return '<div class="note"><div><b>La rotaci\u00f3n empieza el ' + DOW[dow(S.rotacionDesde)] + ' ' +
     corta(S.rotacionDesde) + '.</b><br>Hasta entonces las zonas no tienen equipo.</div></div>';
 }
@@ -1544,8 +1548,10 @@ function formCompra(){
 function vHistorial(){
   var sem = semanaDe(hoy()), tope = hoy(), fila = [];
   for(var i=0;i<SEMANAS_HIST;i++) fila.push(mas(sem, -7*i));
+  /* No se recorta por el ancla: un día sin reparto no pide nada y ya se salta
+     solo más abajo, mientras que recortar aquí borraría del contador las
+     semanas anteriores a un re-anclaje, que sí se vivieron. */
   var arranque = fila[fila.length-1];
-  if(S.rotacionDesde && S.rotacionDesde > arranque) arranque = S.rotacionDesde;
 
   var vacios = 0, activos = 0;
   for(var d = arranque; d <= tope; d = mas(d, 1)){

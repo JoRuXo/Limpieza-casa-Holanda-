@@ -74,6 +74,14 @@ Las dos decisiones tienen un motivo medido:
 
 Si alguna vez una zona acapara tantas plazas que el reparto en ronda no basta para separarlas, el panel de admin lo avisa en rojo en vez de dejarlo pasar.
 
+#### El salto cuando cambia el modelo
+
+Que la fila no repita garantiza que **dos semanas calculadas seguidas** no repitan. No dice nada del salto desde una **semana congelada**, que se repartió con la casa y la fila de antes. Al pasar a seis y reordenar la fila, ese salto cayó justo en el desfase malo y tres personas habrían repetido zona.
+
+Para eso está el **ancla** (`rotacion_desde`): mover el lunes de arranque desplaza el reparto de todas las semanas que aún no están congeladas, y de los seis desfases posibles basta con elegir uno que no choque con la última semana vivida. Es lo que se hizo al marcharse Raul, anclando en el lunes 19.
+
+**Al cambiar de gente, de plazas o de fila hay que mirar ese salto a mano**: la rotación por sí sola no lo cubre.
+
 Con 6 personas hay **una sola ronda**, y eso tiene una consecuencia que conviene saber: **las parejas no rotan**. Cada uno coincide siempre con los mismos dos vecinos de lista, y de las 15 parejas posibles solo llegan a darse 6.
 
 No es un fallo ni se arregla reordenando la lista: reordenar cambia quién va con quién, pero no hace que roten. Es aritmética — hace falta un número de personas con más coprimos, como 5 o 7. Con 7 había 3 rondas y en 21 semanas cada uno había trabajado con los otros seis. El panel de admin lo dice en su texto, para que no prometa lo que ya no cumple.
@@ -277,6 +285,10 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-10-18 (el salto entre la casa vieja y la nueva)**: Reordenar la fila de plazas evita que dos semanas **calculadas** repitan zona, pero no cubre el salto desde una semana **congelada**, repartida con la casa y la fila de antes. Ese salto cayó justo en el peor de los seis desfases: Noel habría seguido en Jardín, Alberto en Planta baja y Pablo en Arriba. Se re-ancla la rotación de zonas en el **lunes 19**, el único arranque limpio junto con el 12 y el que de verdad estrena la casa de seis.
+
+  De paso, dos cosas que el re-anclaje destapó: el aviso de «las zonas no tienen equipo» salía en una semana anterior al ancla aunque estuviera congelada y sí tuviera equipo, y el contador de días del historial se recortaba en el ancla y se comía las semanas vividas antes. Las dos arregladas.
 
 - **2026-10-18 (nadie repite zona dos semanas seguidas)**: La fila de plazas deja de ir agrupada por zona. Antes las dos plazas de Jardín eran vecinas, y como cada lunes todos corren una plaza, al avanzar caías en la de al lado: **todo el mundo hacía Jardín dos domingos seguidos**, y Planta baja otros dos. Ahora se reparten en ronda, una por zona y vuelta a empezar, empezando por las zonas con más plazas.
 
