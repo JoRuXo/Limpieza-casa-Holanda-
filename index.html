@@ -508,7 +508,7 @@ function cargar(){
     var hechas = {};
     (r[3]||[]).forEach(function(c){ hechas[c.tarea_id + "|" + c.periodo] = c; });
     var sem = {};
-    (r[4]||[]).forEach(function(w){ sem[w.semana] = w.asignacion; });
+    (r[4]||[]).forEach(function(w){ sem[w.semana] = w; });
     S = {
       gente: cfg.people || [],
       admins: cfg.admins || [],
@@ -571,7 +571,10 @@ function pasos(n){
 }
 function semanasDesdeAncla(sem){ return Math.round(entre(S.rotacionDesde, sem) / 7); }
 /* Una ronda son n semanas: al acabarla todos han pasado por todas las plazas.
-   La ronda siguiente cambia el paso, y con él las parejas. */
+   La ronda siguiente cambia el paso, y con él las parejas — cuando hay más de
+   un paso posible. Con 6 personas solo hay uno (el 1), así que las parejas se
+   quedan fijas: cada uno coincide siempre con sus vecinos de lista. Es
+   inherente a 6, no algo que se pueda apañar aquí. */
 function rondaDe(sem){
   var n = S.gente.length;
   if(!n || !S.rotacionDesde) return 0;
@@ -630,7 +633,7 @@ function cambioDe(zid, dia){
    puesto encima si lo hay. Lo usa todo lo que mira quién limpia; lo que mira
    la rotación en sí usa `turnoDe`. */
 function turnoReal(z, dia){
-  var t = turnoDe(z, dia);
+  var t = turnoCongelado(z, dia) || turnoDe(z, dia);
   var c = cambioDe(z.id, dia);
   if(c && t.length){
     t = t.slice();
@@ -648,7 +651,25 @@ function turnoSemana(z, sem){
   }
   return out;
 }
-function asignacion(sem){ return S.semanas[sem] || calcula(sem); }
+function asignacion(sem){
+  var w = S.semanas[sem];
+  return (w && w.asignacion) || calcula(sem);
+}
+/* El turno congelado de un día. El reparto de zonas se congela desde que
+   empieza la semana para que el historial no se reescriba si alguien entra o
+   sale de la casa; el turno diario necesita lo mismo, y por el mismo motivo:
+   al pasar de siete a seis personas, los días ya vividos pasarían a decir que
+   le tocaban a quien ya no vive aquí.
+
+   Solo manda sobre lo ya vivido. De mañana en adelante vuelve a mandar la
+   rotación, que es justo lo que permite que un cambio de gente surta efecto
+   sin tener que esperar a la semana siguiente. */
+function turnoCongelado(z, dia){
+  if(dia > hoy()) return null;
+  var w = S.semanas[semanaDe(dia)];
+  var t = w && w.turnos && w.turnos[z.id] && w.turnos[z.id][dia];
+  return (t && t.length) ? t : null;
+}
 /* Reparto completo de un día: las zonas por su semana, las secciones aparte
    por su propio turno. */
 function asignacionDia(dia){
@@ -667,13 +688,31 @@ function zonaDiaria(){
    cambie si alguien entra o sale de la casa más adelante. Las secciones
    aparte no se congelan: se recalculan por día. */
 function fijarSemana(){
-  var sem = semanaDe(hoy());
-  if(S.semanas[sem] || !S.gente.length || !S.rotacionDesde || sem < S.rotacionDesde) return Promise.resolve();
-  var a = calcula(sem);
-  S.semanas[sem] = a;
+  if(!S.gente.length || !S.rotacionDesde) return Promise.resolve();
+  var sem = semanaDe(hoy()), d = hoy();
+  if(sem < S.rotacionDesde) return Promise.resolve();
+  var w = S.semanas[sem];
+  var a = (w && w.asignacion) || calcula(sem);
+  var turnos = (w && w.turnos) ? JSON.parse(JSON.stringify(w.turnos)) : {};
+  var hayQueGuardar = !w;
+  /* El turno se congela **día a día**, no la semana entera de golpe. Si se
+     congelase de golpe y alguien entrase o saliese a media semana, los días
+     que quedan saldrían con la lista vieja. Así solo queda fijo lo ya vivido
+     y el resto de la semana sigue recalculándose. El reparto de zonas sí va
+     por semana entera, porque esa es su unidad. */
+  zonasAparte().forEach(function(z){
+    if(turnos[z.id] && turnos[z.id][d]) return;
+    var q = turnoDe(z, d);
+    if(!q.length) return;
+    turnos[z.id] = turnos[z.id] || {};
+    turnos[z.id][d] = q;
+    hayQueGuardar = true;
+  });
+  if(!hayQueGuardar) return Promise.resolve();
+  S.semanas[sem] = {semana: sem, asignacion: a, turnos: turnos};
   return api("casa_semanas?on_conflict=semana", {
-    method:"POST", prefer:"resolution=ignore-duplicates,return=minimal",
-    body:[{semana: sem, asignacion: a}]
+    method:"POST", prefer:"resolution=merge-duplicates,return=minimal",
+    body:[{semana: sem, asignacion: a, turnos: turnos}]
   }).catch(function(){});
 }
 /* Se puede tener zona, turno diario y cubos el mismo día. */
@@ -1598,9 +1637,16 @@ function vAdmin(){
       : 'La rotación <b>empieza el ' + DOW[dow(S.rotacionDesde)] + ' ' +
         corta(S.rotacionDesde) + '</b>. ') +
     'Cada ronda dura ' + (S.gente.length||1) +
-    ' semanas y en ella todos pasan por todas las zonas; al empezar la siguiente ' +
-    'cambia el paso y con él las parejas, así que nadie repite compañero hasta ' +
-    'haber trabajado con toda la casa.<br><br>' +
+    ' semanas y en ella todos pasan por todas las zonas. ' +
+    (pasos(S.gente.length||1).length > 1
+      ? 'Al empezar la siguiente cambia el paso y con él las parejas, así que ' +
+        'nadie repite compañero hasta haber trabajado con toda la casa.'
+      : 'Con ' + (S.gente.length||1) + ' personas <b>solo hay un paso posible</b>, ' +
+        'así que las parejas no rotan: cada uno coincide siempre con los mismos. ' +
+        'No es un fallo, es aritmética — para que roten hace falta un número de ' +
+        'personas con más coprimos, como 5 o 7. Cambiar el orden de la ' +
+        'lista cambia quién va con quién, pero no hace que roten.') +
+    '<br><br>' +
     'Las secciones con turno propio (el turno diario, los cubos) no gastan plaza ' +
     'y corren por esta misma lista a su ritmo.</p>';
 

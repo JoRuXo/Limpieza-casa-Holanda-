@@ -64,8 +64,8 @@ function mas(fecha: string, n: number): string {
 function diaSemana(fecha: string): number {
   return new Date(fecha + "T12:00:00Z").getUTCDay();
 }
-/** La semana va de lunes a domingo, igual que en la app: así el fin de semana
- *  entero cae dentro de la semana del mismo equipo. */
+/** La semana va de lunes a domingo, igual que en la app: así el domingo de la
+ *  limpieza a fondo cierra la semana del mismo equipo que la ha tenido. */
 function semanaDe(fecha: string): string {
   return mas(fecha, -((diaSemana(fecha) + 6) % 7));
 }
@@ -173,7 +173,8 @@ async function componerResumen(hoy: string) {
       (Date.parse(sem + "T00:00:00Z") - Date.parse(cfg.rotacion_desde + "T00:00:00Z")) / 604800000,
     );
     // Mismo paso que la app: cada ronda de n semanas cambia el multiplicador
-    // para que cambien las parejas sin romper el reparto.
+    // para que cambien las parejas sin romper el reparto. Con 6 personas solo
+    // hay un paso posible y las parejas se quedan fijas; es inherente al 6.
     const mcd = (a: number, b: number): number => { while (b) { const t = a % b; a = b; b = t; } return a; };
     const posibles: number[] = [];
     for (let a = 1; a <= Math.floor(n / 2); a++) if (mcd(a, n) === 1) posibles.push(a);
@@ -192,9 +193,9 @@ async function componerResumen(hoy: string) {
       (Date.parse(dia + "T00:00:00Z") - Date.parse(z.rota_desde + "T00:00:00Z")) / 86400000,
     );
     const cada = Math.max(1, z.rota_cada ?? 7);
-    // rota_salto son los puestos extra que corre el turno cada semana. El turno
-    // diario lleva 2: con 1 el que cae en domingo seria siempre de la misma
-    // zona durante toda una ronda, y libraria siempre la misma gente.
+    // rota_salto son los puestos extra que corre el turno cada semana. Con 6
+    // personas lleva 4: es el unico valor que hace que el dia de cada uno
+    // avance exactamente uno por semana (lunes, martes, miercoles...).
     const idx = Math.floor(dias / cada) + (z.rota_salto ?? 0) * Math.floor(dias / 7);
     let base = gente.indexOf(z.rota_persona);
     if (base < 0) base = 0;
@@ -204,11 +205,20 @@ async function componerResumen(hoy: string) {
     }
     return out;
   };
+  // El turno congelado de un dia, igual que en la app. El reparto de zonas ya
+  // se congelaba por semana para que el historial no se reescribiera al entrar
+  // o salir alguien; el turno diario necesita lo mismo. Solo manda sobre lo ya
+  // vivido: de manana en adelante vuelve a mandar la rotacion.
+  const congelado = (z: any, dia: string): string[] | null => {
+    if (dia > hoy) return null;
+    const t = semanas?.[0]?.turnos?.[z.id]?.[dia];
+    return (t && t.length) ? t : null;
+  };
   // Un cambio pactado: ese dia esa seccion la hace otro. Va encima de la
   // rotacion, igual que en la app, para que el correo nombre a quien de verdad
   // le tocaba y no al titular de la rotacion.
   const turnoReal = (z: any, dia: string): string[] => {
-    const t = turnoDe(z, dia);
+    const t = congelado(z, dia) ?? turnoDe(z, dia);
     const c = (cambios ?? []).find((x: any) => x.zona_id === z.id && x.dia === dia);
     if (!c || !t.length) return t;
     const out = t.slice();
@@ -249,7 +259,7 @@ async function componerResumen(hoy: string) {
   // Una zona sin nadie asignado ese dia no pide nada: no puede estar sin hacer
   // lo que no era de nadie. Pasa antes de que arranque una rotacion.
   const asignado = (z: any, dia: string): boolean =>
-    (z.rota_aparte ? turnoDe(z, dia).length : (reparto[z.id] ?? []).length) > 0;
+    (z.rota_aparte ? turnoReal(z, dia).length : (reparto[z.id] ?? []).length) > 0;
   const diasPasados: string[] = [];
   for (let d = sem; d <= hoy; d = mas(d, 1)) diasPasados.push(d);
 
