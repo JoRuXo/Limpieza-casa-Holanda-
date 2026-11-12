@@ -690,6 +690,12 @@ try { yo = localStorage.getItem(KEY); } catch(e){}
 var vista = "hoy";
 var abierto = {};
 var lightbox = null;
+var lightboxOrigen = null;   /* el elemento que abrió la foto, para devolverle el foco */
+function cierraFoto(){
+  lightbox = null; pinta();
+  if(lightboxOrigen && lightboxOrigen.isConnected && lightboxOrigen.focus) lightboxOrigen.focus();
+  lightboxOrigen = null;
+}
 var guardando = "ok";
 var camStream = null, camCb = null, camShot = null, camMax = 1024;
 var compraAbierta = false;
@@ -891,10 +897,18 @@ function cargar(){
       })
     };
     copiaDe = null;
+    ultimaCarga = new Date().toISOString();
     guardaCopia();
   });
 }
-function refrescar(){ return cargar().then(pinta).catch(function(){}); }
+var ultimaCarga = null;      /* cuándo se leyó bien del servidor por última vez */
+/* Un refresco que falla con la app ya cargada no tira los datos: se enseña la
+   copia y el banner con «Reintentar», en vez de quedarse callado. */
+function refrescar(){
+  return cargar().then(pinta).catch(function(){
+    if(S){ copiaDe = copiaDe || ultimaCarga || new Date().toISOString(); pinta(); }
+  });
+}
 
 function run(p, msg){
   guardando = "guardando"; pinta();
@@ -1339,7 +1353,8 @@ function pinta(){
     : vista === "historial" ? vHistorial()
     : vAdmin();
   el.innerHTML = cabecera() + '<div class="app u-pt-0">' + bannerHTML() + cuerpo + '</div>' +
-    (lightbox ? '<div class="lightbox" role="dialog" aria-modal="true" aria-label="Foto ampliada" data-a="cerrar-foto"><img src="'+at(lightbox)+'" alt=""></div>' : '');
+    (lightbox ? '<div class="lightbox" role="dialog" aria-modal="true" aria-label="Foto ampliada" tabindex="-1" data-a="cerrar-foto"><img src="'+at(lightbox)+'" alt=""></div>' : '');
+  if(lightbox){ var lb = el.querySelector(".lightbox"); if(lb) lb.focus(); }
 }
 
 function selector(){
@@ -1360,8 +1375,8 @@ function bannerHTML(){
   var pend = cola().length, boton = '<button class="btn btn-sm" data-a="reintenta">';
   if(copiaDe) return '<div class="banner bad" role="alert"><span class="grow">Sin conexión · datos de las ' +
     esc(hora(copiaDe)) + '</span>' + boton + 'Reintentar</button></div>';
-  if(guardando === "error") return '<div class="banner bad" role="alert"><span class="grow">No se ha podido guardar.</span>' +
-    boton + 'Reintentar</button></div>';
+  if(guardando === "error") return '<div class="banner bad" role="alert"><span class="grow">No se ha podido guardar. Vuelve a hacerlo.</span>' +
+    boton + 'Recargar</button></div>';
   if(pend) return '<div class="banner warn" role="status"><span class="grow">' + pend +
     (pend === 1 ? " marca" : " marcas") + ' por enviar · se envían solas al volver la red.</span>' +
     boton + 'Enviar ahora</button></div>';
@@ -1491,7 +1506,10 @@ function cierraMas(devuelveFoco){
 }
 /* Teclado para los bloques que son div con role=button, y Esc para la foto ampliada. */
 document.addEventListener("keydown", function(e){
-  if(e.key === "Escape" && lightbox){ lightbox = null; pinta(); return; }
+  if(lightbox){
+    if(e.key === "Escape"){ e.preventDefault(); cierraFoto(); return; }
+    if(e.key === "Tab"){ e.preventDefault(); var lbx = document.querySelector(".lightbox"); if(lbx) lbx.focus(); return; }
+  }
   var t = e.target;
   if((e.key === "Enter" || e.key === " ") && t && t.getAttribute && t.getAttribute("role") === "button" && t.hasAttribute("data-a")){
     e.preventDefault(); t.click();
@@ -2090,7 +2108,7 @@ function vBote(){
             '<div class="nm">'+esc(p.nota || "Compra")+'<small>'+esc(p.por)+' · '+corta((p.at||"").slice(0,10))+'</small></div>' +
             '<span class="u-fw-700 u-fvn-tabular-nums">'+eur(p.importe)+'</span></div>';
         }).join('')
-      : '<div class="empty">Todavía no se ha registrado ninguna compra.<br><button class="btn btn-sm" data-a="compra-abre">Registrar una compra</button></div>');
+      : '<div class="empty">Todavía no se ha registrado ninguna compra.</div>');
 }
 function formCompra(){
   return '<div class="zone u-bc-v-accent u-p-15px_16px">' +
@@ -2856,8 +2874,8 @@ function onClick(e){
   else if(a === "hist-abre"){ var hk = el.getAttribute("data-k"); abierto[hk] = !abierto[hk]; pinta(); }
   else if(a === "abre-sem"){ var w = el.getAttribute("data-w"); abierto["w"+w] = !abierto["w"+w]; pinta(); }
   else if(a === "abre-acc"){ var k = el.getAttribute("data-k"); abierto["a"+k] = !abierto["a"+k]; pinta(); }
-  else if(a === "foto"){ lightbox = el.getAttribute("data-src"); pinta(); }
-  else if(a === "cerrar-foto"){ lightbox = null; pinta(); }
+  else if(a === "foto"){ lightboxOrigen = el; lightbox = el.getAttribute("data-src"); pinta(); }
+  else if(a === "cerrar-foto"){ cierraFoto(); }
   else if(a === "foto-tarea"){
     var tid = el.getAttribute("data-t");
     abreCamara("Foto de la tarea", 1024, function(img){
