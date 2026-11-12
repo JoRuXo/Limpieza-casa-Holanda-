@@ -111,6 +111,8 @@ Esto es más simple que la rotación propia que tenían antes: no hay nada que c
 
 Octubre de 2026: lunes 12 verdes, viernes 16 azules, jueves 22 grises, lunes 26 verdes.
 
+Noviembre de 2026: jueves 5 grises, lunes 9 verdes, viernes 13 azules, lunes 16 verdes (restos de jardín y poda), jueves 19 grises, lunes 23 verdes; y jueves 3 de diciembre grises. El 5 y el 9 no se apuntaron en la app porque se metieron el 12, ya pasados: apuntarlos habría marcado en rojo a quien no se le pidió.
+
 ### Lo ya vivido no se mueve
 
 El reparto de zonas se congela por semana en `casa_semanas.asignacion`, y **el turno diario se congela día a día** en `casa_semanas.turnos`. Las dos cosas por el mismo motivo: si no, al entrar o salir alguien de la casa el pasado se recalcularía y el historial pasaría a decir que un día le tocaba a quien ya no vive aquí. Pasó justo al marcharse Raul: 7 de los 12 días ya vividos habrían cambiado de nombre.
