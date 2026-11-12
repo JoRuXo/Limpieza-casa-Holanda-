@@ -242,6 +242,24 @@ img{max-width:100%;display:block}
 }
 .nav svg{width:21px;height:21px}
 .nav .dot{position:absolute;transform:translate(13px,-3px);width:7px;height:7px;border-radius:50%;background:var(--bad)}
+.nav button{min-height:44px;justify-content:center}
+
+/* Hoja «Más»: sube desde abajo, por encima de la barra. */
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(8,16,12,.45);animation:sheetBg .18s ease-out}
+.sheet-bg[hidden]{display:none}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+       border-radius:18px 18px 0 0;padding:8px 0 calc(10px + env(safe-area-inset-bottom));animation:sheetUp .22s ease-out}
+.sheet-in{max-width:480px;margin:0 auto;padding:0 12px}
+.sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 8px}
+.sheet h2{font-size:12px;font-weight:600;color:var(--muted);margin:0;padding:4px 8px 6px;letter-spacing:.04em;text-transform:uppercase}
+.sheet button{display:flex;align-items:center;gap:14px;width:100%;min-height:48px;padding:8px 10px;border:0;background:none;
+              border-radius:10px;cursor:pointer;color:var(--ink);font:inherit;font-size:15px;font-weight:600;text-align:left}
+.sheet button.on{color:var(--accent)}
+.sheet button svg{width:22px;height:22px;flex:none}
+.sheet button:focus-visible,.nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sheetBg{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-bg{animation:none}}
 
 #toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
        padding:10px 18px;border-radius:10px;font-size:13.5px;font-weight:500;z-index:80;max-width:90vw;text-align:center}
@@ -384,9 +402,18 @@ img{max-width:100%;display:block}
 <div id="cam" hidden></div>
 <div id="toast" hidden></div>
 
-<nav class="nav" id="nav" hidden>
+<nav class="nav" id="nav" hidden aria-label="Navegación principal">
   <div class="nav-in" id="navIn"></div>
 </nav>
+<div class="sheet-bg" id="sheetBg" data-a="cierra-mas" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT">
+    <div class="sheet-in">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h2 id="sheetT">Más</h2>
+      <div id="sheetList"></div>
+    </div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -445,6 +472,7 @@ var NAV_ICON = {
   compra:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h2.1l2.1 10a1.8 1.8 0 0 0 1.8 1.4h7.1a1.8 1.8 0 0 0 1.8-1.4L21 8.2H7"/><circle cx="10.5" cy="19.4" r="1.3"/><circle cx="17.4" cy="19.4" r="1.3"/></svg>',
   bote:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="12.5" rx="2.5"/><path d="M3 11.2h18"/><circle cx="12" cy="15.3" r="1.6"/><path d="M7 7V5.6A1.6 1.6 0 0 1 8.6 4h6.8A1.6 1.6 0 0 1 17 5.6V7"/></svg>',
   historial:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+  mas:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5.5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18.5" cy="12" r="1.8"/></svg>',
   admin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8A1.6 1.6 0 0 0 4 14a2 2 0 1 1 0-4 1.6 1.6 0 0 0 1-2.8 2 2 0 1 1 2.8-2.8A1.6 1.6 0 0 0 10 4.6a2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8A1.6 1.6 0 0 0 20 10a2 2 0 1 1 0 4z"/></svg>'
 };
 
@@ -1078,8 +1106,10 @@ function at(s){ return esc(s).replace(/"/g,"&quot;"); }
 function pinta(){
   var el = document.getElementById("app");
   if(!S){ el.innerHTML = '<div class="boot">Cargando…</div>'; return; }
-  if(!yo){ el.innerHTML = selector(); document.getElementById("nav").hidden = true; return; }
+  if(!yo){ el.innerHTML = selector(); document.getElementById("nav").hidden = true; cierraMas(false); return; }
   document.getElementById("nav").hidden = false;
+  /* Una vista que ya no corresponde (p. ej. Admin tras cambiar a un usuario que no lo es) vuelve a Hoy. */
+  if(["hoy","fondo","mes","historial","compra","bote"].indexOf(vista) < 0 && !(vista === "admin" && esAdmin())) vista = "hoy";
   pintaNav();
   var cuerpo = vista === "hoy" ? vHoy()
     : vista === "fondo" ? vFondo()
@@ -1124,8 +1154,27 @@ function cabecera(){
 
 function pintaNav(){
   var defs = [{id:"hoy",lb:"Hoy"},{id:"fondo",lb:"A fondo"},{id:"mes",lb:"Mi mes"},
-              {id:"compra",lb:"Compra"},{id:"bote",lb:"Bote"},{id:"historial",lb:"Historial"}];
-  if(esAdmin()) defs.push({id:"admin",lb:"Admin"});
+              {id:"historial",lb:"Historial"}];
+  var masDefs = [{id:"compra",lb:"Compra"},{id:"bote",lb:"Bote"}];
+  if(esAdmin()) masDefs.push({id:"admin",lb:"Admin"});
+  var masActivo = masDefs.some(function(d){ return d.id === vista; });
+  var lista = document.getElementById("sheetList");
+  var htmlHoja = masDefs.map(function(d){
+    var on = vista === d.id;
+    return '<button type="button" data-a="ir" data-v="'+d.id+'" class="'+(on?"on":"")+'"'+(on?' aria-current="page"':'')+'>' +
+      NAV_ICON[d.id] + '<span>'+d.lb+'</span></button>';
+  }).join('');
+  /* Con la hoja abierta no se reescribe si no ha cambiado; si cambia, el foco
+     vuelve al botón que lo tenía (o al activo/primero) para no caer al body. */
+  if(lista.innerHTML !== htmlHoja){
+    var foco = document.activeElement, vFoco = foco && lista.contains(foco) ? foco.getAttribute("data-v") : null;
+    lista.innerHTML = htmlHoja;
+    if(masAbierto && (vFoco || (foco && foco === document.body))){
+      var nb = (vFoco && lista.querySelector('button[data-v="'+vFoco+'"]')) ||
+               lista.querySelector("button.on") || lista.querySelector("button");
+      if(nb) nb.focus();
+    }
+  }
   /* El punto rojo avisa de lo que pide atención hoy. La lista de la compra no
      lleva: tener cosas apuntadas es su estado normal, no una alarma. */
   var fondoPide = fondoAbierto(hoy()) && zonasDeTurno().some(function(z){
@@ -1134,12 +1183,56 @@ function pintaNav(){
   });
   document.getElementById("navIn").innerHTML = defs.map(function(d){
     var punto = (d.id === "fondo" && fondoPide);
-    return '<button data-a="ir" data-v="'+d.id+'" class="'+(vista===d.id?"on":"")+'">' +
+    return '<button type="button" data-a="ir" data-v="'+d.id+'" class="'+(vista===d.id?"on":"")+'"'+(vista===d.id?' aria-current="page"':'')+'>' +
       '<span style="position:relative;display:block">'+NAV_ICON[d.id] +
-      (punto ? '<span class="dot"></span>' : '') + '</span>' +
+      (punto ? '<span class="dot" role="img" aria-label="pendiente"></span>' : '') + '</span>' +
       '<span class="lb">'+d.lb+'</span></button>';
-  }).join('');
+  }).join('') +
+  '<button type="button" id="masBtn" data-a="mas" class="'+(masActivo?"on":"")+'"' +
+    (masActivo?' aria-current="page"':'') +
+    ' aria-label="Más: Compra, Bote'+(esAdmin()?', Admin':'')+'" aria-haspopup="dialog" aria-controls="sheet" aria-expanded="'+(masAbierto?"true":"false")+'">' +
+    '<span style="position:relative;display:block">'+NAV_ICON.mas+'</span><span class="lb">Más</span></button>';
 }
+
+/* ---------- hoja «Más» ---------- */
+var masAbierto = false;
+/* Mientras la hoja está abierta el fondo ni hace scroll ni recibe foco. */
+function bloqueaFondo(on){
+  document.documentElement.style.overflow = on ? "hidden" : "";
+  document.body.style.overflow = on ? "hidden" : "";
+  ["app","nav"].forEach(function(id){
+    var n = document.getElementById(id);
+    if(on) n.setAttribute("inert",""); else n.removeAttribute("inert");
+  });
+}
+function abreMas(){
+  masAbierto = true;
+  document.getElementById("sheetBg").hidden = false;
+  bloqueaFondo(true);
+  var b = document.getElementById("masBtn"); if(b) b.setAttribute("aria-expanded","true");
+  var p = document.querySelector("#sheetList button.on") || document.querySelector("#sheetList button");
+  if(p) p.focus();
+}
+function cierraMas(devuelveFoco){
+  if(!masAbierto) return;
+  masAbierto = false;
+  document.getElementById("sheetBg").hidden = true;
+  bloqueaFondo(false);
+  var b = document.getElementById("masBtn");
+  if(b){ b.setAttribute("aria-expanded","false"); if(devuelveFoco) b.focus(); }
+}
+document.addEventListener("keydown", function(e){
+  if(!masAbierto) return;
+  if(e.key === "Escape"){ e.preventDefault(); cierraMas(true); }
+  else if(e.key === "Tab"){
+    var bs = document.querySelectorAll("#sheetList button");
+    if(!bs.length) return;
+    var first = bs[0], last = bs[bs.length-1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    else if(!document.getElementById("sheet").contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+  }
+});
 
 /* ---------- casa ---------- */
 function tareaHTML(t, puede, dia){
@@ -2240,7 +2333,13 @@ function onClick(e){
       (!r.getAttribute("data-theme") && matchMedia("(prefers-color-scheme:dark)").matches);
     r.setAttribute("data-theme", osc ? "light" : "dark");
   }
-  else if(a === "ir"){ vista = el.getAttribute("data-v"); pinta(); window.scrollTo(0,0); }
+  else if(a === "ir"){
+    var enHoja = masAbierto;
+    vista = el.getAttribute("data-v"); cierraMas(false); pinta(); window.scrollTo(0,0);
+    if(enHoja){ var mb = document.getElementById("masBtn"); if(mb) mb.focus(); }
+  }
+  else if(a === "mas"){ if(masAbierto) cierraMas(true); else abreMas(); }
+  else if(a === "cierra-mas"){ if(e.target === el) cierraMas(true); }
   else if(a === "abre-zona"){ var z = el.getAttribute("data-z"); abierto["z"+z] = !abierto["z"+z]; pinta(); }
   else if(a === "abre-blk"){
     var b = el.getAttribute("data-b");
@@ -2487,6 +2586,7 @@ function onClick(e){
 }
 document.getElementById("app").addEventListener("click", onClick);
 document.getElementById("nav").addEventListener("click", onClick);
+document.getElementById("sheetBg").addEventListener("click", onClick);
 
 document.getElementById("app").addEventListener("change", function(e){
   var el = e.target, fl = el.getAttribute("data-f"), a = el.getAttribute("data-a");
@@ -2600,7 +2700,7 @@ window.addEventListener("online", function(){
 /* El refresco repinta la pantalla entera, así que no puede saltar mientras
    alguien escribe: le borraría lo tecleado a media frase. */
 function escribiendo(){
-  if(compraAbierta || editando) return true;
+  if(compraAbierta || editando || masAbierto) return true;
   var el = document.activeElement;
   return !!el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA");
 }

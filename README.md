@@ -158,10 +158,11 @@ La barra de abajo separa las dos cosas:
 | **Hoy** | El turno diario de hoy, con los cubos si ese día tocan, y la tira de la semana |
 | **A fondo** | Las 4 zonas y su limpieza del domingo |
 | **Mi mes** | Todo el mes de una persona: sus días de turno, sus domingos y los cubos |
-| **Compra** | La lista de la compra compartida |
-| **Bote** | El bote común, las aportaciones y las compras con ticket |
 | **Historial** | Por semanas y, dentro, día a día |
-| **Admin** | Solo para quien sea admin |
+| **Más** | No es una página: abre una hoja que sube desde abajo con el resto de pestañas. «Más» se resalta si estás en una de ellas |
+| ↳ **Compra** | La lista de la compra compartida |
+| ↳ **Bote** | El bote común, las aportaciones y las compras con ticket |
+| ↳ **Admin** | Solo para quien sea admin |
 
 Cada bloque abre con una cabecera que explica de qué va y se puede plegar. De lunes a sábado las zonas de fondo salen **apagadas**, con borde discontinuo y un contador de cuánto falta; el domingo se encienden y la cabecera pasa a ámbar. Arriba del todo, una línea dice lo que te toca a ti hoy.
 
