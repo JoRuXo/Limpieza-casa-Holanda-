@@ -113,6 +113,14 @@ Octubre de 2026: lunes 12 verdes, viernes 16 azules, jueves 22 grises, lunes 26 
 
 Noviembre de 2026: jueves 5 grises, lunes 9 verdes, viernes 13 azules, lunes 16 verdes (restos de jardín y poda), jueves 19 grises, lunes 23 verdes; y jueves 3 de diciembre grises. El 5 y el 9 no se apuntaron en la app porque se metieron el 12, ya pasados: apuntarlos habría marcado en rojo a quien no se le pidió.
 
+#### El gris grande de los jueves
+
+Además del calendario, la casa tiene contratado un **cubo gris grande extra que se recoge todos los jueves**, siempre. No se apunta mes a mes: es un **cubo fijo** (`casa_config.cubos_fijos`), una regla de «cada jueves» que la app aplica sola.
+
+Sigue las mismas normas: **lo saca el turno diario del jueves y lo entra el del viernes**. Si ese jueves también hay recogida de grises del ayuntamiento, se piden juntos en la misma tarea (*«Sacar los cubos grises y el cubo gris grande a la calle»*); si no, sale solo (*«Sacar el cubo gris grande a la calle»*).
+
+Cuenta **desde el jueves 19 de noviembre de 2026**, no hacia atrás: el jueves 12 ya estaba casi acabado cuando se apuntó, y aplicarlo a jueves pasados habría marcado en rojo a quien no se le pidió. Los cubos fijos se gestionan en **Admin → Cubos de la basura → Cada semana, sin calendario**; uno nuevo cuenta desde el día en que se añade.
+
 ### Lo ya vivido no se mueve
 
 El reparto de zonas se congela por semana en `casa_semanas.asignacion`, y **el turno diario se congela día a día** en `casa_semanas.turnos`. Las dos cosas por el mismo motivo: si no, al entrar o salir alguien de la casa el pasado se recalcularía y el historial pasaría a decir que un día le tocaba a quien ya no vive aquí. Pasó justo al marcharse Raul: 7 de los 12 días ya vividos habrían cambiado de nombre.
@@ -243,7 +251,7 @@ Solo quien esté en `admins`. **Todo el modelo se edita desde ahí, sin tocar c�
 | Días de limpieza | Qué días de la semana se pide lo que no tiene días propios |
 | Zonas y plazas | Nombre, qué incluye, plazas, color, orden · crear y borrar zonas · convertir una zona en **turno propio** y al revés, con su ritmo (cada día / cada semana) y su salto semanal |
 | Tareas | Texto · **qué días se pide**, uno a uno · si cuenta **1 vez por semana** o una por día · si vale **cualquier día** · si lleva foto · orden dentro de la zona · crear y borrar |
-| Cubos de la basura | Las fechas de recogida y su color · añadir y quitar |
+| Cubos de la basura | Las fechas de recogida y su color · añadir y quitar · los **cubos fijos** de cada semana |
 | Cambios de un día | Apuntar que una sección con turno propio la hace otra persona **ese día** · deshacerlos |
 | Correo nocturno | Destinatarios |
 
@@ -266,7 +274,7 @@ Cada push a `main` despliega solo.
 
 ### Tablas
 
-- `casa_config` — fila única: gente, admins, ancla de rotación, `dias_limpieza`, destinatarios del correo
+- `casa_config` — fila única: gente, admins, ancla de rotación, `dias_limpieza`, destinatarios del correo, `cubos_fijos` (cubos que salen cada semana el mismo día)
 - `casa_zonas` — zonas con plazas y color. `rota_aparte` marca las que no consumen plaza y llevan turno propio (`rota_desde`, `rota_persona`, `rota_cada` días entre relevos y `rota_salto` puestos extra por semana). Hoy la única es el turno diario, con 1 y 2
 - `casa_tareas` — tareas por zona. `dias` son los días en que se pide (`NULL` = los días de limpieza de la casa), `semanal` dice si cuenta una vez por semana en vez de una por día, `cubos` (`sacar`/`entrar`) marca las que van por el calendario de recogidas en vez de por día de la semana, y `cualquier_dia` las que se piden toda la semana y se hacen cuando se pueda
 - `casa_completadas` — una fila por tarea completada. `periodo` es el día, o el lunes que abre la semana para las semanales
@@ -320,6 +328,8 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
 
 ## Historial de cambios
+
+- **2026-11-12 (el gris grande de los jueves)**: Entra el **cubo gris grande extra** que la casa tiene contratado, con recogida **todos los jueves**. En vez de apuntarlo a mano cada mes, es una regla fija (`casa_config.cubos_fijos`) que se suma al calendario del ayuntamiento: lo saca el turno del jueves y lo entra el del viernes, y si coincide con los grises se piden juntos. Cuenta desde el jueves 19. El correo nocturno lo incluye y sus «próximos cubos» pasan a mirar los 14 días siguientes en vez de las tres próximas filas del calendario. También se metieron las recogidas de noviembre de la foto del calendario.
 
 - **2026-10-18 (candado y sin cobertura)**: Dos cosas que faltaban y un fallo propio.
 

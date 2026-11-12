@@ -638,6 +638,7 @@ function cargar(){
       gastoMes: (r[7] && r[7][0]) ? Number(r[7][0].gastado_mes) : 0,
       cambios: r[8] || [],
       cubos: r[9] || [],
+      cubosFijos: cfg.cubos_fijos || [],
       lista: (r[10]||[]).map(function(i){
         return {id:i.id, nombre:i.nombre, cant:Number(i.cantidad), nota:i.nota,
                 por:i.pedido_por, at:i.at, comprado:!!i.comprado,
@@ -885,10 +886,28 @@ function misZonas(dia){
 function tareasDe(zid){ return S.tareas.filter(function(t){ return t.zona_id === zid; }); }
 function diasLimpieza(){ return S.diasLimpieza || []; }
 function esDiaDeLimpieza(dia){ return diasLimpieza().indexOf(dow(dia)) > -1; }
-/* La recogida de cubos de un día, si ese día hay. */
+/* Los cubos fijos son los que salen todas las semanas el mismo día, sin mirar
+   el calendario del ayuntamiento (el gris grande contratado, los jueves).
+   `desde` impide que la regla se aplique a semanas en que no se pedía. */
+function cubosFijosDe(dia){
+  return (S.cubosFijos || []).filter(function(f){
+    return Number(f.dow) === dow(dia) && (!f.desde || dia >= f.desde);
+  });
+}
+/* La recogida de cubos de un día, si ese día hay: la del calendario más los
+   fijos de ese día de la semana, juntos en una sola, porque se sacan a la vez.
+   `color` es la etiqueta corta («grises + gris grande») y `frase` lo que se
+   escribe en la tarea («los cubos grises y el cubo gris grande»). */
 function recogidaDe(dia){
-  for(var i=0;i<S.cubos.length;i++) if(S.cubos[i].dia === dia) return S.cubos[i];
-  return null;
+  var cal = null;
+  for(var i=0;i<S.cubos.length;i++) if(S.cubos[i].dia === dia){ cal = S.cubos[i]; break; }
+  var fijos = cubosFijosDe(dia);
+  if(!cal && !fijos.length) return null;
+  var etiquetas = [], frases = [];
+  if(cal){ etiquetas.push(cal.color); frases.push("los cubos " + cal.color); }
+  fijos.forEach(function(f){ etiquetas.push(f.cubo); frases.push("el cubo " + f.cubo); });
+  return {dia:dia, color:etiquetas.join(" + "), frase:frases.join(" y "),
+          nota:cal ? cal.nota : null, fijo:!cal};
 }
 /* Los cubos no se piden por día de la semana sino por calendario: se sacan el
    día de la recogida y se entran al siguiente. Se los queda quien tenga el
@@ -913,7 +932,7 @@ function toca(t, dia){
    que toque esa fecha. */
 function textoTarea(t, dia){
   var c = cuboDe(t, dia);
-  return c ? t.label.replace("los cubos", "los cubos " + c.color) : t.label;
+  return c ? t.label.replace("los cubos", c.frase) : t.label;
 }
 function tareasDeDia(zid, dia){
   /* Una zona sin nadie asignado ese día no pide nada: no puede estar "sin
@@ -1505,8 +1524,8 @@ function vMes(){
     ? turnos.map(function(d){
         var rec = recogidaDe(d), ent = recogidaDe(mas(d, -1));
         var extra = [];
-        if(rec) extra.push("saca los cubos " + rec.color);
-        if(ent) extra.push("entra los cubos " + ent.color);
+        if(rec) extra.push("saca " + rec.frase);
+        if(ent) extra.push("entra " + ent.frase);
         var p = progreso(zd.id, d), pas = d < hoy();
         return '<div class="mrow' + (d === hoy() ? " hoy" : "") + (pas ? " pasado" : "") + '">' +
           '<div class="mrow-d">' + DOW_C[dow(d)] + ' <b>' + Number(d.slice(8,10)) + '</b></div>' +
@@ -1939,7 +1958,30 @@ function vAdmin(){
     '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">' +
       'Los saca quien tenga el <b>turno diario</b> ese d\u00eda y los entra quien lo tenga ' +
       'al d\u00eda siguiente. Las tareas aparecen solas en el turno de cada uno, con el ' +
-      'color escrito. Si no hay recogida apuntada, no se pide nada.</p>';
+      'color escrito. Si no hay recogida apuntada, no se pide nada.</p>' +
+    /* Los fijos van aparte porque no se apuntan mes a mes: salen solos cada
+       semana. Mismas normas de quién saca y quién entra. */
+    '<div class="lab" style="margin-top:16px">Cada semana, sin calendario</div>' +
+    (S.cubosFijos || []).map(function(f, i){
+      return '<div class="row"><div class="grow" style="min-width:0">' +
+        '<div style="font-weight:600;font-size:13.5px">' + esc(f.cubo) +
+          ' <span style="color:var(--muted);font-weight:500">todos los ' + DOW[Number(f.dow)] +
+          (f.desde ? ' desde el ' + corta(f.desde) : '') + '</span></div></div>' +
+        '<button class="mini btn-danger" data-a="cf-quita" data-i="'+i+'" ' +
+          'title="Quitar este cubo fijo">×</button></div>';
+    }).join('') +
+    '<div class="row" style="margin-top:10px">' +
+      '<div style="width:110px"><span class="lab">Cada</span>' +
+        '<select class="fld fld-sm" id="cf-dow">' + [1,2,3,4,5,6,0].map(function(d){
+          return '<option value="'+d+'">' + DOW[d] + '</option>';
+        }).join('') + '</select></div>' +
+      '<div class="grow"><span class="lab">Cubo</span>' +
+        '<input class="fld fld-sm" id="cf-cubo" placeholder="gris grande" autocomplete="off"></div>' +
+      '<button class="btn btn-sm btn-pri" data-a="cf-add" style="margin-top:16px">Añadir</button></div>' +
+    '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.45">' +
+      'Para los cubos que se recogen <b>todas las semanas el mismo día</b>. Mismas normas: ' +
+      'lo saca el turno diario de ese día y lo entra el del siguiente. Si coincide con una ' +
+      'recogida del calendario, se piden juntos. Cuenta desde hoy, nunca hacia atrás.</p>';
 
   var ordenados = diasLimpieza().slice().sort(function(a,b){ return a - b; });
   var limp = '<div class="dchips">' + DOW_C.map(function(d, i){
@@ -2014,7 +2056,8 @@ function vAdmin(){
     acc("lim", "Días de limpieza", ordenados.length+(ordenados.length===1?" día":" días"), limp) +
     acc("zon", "Zonas y plazas", S.zonas.length+" zonas", zonas) +
     acc("tar", "Tareas", S.tareas.length+" tareas", tareas) +
-    acc("cub", "Cubos de la basura", S.cubos.length ? S.cubos.length+" recogidas" : "sin fechas", cubos) +
+    acc("cub", "Cubos de la basura", (S.cubos.length ? S.cubos.length+" recogidas" : "sin fechas") +
+      ((S.cubosFijos || []).length ? " + " + S.cubosFijos.length + " fijo" + (S.cubosFijos.length === 1 ? "" : "s") : ""), cubos) +
     acc("cam", "Cambios de un d\u00eda", S.cambios.length ? S.cambios.length+" apuntados" : "ninguno", cambiosBody) +
     acc("cor", "Correo nocturno", S.correos.length+" destinos", correos);
 }
@@ -2384,6 +2427,19 @@ function onClick(e){
     run(api("casa_cubos?on_conflict=dia", {method:"POST",
       prefer:"resolution=merge-duplicates,return=minimal",
       body:[{dia:cud, color:cuc, por:yo}]}), "Recogida apuntada");
+  }
+  else if(a === "cf-add"){
+    var cfd = Number(document.getElementById("cf-dow").value);
+    var cfc = document.getElementById("cf-cubo").value.trim().toLowerCase();
+    if(!cfc){ toast("Pon qué cubo es.", true); return; }
+    /* Desde hoy: lo que ya pasó no se pidió y no puede salir como no hecho. */
+    run(cfg({cubos_fijos: (S.cubosFijos || []).concat([{dow:cfd, cubo:cfc, desde:hoy()}])}),
+      "Cubo fijo apuntado");
+  }
+  else if(a === "cf-quita"){
+    var cfi = Number(el.getAttribute("data-i"));
+    run(cfg({cubos_fijos: (S.cubosFijos || []).filter(function(f, i){ return i !== cfi; })}),
+      "Cubo fijo quitado");
   }
   else if(a === "cu-quita"){
     run(api("casa_cubos?dia=eq."+encodeURIComponent(el.getAttribute("data-d")),

@@ -244,8 +244,20 @@ async function componerResumen(hoy: string) {
   // Los cubos no siguen los dias de la semana: se sacan el dia de la recogida
   // y se entran al siguiente, y se los queda el turno diario de cada uno de
   // esos dos dias.
-  const recogidaDe = (dia: string) =>
-    (cubos ?? []).find((c: any) => c.dia === dia) ?? null;
+  // A las del calendario se suman los cubos fijos (cfg.cubos_fijos), los que
+  // salen cada semana el mismo dia, como el gris grande de los jueves. Si
+  // coinciden con una recogida del calendario se piden juntos.
+  const cubosFijos: any[] = cfg.cubos_fijos ?? [];
+  const recogidaDe = (dia: string) => {
+    const cal = (cubos ?? []).find((c: any) => c.dia === dia) ?? null;
+    const fijos = cubosFijos.filter((f: any) =>
+      Number(f.dow) === diaSemana(dia) && (!f.desde || dia >= f.desde));
+    if (!cal && !fijos.length) return null;
+    return {
+      dia,
+      color: [...(cal ? [cal.color] : []), ...fijos.map((f: any) => f.cubo)].join(" + "),
+    };
+  };
   const cuboDe = (t: any, dia: string) =>
     t.cubos === "sacar" ? recogidaDe(dia)
     : t.cubos === "entrar" ? recogidaDe(mas(dia, -1))
@@ -404,9 +416,11 @@ async function componerResumen(hoy: string) {
   // Las recogidas de cubos que vienen, con quien las tiene. Es lo que mas se
   // olvida, porque no cae siempre el mismo dia de la semana.
   const zonaD = zonas.find((z: any) => z.rota_aparte && (z.rota_cada ?? 7) < 7) ?? null;
-  const proximos = (cubos ?? [])
-    .filter((c: any) => c.dia >= hoy)
-    .slice(0, 3)
+  // Se miran los proximos 14 dias dia a dia, para que salgan tambien los
+  // cubos fijos, que no tienen fila en casa_cubos.
+  const proximos = Array.from({ length: 14 }, (_, i) => recogidaDe(mas(hoy, i)))
+    .filter(Boolean)
+    .slice(0, 5)
     .map((c: any) => {
       const sig = mas(c.dia, 1);
       const qs = zonaD ? (turnoReal(zonaD, c.dia)[0] ?? "sin asignar") : "sin asignar";
