@@ -18,7 +18,7 @@ Cada día una persona se encarga de la casa entera:
 |---|---|
 | Barrer y fregar toda la casa | lunes a sábado |
 | Sacar la basura y poner bolsa nueva | lunes a sábado |
-| Sacar y entrar los cubos | los días del calendario de recogida |
+| Sacar y entrar los cubos | los días de recogida: los del calendario del ayuntamiento y, cada jueves, el gris grande |
 
 **El domingo no hay turno diario.** Ese día es el de la limpieza a fondo y todo el mundo tiene su zona, así que nadie debe además barrer la casa entera.
 
@@ -107,7 +107,9 @@ La única forma de que el mismo saque y entre es que un **cambio pactado** le po
 
 Las dos tareas aparecen solas dentro del turno diario de cada uno, con el color escrito (*«Sacar los cubos azules a la calle»*). Si un día no hay recogida apuntada, no se pide nada.
 
-Esto es más simple que la rotación propia que tenían antes: no hay nada que cuadrar con el reparto de zonas, no gasta plaza y no hace falta re-anclar nada cuando cambia el calendario. Las fechas se meten en **Admin → Cubos de la basura**, y hay que ir añadiéndolas mes a mes.
+Esto es más simple que la rotación propia que tenían antes: no hay nada que cuadrar con el reparto de zonas, no gasta plaza y no hace falta re-anclar nada cuando cambia el calendario. Las fechas del ayuntamiento se meten en **Admin → Cubos de la basura**, y hay que ir añadiéndolas mes a mes; el gris grande de los jueves no, porque es un cubo fijo (ver abajo).
+
+Nomenclatura: **cubos grises** (plural) son los del calendario del ayuntamiento; el **cubo gris grande** (singular) es el extra contratado, que sale cada jueves. Son cubos distintos aunque coincidan en jueves.
 
 Octubre de 2026: lunes 12 verdes, viernes 16 azules, jueves 22 grises, lunes 26 verdes.
 
@@ -151,14 +153,14 @@ También es lo que hace que la tira del turno diario salga limpia: dentro de una
 
 ### La pantalla
 
-La barra de abajo separa las dos cosas:
+La barra de abajo tiene **cinco botones**: Hoy, A fondo, Mi mes, Historial y **Más**. «A fondo» es el nombre del botón; la tarea se llama «limpieza a fondo». Lo demás (Compra, Bote y Admin) está dentro de «Más», que no es una página sino una hoja que sube desde abajo:
 
 | Pestaña | Qué hay |
 |---|---|
 | **Hoy** | El turno diario de hoy, con los cubos si ese día tocan, y la tira de la semana |
 | **A fondo** | Las 4 zonas y su limpieza del domingo |
 | **Mi mes** | Todo el mes de una persona: sus días de turno, sus domingos y los cubos |
-| **Historial** | Por semanas y, dentro, día a día |
+| **Historial** | Semana a semana: quién ha cumplido y quién no, con el detalle por tarea |
 | **Más** | No es una página: abre una hoja que sube desde abajo con el resto de pestañas. «Más» se resalta si estás en una de ellas |
 | ↳ **Compra** | La lista de la compra compartida |
 | ↳ **Bote** | El bote común, las aportaciones y las compras con ticket |
@@ -168,7 +170,7 @@ Cada bloque abre con una cabecera que explica de qué va y se puede plegar. De l
 
 **Mi mes** existe porque el turno diario cambia cada día y las zonas cada lunes: de memoria nadie sabe cómo tiene el mes. Se puede mirar el mes de otro, que para discutir un cambio hace falta ver los dos.
 
-Arriba va un **calendario** del mes, de lunes a domingo, con una abreviatura en cada día en que a esa persona le toca algo:
+Arriba va un **calendario** del mes, de lunes a domingo, con una abreviatura en cada día en que a esa persona le toca algo. Además, cada día de **recogida** lleva un chip con el color del cubo (`GR` grises, `GG` gris grande, `VE` verdes, `AZ` azules…), igual para todos porque la recogida no es de nadie; el gris grande sale así todos los jueves desde el 19 de noviembre, y antes de esa fecha no aparece. La leyenda de debajo nombra los cubos que salen ese mes. Las abreviaturas de lo que te toca son:
 
 | | Qué es | Qué hay que hacer |
 |---|---|---|
@@ -177,7 +179,7 @@ Arriba va un **calendario** del mes, de lunes a domingo, con una abreviatura en 
 | **CS** | Cubos: sacar | Sacarlos a la calle |
 | **CE** | Cubos: entrar | Entrarlos a casa |
 
-La misma leyenda va impresa debajo del calendario, para no tener que recordarla. Un día puede llevar dos (`TD CS` es turno diario y además sacar los cubos). **En rojo** sale lo que ya pasó y no se hizo; lo que está por venir nunca sale en rojo, que todavía no es un fallo. El día de hoy va recuadrado y los domingos tienen el fondo distinto.
+La misma leyenda va impresa debajo del calendario, junto con los cubos del mes, para no tener que recordarla. Los cubos se sacan el día de la recogida y se **entran al día siguiente** (el viernes, en el caso del gris grande). Un día puede llevar dos (`TD CS` es turno diario y además sacar los cubos). **En rojo** sale lo que ya pasó y no se hizo; lo que está por venir nunca sale en rojo, que todavía no es un fallo. El día de hoy va recuadrado y los domingos tienen el fondo distinto.
 
 Debajo siguen las listas, que son el detalle: los días de turno con lo que cae cada uno, la zona de cada domingo y las recogidas del mes con quién las saca y quién las entra.
 
@@ -192,12 +194,12 @@ Una tarea se pide en unos días y cuenta por día o por semana:
 | Barrer y fregar | los días de limpieza de la casa | una vez por día |
 | Sacar la basura | los días de limpieza de la casa | una vez por día |
 | Limpieza a fondo | domingo | una vez por semana |
-| Sacar / entrar los cubos | por calendario, no por día de la semana | una vez por día |
+| Sacar / entrar los cubos | por recogida (calendario y cubos fijos), no por día de la semana | una vez por día |
 | Cortar el césped, desbrozadora | cualquier día de la semana | una vez por semana |
 
 **Qué días se limpia** es un ajuste de casa (Admin → Días de limpieza): es el calendario del turno diario, ahora **de lunes a sábado**. Las dos tareas del turno diario no tienen días propios, heredan los de la casa, así que cambiar ese ajuste las cambia a la vez y no hay dos sitios que puedan contradecirse. La limpieza a fondo no depende de él: va fijada al domingo.
 
-Las tareas de cubos son la excepción: llevan una marca `cubos` (`sacar` o `entrar`) y **no miran el día de la semana**, sino el calendario de recogidas.
+Las tareas de cubos son la excepción: llevan una marca `cubos` (`sacar` o `entrar`) y **no miran el día de la semana**, sino las recogidas: las del calendario y los cubos fijos.
 
 ### Tareas sin día fijo
 
@@ -230,9 +232,9 @@ Su propia pestaña, separada de la lista. El bote, las aportaciones y las compra
 
 ### Correo nocturno
 
-Cada noche a las **23:00 hora de Holanda** sale un resumen a Miguel y a Alberto: cómo va cada zona, qué días de la semana no se hizo nada, quién ha hecho qué, la lista de la compra y **las próximas recogidas de cubos con quién las saca y quién las entra** — que es lo que más se olvida, justamente porque no caen siempre el mismo día. Lo dispara `pg_cron` dentro de Supabase, así que **no depende de que ningún ordenador esté encendido**.
+Cada noche a las **23:00 hora de Holanda** sale un resumen a **Miguel y a Alberto, a los dos**: cómo va cada zona, qué días de la semana no se hizo nada, quién ha hecho qué, la lista de la compra y **las próximas recogidas de cubos con quién las saca y quién las entra** — que es lo que más se olvida, justamente porque no caen siempre el mismo día. Lo dispara `pg_cron` dentro de Supabase, así que **no depende de que ningún ordenador esté encendido**. Los destinatarios son `casa_config.aviso_emails` (se editan en Admin → correos): ahí tienen que estar las direcciones de Miguel y de Alberto. Envía **una sola vez al día**; un envío forzado a mano (`{"forzar":true}`) no pide contraseña (decisión del usuario, ver Secretos).
 
-Para comprobar que va a salir bien sin enviar nada a nadie, se puede pedir el correo en seco:
+Para comprobar que va a salir bien sin enviar nada a nadie, se puede pedir el correo en seco, o simplemente ejecutar `node resumen-diario.mjs`, que hace esa misma petición y lo imprime (es solo una vista previa: no calcula nada por su cuenta y nada lo ejecuta automáticamente):
 
 ```bash
 curl -s -X POST "https://lmuiogddgfmmbouaanzo.supabase.co/functions/v1/avisar-miguel" -H "Content-Type: application/json" -H "apikey: sb_publishable_NqIyAof4Y4fYyzf53qjlnA_-xDvYwsc" -H "Authorization: Bearer sb_publishable_NqIyAof4Y4fYyzf53qjlnA_-xDvYwsc" -d '{"seco":true}'
@@ -240,7 +242,21 @@ curl -s -X POST "https://lmuiogddgfmmbouaanzo.supabase.co/functions/v1/avisar-mi
 
 ### Historial
 
-Dos niveles. Por semanas, con el porcentaje de cada zona; y al abrir una semana, **una fila por día**. Los días en que tocaba limpiar y no se hizo nada salen marcados en rojo, y arriba hay un contador de cuántos han sido. La semana en curso no cuenta los días que aún no han llegado.
+Responde a una pregunta: **¿quién ha cumplido y quién no esta semana y en las anteriores?** Arriba va un **selector de semana** (‹ semana anterior · semana siguiente ›). La semana actual se distingue con borde de color y la etiqueta «Esta semana · en curso»; las demás dicen «Cerrada» y hay un botón «Volver a esta semana». Se puede retroceder hasta **26 semanas** (o hasta que arrancó la rotación). La app carga al arrancar solo las últimas 8; al retroceder más allá, trae el resto **bajo demanda** en una sola consulta y muestra «Cargando…» mientras tanto (si falla, avisa y deja reintentar).
+
+Debajo:
+
+- **Resumen de la semana:** porcentaje cumplido (con el recuento), tareas falladas y pendientes, y la diferencia con la semana anterior. Una frase dice **quién ha cumplido y quién ha fallado**.
+- **Por persona:** una fila por persona, con quien más ha fallado primero. Cada una dice su estado con **icono y palabra** (`✓ Al día`, `! Pendiente`, `✕ Falló n`, `– Sin tareas`), no solo con color, y sus «n de m cumplidas». Al tocarla se abre el **detalle por tarea**: el día, el texto de la tarea y `✓ Hecha · quién · hora`, `✕ No hecha` o `! Pendiente`. Si la hizo otra persona, lo dice («Hecha por Noel (le tocaba a Pablo)»).
+- **Ver como tabla:** la misma información por persona en una tabla accesible (`<th scope>`), para lectores de pantalla.
+- **Por zona** y **Por día**, plegados: el porcentaje por zona y los días en que tocaba limpiar y no se hizo nada (`✕ nada`).
+
+Reglas:
+
+- Se calcula con las mismas funciones que Hoy y Mi mes (`tareasDeDia`, `asignacionDia`, `hecha`, `periodoDe`), así que **no puede contradecirlas**. Los cubos entran igual: un jueves con el gris grande aparece como «Sacar el cubo gris grande a la calle» (o junto a los grises) y el viernes «Entrar…», y pueden salir hechos o fallados como cualquier tarea.
+- Una tarea diaria **falla** cuando su día ya ha pasado; una semanal, cuando ha pasado el domingo. Lo de hoy y lo que viene sale **pendiente**, nunca fallado. Una tarea semanal cuenta una sola vez.
+- En las **zonas con varias personas** no hay un responsable individual: la tarea cuenta para todo el equipo (a cada miembro) y el detalle lo indica con «Equipo: …».
+- Si una semana **no tiene su reparto guardado** en `casa_semanas`, el historial la reconstruye con la gente y las zonas de hoy y lo **avisa** («Reparto recalculado»): puede no ser el que se vivió. Lo mismo, día a día, con el turno diario.
 
 ### Panel de admin
 
@@ -312,13 +328,16 @@ Ahora cada tabla tiene solo los verbos que la app usa:
 | `casa_purchases`, `casa_contributions` | leer e insertar — ni editar ni borrar |
 | `casa_config` | leer y editar la fila única |
 | `casa_zonas`, `casa_tareas`, `casa_lista`, `casa_cubos`, `casa_cambios` | todo: el admin las crea y las borra de verdad |
+| `casa_avisos` (registro del correo) | nada: solo la Edge Function, con su clave de servicio |
 | `casa_days` (modelo viejo) | nada |
 
 Quitar el `DELETE` cierra la puerta principal, pero quedaba la de atrás: `casa_completadas` cuelga de `casa_tareas` con `ON DELETE CASCADE`, así que borrar una zona se llevaría las fotos de sus tareas. Un **trigger** lo impide y lo dice con nombre y apellidos: *«La tarea X no se puede borrar: tiene 3 marcas con su foto. Cámbiale el nombre en vez de borrarla.»* Es la regla que ya estaba escrita, ahora hecha norma de la base.
 
 Para que ese mensaje llegue, los errores del servidor se enseñan tal cual en vez del genérico «revisa la conexión», que mandaba a mirar donde no era.
 
-**Lo que sigue abierto, a sabiendas:** cualquiera con el enlace puede *escribir* — marcar por otro, añadir a la lista, cambiar la configuración. Para una casa de seis compensa; cerrarlo pediría cuentas de usuario.
+Además, `TRUNCATE`, `TRIGGER` y `REFERENCES` están retirados a `anon` y `authenticated` en todas las tablas `casa_*` (`supabase/migrations/20261113_permisos_correo.sql`).
+
+**Lo que sigue abierto, a sabiendas:** cualquiera con el enlace puede *escribir* — marcar por otro, añadir a la lista, cambiar la configuración. Para una casa de seis compensa; cerrarlo pediría cuentas de usuario. Eso incluye **Admin**: es una pestaña que solo se *muestra* a quien está en `admins` (sin PIN, decisión del usuario), pero las políticas no distinguen admin de no admin; la restricción es de interfaz, no de servidor.
 
 ### Sobre el acceso
 
@@ -326,9 +345,30 @@ No hay login: **el enlace es la llave**. Las políticas RLS permiten leer y escr
 
 ### Secretos
 
-En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código.
+En Supabase → Edge Functions → Secrets: `BREVO_API_KEY` y `EMAIL_REMITENTE`. Nunca en el código. No hay `FORZAR_SECRET`: `{"forzar":true}` no pide contraseña (decisión del usuario), pero dos envíos forzados no pueden estar a menos de **10 minutos** de distancia (se mira el último `FORZADO` en `casa_avisos`), y si esa comprobación falla no se envía. La vista previa nunca devuelve los destinatarios. Los errores muestran un mensaje genérico; el detalle queda en `casa_avisos`. La clave publicable sí va en el código a propósito: es pública.
+
+### Pruebas
+
+`tests/` lleva pruebas con jsdom (solo desarrollo, no se despliega; su `package.json` está dentro de `tests/` para no afectar a Vercel): `cd tests && npm install && npm test`, que repite los tests en cuatro zonas horarias.
+
+## Riesgos abiertos
+
+Lo que se sabe que no está cerrado, para no olvidarlo:
+
+- **Escrituras públicas sin PIN en servidor.** Cualquiera con el enlace puede escribir en las tablas de la casa (marcar por otro, cambiar `casa_config` incluidos `admins` y `aviso_emails`, editar zonas y tareas). Admin solo se oculta en la interfaz. Cerrarlo pide cuentas de usuario. **Decisión del usuario: queda así, sin PIN en servidor.**
+- **Despliegue pendiente de la función del correo.** Los cambios de `supabase/functions/avisar-miguel/index.ts` no están desplegados (instrucciones exactas en `DESPLIEGUE.md`): la versión en producción devuelve los destinatarios en la prueba en seco sin ninguna contraseña, y no se ha comprobado si acepta `forzar` sin contraseña (probarlo enviaría un correo). Hay que pegar el código en el panel de Supabase (Edge Functions → avisar-miguel → Code → Deploy).
+- **Correo de Alberto.** Alberto es `joruxoo@gmail.com`, confirmado por el usuario. Está en `casa_config.aviso_emails` junto al de Miguel, así que el correo llega a los dos.
+- **Envío duplicado posible.** La comprobación de «ya enviado hoy» no es atómica: dos llamadas simultáneas pueden enviar dos veces. Es raro con un cron de dos disparos y se acepta.
 
 ## Historial de cambios
+
+- **2026-11-13 (sistema de diseño, primera pasada)**: Tokens nuevos en `:root` (escala de 4 px, tipografía, radios, `--hit:44px` y `--line-strong` para bordes de controles). `--muted` del tema claro pasa de `#697A71` a `#56665D` (de 4,1 a 5,5:1 sobre el fondo). Zonas táctiles de 44 px en botones, ticks, cantidades y mini-botones; texto informativo a 12 px como mínimo; márgenes de notch en cabecera, laterales y lightbox; ajustes de 360 px; `prefers-reduced-motion` y `forced-colors`; `100dvh`; fuentes sin bloquear el primer pintado; el aviso (`#toast`) es un `role="status"` (`alert` si es un error). **La navegación no cambia**: sigue siendo Hoy, A fondo, Mi mes, Historial y Más (con Compra, Bote y Admin dentro), tal como se decidió; no se fusionan Compra y Bote ni se mueve Mi mes dentro de Hoy.
+
+- **2026-11-13 (correo y permisos)**: `resumen-diario.mjs` deja de tener su propia lógica (rotación semanal de cubos, tablas antiguas) y pasa a pedir la vista previa a la Edge Function, así que el gris grande de los jueves y el «entrar» del viernes cuadran con la app. La función envía una vez al día; `forzar` no pide contraseña (decisión posterior del usuario). Migración `20261113_permisos_correo.sql`: `casa_avisos` ya no se lee con la clave pública y se retiran `TRUNCATE`/`TRIGGER`/`REFERENCES`. Pruebas versionadas en `tests/`, junto con `PLAN_VISUAL.md`.
+
+- **2026-11-12 (historial nuevo)**: El Historial pasa de una lista de semanas a un selector de semana con resumen, detalle **por persona y por tarea** (icono + texto), atribución al equipo en zonas de varias personas y aviso de reparto recalculado. Navegación hasta 26 semanas con carga bajo demanda (`histSemanas` en `cargar()`). El gris grande de los jueves cuenta como cualquier otra tarea de cubos.
+
+- **2026-11-12 (el gris grande en el calendario)**: **Mi mes** marca cada recogida con un chip del color del cubo (también el gris grande de los jueves, desde el 19) y la leyenda nombra los cubos del mes. README revisado: la barra tiene cinco botones con «Más» y se unifica la nomenclatura (cubos grises / cubo gris grande, botón «A fondo» / limpieza a fondo). El texto de Admin → Días de limpieza ya no habla de «fin de semana» para el fondo.
 
 - **2026-11-12 (el gris grande de los jueves)**: Entra el **cubo gris grande extra** que la casa tiene contratado, con recogida **todos los jueves**. En vez de apuntarlo a mano cada mes, es una regla fija (`casa_config.cubos_fijos`) que se suma al calendario del ayuntamiento: lo saca el turno del jueves y lo entra el del viernes, y si coincide con los grises se piden juntos. Cuenta desde el jueves 19. El correo nocturno lo incluye y sus «próximos cubos» pasan a mirar los 14 días siguientes en vez de las tres próximas filas del calendario. También se metieron las recogidas de noviembre de la foto del calendario.
 

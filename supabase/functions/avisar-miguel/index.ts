@@ -20,6 +20,11 @@
  * Secretos (Supabase → Edge Functions → Secrets, nunca en el código):
  *   BREVO_API_KEY     clave de API de Brevo
  *   EMAIL_REMITENTE   dirección verificada en Brevo desde la que se envía
+ *
+ * Destinatarios: `casa_config.aviso_emails` (Miguel y Alberto, los dos). La
+ * función es pública —la llama pg_cron con la clave publicable— y `forzar`
+ * no pide contraseña (decisión del usuario). La vista previa (`seco`) nunca
+ * devuelve los destinatarios.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -30,6 +35,7 @@ const REMITENTE = Deno.env.get("EMAIL_REMITENTE") ?? "";
 const APP_URL = "https://limpieza-casa-holanda.vercel.app";
 const TZ = "Europe/Amsterdam";
 const HORA_ENVIO = 23;
+const FORZADO_ESPERA_MIN = 10;
 
 const DOW = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
 const DOW_C = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
@@ -458,16 +464,51 @@ Deno.serve(async (req: Request) => {
     const forzar = payload?.forzar === true;
     const seco = payload?.seco === true;
 
+    // Forzar un envío salta la comprobación de hora y de "ya enviado hoy".
+    // Sin contraseña (decisión del usuario): para acotar el daño, dos forzados
+    // no pueden estar a menos de FORZADO_ESPERA_MIN minutos. Se mira el último
+    // forzado en casa_avisos; si esa consulta falla, no se envía.
+    if (forzar) {
+      let ultimo: any[];
+      try {
+        ultimo = await db(`casa_avisos?select=at&detalle=like.FORZADO*&order=at.desc&limit=1`);
+      } catch (e) {
+        throw new Error(`no se pudo comprobar el último forzado: ${String((e as Error)?.message ?? e)}`);
+      }
+      const desde = ultimo?.[0]?.at ? Date.parse(ultimo[0].at) : 0;
+      if (desde && Date.now() - desde < FORZADO_ESPERA_MIN * 60_000) {
+        return responder({ ok: false, enviado: false, motivo: `ya hubo un envío forzado hace menos de ${FORZADO_ESPERA_MIN} min` }, 429);
+      }
+    }
+
     // Prueba en seco: compone el resumen y lo devuelve sin enviar ni registrar
-    // nada. Sirve para comprobar que el correo de esta noche va a salir bien
-    // sin molestar a nadie con un correo de prueba.
+    // nada. Nunca devuelve los destinatarios.
     if (seco) {
-      const previo = await componerResumen(hoy);
-      return responder({ ok: true, enviado: false, seco: true, ...previo });
+      const { destinos: _destinos, ...sinDestinos } = await componerResumen(hoy);
+      return responder({ ok: true, enviado: false, seco: true, ...sinDestinos });
     }
 
     if (!forzar && horaAhoraLocal() !== HORA_ENVIO) {
       return responder({ ok: true, enviado: false, motivo: "no son las 23:00 en Holanda todavia" });
+    }
+
+    // Una sola vez al día: una segunda llamada dentro de la hora de las 23 no
+    // vuelve a enviar (el cron lanza dos veces y cualquiera puede llamar).
+    // Los envíos forzados se registran con prefijo FORZADO y no cuentan aquí.
+    // Si esta consulta falla, no se envía: sin saber si ya salió, mejor no
+    // mandar dos veces.
+    if (!forzar) {
+      let ya: any[];
+      try {
+        ya = await db(`casa_avisos?select=id&fecha=eq.${hoy}&ok=is.true&detalle=not.like.FORZADO*&limit=1`);
+      } catch (e) {
+        const msg = `no se pudo comprobar el envío de hoy: ${String((e as Error)?.message ?? e)}`;
+        await registrar(hoy, false, null, msg);
+        return responder({ ok: false, enviado: false, error: "no se pudo comprobar el envío de hoy" }, 500);
+      }
+      if (ya?.length) {
+        return responder({ ok: true, enviado: false, motivo: "ya se envió hoy" });
+      }
     }
 
     const aviso = await componerResumen(hoy);
@@ -477,11 +518,14 @@ Deno.serve(async (req: Request) => {
     }
 
     await enviarCorreo(aviso.destinos, aviso.asunto, aviso.cuerpo);
-    await registrar(hoy, true, aviso.destinos.join(", "), aviso.asunto);
+    await registrar(hoy, true, aviso.destinos.join(", "),
+      (forzar ? "FORZADO · " : "") + aviso.asunto);
     return responder({ ok: true, enviado: true, destinos: aviso.destinos, asunto: aviso.asunto });
   } catch (e) {
+    // El detalle técnico va a casa_avisos; fuera, un mensaje genérico.
     const msg = String((e as Error)?.message ?? e);
     await registrar(hoy, false, null, msg);
-    return responder({ ok: false, enviado: false, error: msg }, 500);
+    console.error("avisar-miguel:", msg);
+    return responder({ ok: false, enviado: false, error: "no se pudo completar el envío" }, 500);
   }
 });

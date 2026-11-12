@@ -1,0 +1,12 @@
+{
+  "name": "casa-holanda-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pruebas de index.html con jsdom. Solo desarrollo: la app es un único HTML sin dependencias y esto NO se despliega.",
+  "scripts": {
+    "test": "sh run.sh"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  }
+}
