@@ -594,7 +594,7 @@ input,select,textarea{scroll-margin-bottom:120px}
 </head>
 <body>
 
-<main id="app"><div class="app"><div class="skel" role="status" aria-label="Cargando"><div class="sk l"></div><div class="sk"></div><div class="sk s"></div></div></div></main>
+<main id="app" tabindex="-1"><div class="app"><div class="skel" role="status" aria-label="Cargando"><div class="sk l"></div><div class="sk"></div><div class="sk s"></div></div></div></main>
 <div id="cam" hidden></div>
 <div id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
@@ -690,11 +690,21 @@ try { yo = localStorage.getItem(KEY); } catch(e){}
 var vista = "hoy";
 var abierto = {};
 var lightbox = null;
-var lightboxOrigen = null;   /* el elemento que abrió la foto, para devolverle el foco */
+/* pinta() reemplaza todos los nodos, así que no se guarda el elemento que abrió
+   la foto: se guarda su data-src y, al cerrar, se busca la miniatura de nuevo.
+   Si ya no existe, el foco va al contenedor principal (tabindex=-1). */
+var lightboxOrigen = null;
 function cierraFoto(){
-  lightbox = null; pinta();
-  if(lightboxOrigen && lightboxOrigen.isConnected && lightboxOrigen.focus) lightboxOrigen.focus();
-  lightboxOrigen = null;
+  var src = lightboxOrigen;
+  lightbox = null; lightboxOrigen = null; pinta();
+  var app = document.getElementById("app"), dest = null;
+  if(src){
+    var miniaturas = app.querySelectorAll('[data-a="foto"]');
+    for(var i = 0; i < miniaturas.length && !dest; i++){
+      if(miniaturas[i].getAttribute("data-src") === src) dest = miniaturas[i];
+    }
+  }
+  (dest || app).focus();
 }
 var guardando = "ok";
 var camStream = null, camCb = null, camShot = null, camMax = 1024;
@@ -1544,7 +1554,7 @@ function tareaHTML(t, puede, dia){
      dice aquí, en la propia tarea, y no se ofrece marcarla otra vez. */
   var enCola = !h && cola().some(function(c){ return c.tarea_id === t.id && c.periodo === periodoDe(t, dia); });
   if(h){
-    acc = (h.foto_url ? '<img class="thumb" src="'+at(h.foto_url)+'" data-a="foto" data-src="'+at(h.foto_url)+'" alt="" loading="lazy">' : '');
+    acc = (h.foto_url ? '<img class="thumb" src="'+at(h.foto_url)+'" data-a="foto" data-src="'+at(h.foto_url)+'" role="button" tabindex="0" aria-label="Ver la foto" loading="lazy" alt="">' : '');
   } else if(enCola){
     acc = '<span class="tag enviar">Por enviar</span>';
   } else if(puede){
@@ -2104,7 +2114,7 @@ function vBote(){
     (S.compras.length
       ? S.compras.map(function(p){
           return '<div class="item u-bg-v-surface u-bd-1px_solid_v-line u-br-12px u-mb-8px">' +
-            (p.ticket ? '<img class="thumb" src="'+at(p.ticket)+'" data-a="foto" data-src="'+at(p.ticket)+'" alt="" loading="lazy">' : '<span class="tag plain">sin ticket</span>') +
+            (p.ticket ? '<img class="thumb" src="'+at(p.ticket)+'" data-a="foto" data-src="'+at(p.ticket)+'" role="button" tabindex="0" aria-label="Ver el ticket" loading="lazy" alt="">' : '<span class="tag plain">sin ticket</span>') +
             '<div class="nm">'+esc(p.nota || "Compra")+'<small>'+esc(p.por)+' · '+corta((p.at||"").slice(0,10))+'</small></div>' +
             '<span class="u-fw-700 u-fvn-tabular-nums">'+eur(p.importe)+'</span></div>';
         }).join('')
@@ -2868,13 +2878,19 @@ function onClick(e){
   else if(a === "hist-sig"){ histVa(mas(semHist || semanaDe(hoy()), 7)); }
   else if(a === "hist-hoy"){ histVa(semanaDe(hoy())); }
   else if(a === "hist-reintenta"){ histCargar(); pinta(); }
-  else if(a === "reintenta"){ vaciaCola().then(function(m){ if(!m) refrescar(); }); }
+  else if(a === "reintenta"){
+    /* Si el refresco sale bien, el error de guardado ya no tiene sentido: se limpia.
+       Si no sale, refrescar() deja el banner de conexión y el error se queda. */
+    vaciaCola().then(function(m){ if(!m) return refrescar(); }).then(function(){
+      if(!copiaDe && guardando === "error"){ guardando = "ok"; pinta(); }
+    });
+  }
   else if(a === "ap-foco"){ var af = document.getElementById("ap-cuanto"); if(af) af.focus(); }
   else if(a === "l-foco"){ var lf = document.getElementById("l-nombre"); if(lf) lf.focus(); }
   else if(a === "hist-abre"){ var hk = el.getAttribute("data-k"); abierto[hk] = !abierto[hk]; pinta(); }
   else if(a === "abre-sem"){ var w = el.getAttribute("data-w"); abierto["w"+w] = !abierto["w"+w]; pinta(); }
   else if(a === "abre-acc"){ var k = el.getAttribute("data-k"); abierto["a"+k] = !abierto["a"+k]; pinta(); }
-  else if(a === "foto"){ lightboxOrigen = el; lightbox = el.getAttribute("data-src"); pinta(); }
+  else if(a === "foto"){ lightboxOrigen = el.getAttribute("data-src"); lightbox = lightboxOrigen; pinta(); }
   else if(a === "cerrar-foto"){ cierraFoto(); }
   else if(a === "foto-tarea"){
     var tid = el.getAttribute("data-t");
